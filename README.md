@@ -19,7 +19,7 @@ The database alias must match the name of a database configuration in your confi
 
 ## Installation
 
-`go install github.com/wheelibin/dbee`
+`go install github.com/wheelibin/dbee@latest`
 
 ## Config
 
