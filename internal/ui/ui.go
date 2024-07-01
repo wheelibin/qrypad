@@ -38,16 +38,17 @@ type model struct {
 	errorPopup     component.ErrorPopupModel
 
 	// state
-	dbAlias              string
-	db                   db.DBConn
-	activePanelIndex     int
-	errorMessage         string
-	loading              bool
-	windowTooSmall       bool
-	width                int
-	height               int
-	leftPanelHidden      bool
-	selectablePanelCount int
+	dbAlias                string
+	db                     db.DBConn
+	activePanelIndex       int
+	errorMessage           string
+	loading                bool
+	windowTooSmall         bool
+	width                  int
+	height                 int
+	leftPanelHidden        bool
+	selectablePanelCount   int
+	lastSavedQueryContents string
 }
 
 func NewModel(dbAlias string, db db.DBConn) model {
@@ -92,6 +93,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
+
+	// update this now so the query text value is updated and can be used below
+	m.queryPanel, cmd = m.queryPanel.Update(msg)
+	cmds = append(cmds, cmd)
 
 	switch msg := msg.(type) {
 
@@ -180,6 +185,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.DefaultKeyMap.SaveQuery):
 			if m.activePanelIndex == PanelIndexQuery {
 				m.queryPanel.SetDirty(false)
+				m.lastSavedQueryContents = m.queryPanel.GetValue()
 				cmds = append(cmds, commands.SaveQueryFile(m.dbAlias, m.queryPanel.GetValue()))
 			}
 
@@ -200,7 +206,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if m.activePanelIndex == PanelIndexQuery {
-				m.queryPanel.SetDirty(true)
+				if m.lastSavedQueryContents != m.queryPanel.GetValue() {
+					m.queryPanel.SetDirty(true)
+				}
 			}
 		}
 	}
@@ -215,9 +223,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tableInfoPanel, cmd = m.tableInfoPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
-	m.queryPanel, cmd = m.queryPanel.Update(msg)
-	cmds = append(cmds, cmd)
 
 	if m.activePanelIndex == PanelIndexResults {
 		m.resultsPanel, cmd = m.resultsPanel.Update(msg)
