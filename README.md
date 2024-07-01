@@ -5,7 +5,7 @@ DBee is a basic terminal application for running ad-hoc queries against a (mysql
 It has the following features:
 - view a list of the tables in the database along with the column info for the selected table
 - quickly view table data without writing sql
-- keep one or more queries in the query panel and easily run the query under the cursor (queries are auto-saved per database)
+- keep one or more queries in the query panel and easily run the query under the cursor (queries are saved per database)
 
 > If you want to browse the table relationships, edit columns, add indexes, or really anything other than running a query, then you need to use another tool. 
 
