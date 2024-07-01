@@ -87,6 +87,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// log.Println("ui.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -179,7 +180,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.DefaultKeyMap.SaveQuery):
 			if m.activePanelIndex == PanelIndexQuery {
 				m.queryPanel.SetDirty(false)
-				cmds = append(cmds, commands.SaveQueryFile(m.dbAlias, m.queryPanel.Value))
+				cmds = append(cmds, commands.SaveQueryFile(m.dbAlias, m.queryPanel.GetValue()))
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ReloadQuery):
@@ -205,17 +206,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// update components
-	m.tablePanel, cmd = m.tablePanel.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.activePanelIndex == PanelIndexTables {
+		m.tablePanel, cmd = m.tablePanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
-	m.tableInfoPanel, cmd = m.tableInfoPanel.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.activePanelIndex == PanelIndexTableInfo {
+		m.tableInfoPanel, cmd = m.tableInfoPanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	m.queryPanel, cmd = m.queryPanel.Update(msg)
 	cmds = append(cmds, cmd)
 
-	m.resultsPanel, cmd = m.resultsPanel.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.activePanelIndex == PanelIndexResults {
+		m.resultsPanel, cmd = m.resultsPanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }

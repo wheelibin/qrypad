@@ -25,7 +25,7 @@ func (m StatusBarModel) Init() tea.Cmd {
 }
 
 func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
-	// log.Println("queryPanel.update", msg)
+	// log.Println("statusBar.model::Update", msg)
 	var (
 		cmds []tea.Cmd
 	)

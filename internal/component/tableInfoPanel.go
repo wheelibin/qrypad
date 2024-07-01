@@ -45,6 +45,7 @@ func (m TableInfoPanelModel) Init() tea.Cmd {
 }
 
 func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) {
+	// log.Println("tableInfoPanel.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
