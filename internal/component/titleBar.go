@@ -24,7 +24,7 @@ func (m TitlBarModel) Init() tea.Cmd {
 }
 
 func (m TitlBarModel) Update(msg tea.Msg) (TitlBarModel, tea.Cmd) {
-	// log.Println("queryPanel.update", msg)
+	// log.Println("titleBar.model::Update", msg)
 	var (
 		cmds []tea.Cmd
 	)

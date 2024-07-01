@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -20,7 +21,6 @@ type QueryPanelModel struct {
 	queryBuffer      textarea.Model
 	dbAlias          string
 	CurrentStatement string
-	Value            string
 	dirty            bool
 }
 
@@ -28,7 +28,7 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 	ta := textarea.New()
 	ta.Placeholder = "sql statement(s)..."
 	ta.Prompt = "┃ "
-	ta.CharLimit = 280
+	ta.Cursor.SetMode(cursor.CursorStatic)
 
 	// Remove cursor line styling
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
@@ -38,10 +38,11 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 }
 
 func (m QueryPanelModel) Init() tea.Cmd {
-	return tea.Batch(commands.ReadOrCreateQueryFile(m.dbAlias), textarea.Blink)
+	return tea.Batch(commands.ReadOrCreateQueryFile(m.dbAlias))
 }
 
 func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
+	// log.Println("queryPanel.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -63,7 +64,6 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 		m.CurrentStatement = getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
-		m.Value = m.queryBuffer.Value()
 
 	} else {
 		m.queryBuffer.Blur()
@@ -74,6 +74,10 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 
 func (m QueryPanelModel) GetCurrentStatement() string {
 	return getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
+}
+
+func (m QueryPanelModel) GetValue() string {
+	return m.queryBuffer.Value()
 }
 
 func (m *QueryPanelModel) SetDirty(dirty bool) {
