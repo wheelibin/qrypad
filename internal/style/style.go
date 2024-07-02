@@ -25,7 +25,8 @@ func Title(width int, active bool) lipgloss.Style {
 		Height(1).
 		// MarginBottom(1).
 		MarginLeft(1).
-		PaddingLeft(1)
+		PaddingLeft(1).
+		Bold(true)
 	if active {
 		title = title.Background(colour.PanelTitleActiveBG).Foreground(colour.PanelTitleActiveFG)
 	}
