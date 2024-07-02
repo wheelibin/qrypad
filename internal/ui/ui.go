@@ -95,8 +95,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	// update this now so the query text value is updated and can be used below
-	m.queryPanel, cmd = m.queryPanel.Update(msg)
-	cmds = append(cmds, cmd)
+	if len(m.errorMessage) == 0 {
+		m.queryPanel, cmd = m.queryPanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	switch msg := msg.(type) {
 
