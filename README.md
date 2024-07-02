@@ -10,6 +10,7 @@ It has the following features:
 > If you want to browse the table relationships, edit columns, add indexes, or really anything other than running a query, then you need to use another tool. 
 
 <img src="https://github.com/wheelibin/dbee/blob/main/dbee.png" width="200" />
+
 ![DBee screenshot](https://github.com/wheelibin/dbee/blob/main/ss.png?raw=true)
 
 ## Usage
