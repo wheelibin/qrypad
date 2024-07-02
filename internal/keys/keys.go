@@ -5,18 +5,19 @@ import (
 )
 
 type KeyMap struct {
-	Quit            key.Binding
-	Up              key.Binding
-	Down            key.Binding
-	Left            key.Binding
-	Right           key.Binding
-	NextPanel       key.Binding
-	PrevPanel       key.Binding
-	ExecuteQuery    key.Binding
-	ViewTableData   key.Binding
-	ToggleLeftPanel key.Binding
-	SaveQuery       key.Binding
-	ReloadQuery     key.Binding
+	Quit                key.Binding
+	Up                  key.Binding
+	Down                key.Binding
+	Left                key.Binding
+	Right               key.Binding
+	NextPanel           key.Binding
+	PrevPanel           key.Binding
+	ExecuteQuery        key.Binding
+	ViewData            key.Binding
+	ToggleLeftPanel     key.Binding
+	SaveQuery           key.Binding
+	ReloadQuery         key.Binding
+	CloseResultRowPopup key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -51,7 +52,7 @@ var DefaultKeyMap = KeyMap{
 		key.WithKeys("f5"),
 		key.WithHelp("f5", "execute query"),
 	),
-	ViewTableData: key.NewBinding(
+	ViewData: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "view data"),
 	),
@@ -66,5 +67,9 @@ var DefaultKeyMap = KeyMap{
 	ReloadQuery: key.NewBinding(
 		key.WithKeys("ctrl+r"),
 		key.WithHelp("ctrl+r", "reload query"),
+	),
+	CloseResultRowPopup: key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc", "close popup"),
 	),
 }

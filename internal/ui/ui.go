@@ -36,6 +36,7 @@ type model struct {
 	statusBar      component.StatusBarModel
 	titleBar       component.TitlBarModel
 	errorPopup     component.ErrorPopupModel
+	resultRowPopup component.ResultRowPopupModel
 
 	// state
 	dbAlias                string
@@ -49,6 +50,7 @@ type model struct {
 	leftPanelHidden        bool
 	selectablePanelCount   int
 	lastSavedQueryContents string
+	showResultRowPopup     bool
 }
 
 func NewModel(dbAlias string, db db.DBConn) model {
@@ -59,6 +61,7 @@ func NewModel(dbAlias string, db db.DBConn) model {
 	statusBar := component.NewStatusBarModel(dbAlias)
 	titleBar := component.NewTitlBarModel()
 	errorPopup := component.NewErrorPopupModel()
+	resultRowPopup := component.NewResultRowPopupModel()
 
 	return model{
 		dbAlias:              dbAlias,
@@ -70,6 +73,7 @@ func NewModel(dbAlias string, db db.DBConn) model {
 		statusBar:            statusBar,
 		titleBar:             titleBar,
 		errorPopup:           errorPopup,
+		resultRowPopup:       resultRowPopup,
 		selectablePanelCount: 4,
 	}
 }
@@ -84,6 +88,7 @@ func (m model) Init() tea.Cmd {
 		m.statusBar.Init(),
 		m.titleBar.Init(),
 		m.errorPopup.Init(),
+		m.resultRowPopup.Init(),
 	)
 }
 
@@ -143,6 +148,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 
+		if len(m.errorMessage) > 0 {
+			// the error popup is shown, so any key should remove it
+			m.errorMessage = ""
+			return m, nil
+		}
+
 		switch {
 		case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 			cmd = commands.SetActivePanel((m.activePanelIndex + 1) % m.selectablePanelCount)
@@ -156,11 +167,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = commands.SetActivePanel(i)
 			cmds = append(cmds, cmd)
 
-		case key.Matches(msg, keys.DefaultKeyMap.ViewTableData):
-			if m.activePanelIndex == PanelIndexTables {
+		case key.Matches(msg, keys.DefaultKeyMap.ViewData):
+			switch m.activePanelIndex {
+			case PanelIndexTables:
 				m.setLoading()
 				cmd = commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable())
 				cmds = append(cmds, cmd)
+			case PanelIndexResults:
+				if !m.showResultRowPopup {
+					m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
+					m.showResultRowPopup = true
+				}
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):
@@ -197,16 +214,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, commands.ReadOrCreateQueryFile(m.dbAlias))
 			}
 
+		case key.Matches(msg, keys.DefaultKeyMap.CloseResultRowPopup):
+			m.showResultRowPopup = false
+
 		case key.Matches(msg, keys.DefaultKeyMap.Quit):
 			return m, tea.Quit
 
 		default:
 			// any other key
-			if len(m.errorMessage) > 0 {
-				// the error popup is shown, so any key should remove it
-				m.errorMessage = ""
-				return m, nil
-			}
 			if m.activePanelIndex == PanelIndexQuery {
 				if m.lastSavedQueryContents != m.queryPanel.GetValue() {
 					m.queryPanel.SetDirty(true)
@@ -216,6 +231,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// update components
+	if m.showResultRowPopup {
+		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
+		cmds = append(cmds, cmd)
+		// skip other component updates if popup is shown
+		return m, tea.Batch(cmds...)
+	}
+
 	if m.activePanelIndex == PanelIndexTables {
 		m.tablePanel, cmd = m.tablePanel.Update(msg)
 		cmds = append(cmds, cmd)
@@ -266,6 +288,7 @@ func (m *model) adjustSizes() {
 	m.statusBar.SetSize(m.width, StatusBarHeight)
 	m.titleBar.SetSize(m.width, TitleBarHeight)
 	m.errorPopup.SetSize(m.width/2, 5)
+	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 }
 
 func (m *model) setLoading() {
@@ -310,9 +333,15 @@ func (m model) View() string {
 	finalView := mainContent
 	if len(m.errorMessage) > 0 {
 		ep := m.errorPopup.View()
-		epX := m.width/2 - lipgloss.Width(ep)/2
-		epY := m.height/2 - 2 - lipgloss.Height(ep)/2
-		finalView = style.PlaceOverlay(epX, epY, m.errorPopup.View(), mainContent)
+		x := m.width/2 - lipgloss.Width(ep)/2
+		y := m.height/2 - 2 - lipgloss.Height(ep)/2
+		finalView = style.PlaceOverlay(x, y, m.errorPopup.View(), mainContent)
+	}
+	if m.showResultRowPopup {
+		p := m.resultRowPopup.View()
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		finalView = style.PlaceOverlay(x, y, m.resultRowPopup.View(), mainContent)
 	}
 
 	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
