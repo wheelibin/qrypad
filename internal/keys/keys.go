@@ -4,7 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 )
 
-type KeyMap struct {
+type keyMap struct {
 	Quit                key.Binding
 	Up                  key.Binding
 	Down                key.Binding
@@ -18,28 +18,50 @@ type KeyMap struct {
 	SaveQuery           key.Binding
 	ReloadQuery         key.Binding
 	CloseResultRowPopup key.Binding
+	Help                key.Binding
 }
 
-var DefaultKeyMap = KeyMap{
+// ShortHelp returns keybindings to be shown in the mini help view. It's part
+// of the key.Map interface.
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Help, k.Quit}
+}
+
+// FullHelp returns keybindings for the expanded help view. It's part of the
+// key.Map interface.
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.NextPanel, k.PrevPanel, k.ToggleLeftPanel},
+		{k.ExecuteQuery, k.ViewData, k.SaveQuery, k.ReloadQuery},
+		{k.Help, k.CloseResultRowPopup, k.Quit},
+	}
+}
+
+var DefaultKeyMap = keyMap{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "quit"),
 	),
-	Up: key.NewBinding(
-		key.WithKeys("k", "up"),        // actual keybindings
-		key.WithHelp("↑/k", "move up"), // corresponding help text
+	Help: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "toggle help"),
 	),
-	Down: key.NewBinding(
-		key.WithKeys("j", "down"),
-		key.WithHelp("↓/j", "move down"),
-	),
-	Left: key.NewBinding(
-		key.WithKeys("h", "left"),
-		key.WithHelp("↓/h", "move left"),
-	),
-	Right: key.NewBinding(
-		key.WithKeys("l", "right"),
-		key.WithHelp("↓/l", "move right"),
-	),
+	// Up: key.NewBinding(
+	// 	key.WithKeys("k", "up"),        // actual keybindings
+	// 	key.WithHelp("↑/k", "move up"), // corresponding help text
+	// ),
+	// Down: key.NewBinding(
+	// 	key.WithKeys("j", "down"),
+	// 	key.WithHelp("↓/j", "move down"),
+	// ),
+	// Left: key.NewBinding(
+	// 	key.WithKeys("h", "left"),
+	// 	key.WithHelp("↓/h", "move left"),
+	// ),
+	// Right: key.NewBinding(
+	// 	key.WithKeys("l", "right"),
+	// 	key.WithHelp("↓/l", "move right"),
+	// ),
 	NextPanel: key.NewBinding(
 		key.WithKeys("tab"),
 		key.WithHelp("tab", "next panel"),
@@ -54,7 +76,7 @@ var DefaultKeyMap = KeyMap{
 	),
 	ViewData: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("enter", "view data"),
+		key.WithHelp("enter", "view table data / view result row"),
 	),
 	ToggleLeftPanel: key.NewBinding(
 		key.WithKeys("ctrl+t"),

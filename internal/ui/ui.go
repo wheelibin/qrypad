@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/wheelibin/dbee/internal/colour"
 	"github.com/wheelibin/dbee/internal/commands"
 	"github.com/wheelibin/dbee/internal/component"
 	"github.com/wheelibin/dbee/internal/db"
@@ -37,6 +39,7 @@ type model struct {
 	titleBar       component.TitlBarModel
 	errorPopup     component.ErrorPopupModel
 	resultRowPopup component.ResultRowPopupModel
+	help           help.Model
 
 	// state
 	dbAlias                string
@@ -51,6 +54,7 @@ type model struct {
 	selectablePanelCount   int
 	lastSavedQueryContents string
 	showResultRowPopup     bool
+	showHelpPopup          bool
 }
 
 func NewModel(dbAlias string, db db.DBConn) model {
@@ -63,6 +67,10 @@ func NewModel(dbAlias string, db db.DBConn) model {
 	errorPopup := component.NewErrorPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
 
+	help := help.New()
+	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.HelpKey)
+	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.HelpDesc)
+
 	return model{
 		dbAlias:              dbAlias,
 		db:                   db,
@@ -74,6 +82,7 @@ func NewModel(dbAlias string, db db.DBConn) model {
 		titleBar:             titleBar,
 		errorPopup:           errorPopup,
 		resultRowPopup:       resultRowPopup,
+		help:                 help,
 		selectablePanelCount: 4,
 	}
 }
@@ -217,6 +226,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.DefaultKeyMap.CloseResultRowPopup):
 			m.showResultRowPopup = false
 
+		case key.Matches(msg, keys.DefaultKeyMap.Help):
+			m.help.ShowAll = true
+			m.showHelpPopup = !m.showHelpPopup
+
 		case key.Matches(msg, keys.DefaultKeyMap.Quit):
 			return m, tea.Quit
 
@@ -234,6 +247,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.showResultRowPopup {
 		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
 		cmds = append(cmds, cmd)
+		// skip other component updates if popup is shown
+		return m, tea.Batch(cmds...)
+	}
+	if m.showHelpPopup {
 		// skip other component updates if popup is shown
 		return m, tea.Batch(cmds...)
 	}
@@ -289,6 +306,8 @@ func (m *model) adjustSizes() {
 	m.titleBar.SetSize(m.width, TitleBarHeight)
 	m.errorPopup.SetSize(m.width/2, 5)
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
+
+	m.help.Width = m.width
 }
 
 func (m *model) setLoading() {
@@ -332,16 +351,23 @@ func (m model) View() string {
 
 	finalView := mainContent
 	if len(m.errorMessage) > 0 {
-		ep := m.errorPopup.View()
-		x := m.width/2 - lipgloss.Width(ep)/2
-		y := m.height/2 - 2 - lipgloss.Height(ep)/2
-		finalView = style.PlaceOverlay(x, y, m.errorPopup.View(), mainContent)
+		p := m.errorPopup.View()
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		finalView = style.PlaceOverlay(x, y, p, mainContent)
 	}
 	if m.showResultRowPopup {
 		p := m.resultRowPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		finalView = style.PlaceOverlay(x, y, m.resultRowPopup.View(), mainContent)
+		finalView = style.PlaceOverlay(x, y, p, mainContent)
+	}
+	if m.showHelpPopup {
+		p := m.help.View(keys.DefaultKeyMap)
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		helpStyle := style.BasePanelStyle.BorderForeground(colour.HelpBorder)
+		finalView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
 	}
 
 	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
