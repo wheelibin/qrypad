@@ -36,4 +36,7 @@ var (
 	Error       = red
 
 	ResultRowPopupTitleBG = yellow
+	HelpBorder            = orange
+	HelpKey               = orange
+	HelpDesc              = lipgloss.NoColor{}
 )
