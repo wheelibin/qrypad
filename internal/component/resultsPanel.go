@@ -104,6 +104,10 @@ func (m *ResultsPanelModel) SetActive(active bool) {
 	m.active = active
 }
 
+func (m ResultsPanelModel) GetSelectedRow() map[string]any {
+	return m.table.HighlightedRow().Data
+}
+
 func (m ResultsPanelModel) View() string {
 	var panelStyle = style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)

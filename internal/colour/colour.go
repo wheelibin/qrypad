@@ -34,4 +34,6 @@ var (
 	TitleBarBG  = darkGrey
 	TitleBarFG  = blue
 	Error       = red
+
+	ResultRowPopupTitleBG = yellow
 )
