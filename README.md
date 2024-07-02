@@ -9,7 +9,8 @@ It has the following features:
 
 > If you want to browse the table relationships, edit columns, add indexes, or really anything other than running a query, then you need to use another tool. 
 
-![DBee screenshot](https://github.com/wheelibin/dbee/blob/main/dbee.png?raw=true)
+![DBee logo](https://github.com/wheelibin/dbee/blob/main/dbee.png?raw=true)
+![DBee screenshot](https://github.com/wheelibin/dbee/blob/main/ss.png?raw=true)
 
 ## Usage
 
@@ -50,6 +51,24 @@ port = 5432
 user = "postgres"
 password = "123456"
 database = "music-store"
+
+## Keys
+
+Configurable key map is coming soon, but for now the default keys are:
+
+### general
+- `tab` / `shift+tab` to navigate between panels
+- `ctrl+t` toggle tables
+- `/` to filter in the tables, table info, and results panel (`esc` to cancel) 
+
+### table panel
+- `enter` to fetch the first 100 rows of the selected table
+
+### query panel
+- `F5` to run the query under the cursor
+- `ctrl+s` to save the query (buffer is saved per db)
+- `ctrl+r` to reload the query file from disk
+
 
 ```
 
