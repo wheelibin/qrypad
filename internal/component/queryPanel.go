@@ -28,7 +28,7 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 	ta := textarea.New()
 	ta.Placeholder = "sql statement(s)..."
 	ta.Prompt = "┃ "
-	ta.Cursor.SetMode(cursor.CursorStatic)
+	ta.Cursor.SetMode(cursor.CursorBlink)
 	ta.CharLimit = 0
 
 	// Remove cursor line styling
