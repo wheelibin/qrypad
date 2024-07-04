@@ -59,6 +59,8 @@ user = "postgres"
 password = "123456"
 database = "music-store"
 
+```
+
 ## Keys
 
 Configurable key map is coming soon, but for now the default keys are:
@@ -77,5 +79,5 @@ Configurable key map is coming soon, but for now the default keys are:
 - `ctrl+r` to reload the query file from disk
 
 
-```
+
 
