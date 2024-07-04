@@ -265,7 +265,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	if m.activePanelIndex == PanelIndexResults {
+	if m.activePanelIndex == PanelIndexResults || m.loading {
 		m.resultsPanel, cmd = m.resultsPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
