@@ -1,4 +1,4 @@
-# DBee - A simple scratchpad for running ad-hoc database queries
+# DBee - A terminal app for running ad-hoc database queries 
 
 <p align="center">
   <img src="https://github.com/wheelibin/dbee/blob/main/dbee.png" height="100" />
