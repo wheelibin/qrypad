@@ -33,30 +33,6 @@ func GetSchemaTables(dbConn DBConn) (*Data, error) {
 
 	return ExecuteQuery(dbConn, query)
 
-	// timeoutSecs := getTimeoutSecs()
-	// queryCtx, cancel := context.WithTimeout(context.Background(), timeoutSecs*time.Second)
-	// defer cancel()
-	//
-	// rows, err := dbConn.DB.QueryContext(queryCtx, query)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer rows.Close()
-	//
-	// tables := make([]Table, 0)
-	//
-	// for rows.Next() {
-	// 	var tbl Table
-	// 	if err := rows.Scan(&tbl.Name, &tbl.RowCount); err != nil {
-	// 		return nil, err
-	// 	}
-	//
-	// 	tables = append(tables, tbl)
-	// }
-	// if err = rows.Err(); err != nil {
-	// 	return nil, err
-	// }
-	// return tables, nil
 }
 
 func GetTableColumns(dbConn DBConn, tableName string) (*Data, error) {
@@ -70,7 +46,6 @@ func GetTableRows(dbConn DBConn, tableName string) (*Data, error) {
 }
 
 func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
-
 	var data Data
 
 	timeoutSecs := getTimeoutSecs()
