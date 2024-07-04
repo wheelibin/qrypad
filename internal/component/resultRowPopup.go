@@ -65,6 +65,7 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
+	m.table = m.table.SortByAsc("field")
 }
 
 func (m *ResultRowPopupModel) SetSize(w, h int) {
