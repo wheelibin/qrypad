@@ -1,6 +1,8 @@
 package component
 
 import (
+	"log"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/dbee/internal/colour"
@@ -47,13 +49,17 @@ func (m *ErrorPopupModel) SetText(text string) {
 func (m ErrorPopupModel) View() string {
 	popupStyle := style.BasePanelStyle
 	popupStyle = popupStyle.Width(m.width)
-	popupStyle = popupStyle.Height(m.height)
 
 	var errStyle = lipgloss.NewStyle().
 		Foreground(colour.Error).
 		Padding(0, 2).
-		Align(lipgloss.Center)
+		Align(lipgloss.Center).
+		Width(m.width - 2)
 	err := errStyle.Render(m.text)
+
+	errHeight := lipgloss.Height(err)
+	log.Println(errHeight)
+	popupStyle = popupStyle.Height(errHeight + 3)
 
 	title := style.Title(m.width-2, false).
 		Background(colour.Error).
