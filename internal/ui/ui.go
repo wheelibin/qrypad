@@ -27,6 +27,13 @@ const (
 	TablePanelMinHeight     = 10
 )
 
+type bounds struct {
+	x1 int
+	x2 int
+	y1 int
+	y2 int
+}
+
 var appStyle = lipgloss.NewStyle()
 
 type model struct {
@@ -56,6 +63,10 @@ type model struct {
 	showResultRowPopup     bool
 	showHelpPopup          bool
 	mouseEvent             tea.MouseEvent
+	tablePanelBounds       bounds
+	tableInfoPanelBounds   bounds
+	queryPanelBounds       bounds
+	resultsPanelBounds     bounds
 }
 
 func NewModel(dbAlias string, db db.DBConn) model {
@@ -156,8 +167,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = commands.GetTableInfo(m.db, string(msg))
 		cmds = append(cmds, cmd)
 
-	// case tea.MouseMsg:
-	// 	log.Printf("(X: %d, Y: %d) %s", msg.X, msg.Y, tea.MouseEvent(msg))
+	case tea.MouseMsg:
+		if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
+
+			if isInBounds(msg.X, msg.Y, m.tablePanelBounds) {
+				if m.activePanelIndex != PanelIndexTables {
+					cmd = commands.SetActivePanel(PanelIndexTables)
+					cmds = append(cmds, cmd)
+				}
+			} else if isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds) {
+				if m.activePanelIndex != PanelIndexTableInfo {
+					cmd = commands.SetActivePanel(PanelIndexTableInfo)
+					cmds = append(cmds, cmd)
+				}
+			} else if isInBounds(msg.X, msg.Y, m.queryPanelBounds) {
+				if m.activePanelIndex != PanelIndexQuery {
+					cmd = commands.SetActivePanel(PanelIndexQuery)
+					cmds = append(cmds, cmd)
+				}
+			} else if isInBounds(msg.X, msg.Y, m.resultsPanelBounds) {
+				if m.activePanelIndex != PanelIndexResults {
+					cmd = commands.SetActivePanel(PanelIndexResults)
+					cmds = append(cmds, cmd)
+				}
+			}
+
+		}
 
 	case tea.KeyMsg:
 
@@ -281,6 +316,8 @@ func (m *model) adjustSizes() {
 	m.windowTooSmall = false
 
 	availableHeight := m.height - TitleBarHeight - StatusBarHeight
+	leftWidth := style.GetSpan(3, m.width)
+	rightWidth := m.getRightWidth(m.width)
 
 	//left
 	tableInfoHeight := style.GetSpan(3, availableHeight)
@@ -291,8 +328,8 @@ func (m *model) adjustSizes() {
 	if tableHeight < TablePanelMinHeight {
 		m.windowTooSmall = true
 	}
-	m.tableInfoPanel.SetSize(style.GetSpan(3, m.width), tableInfoHeight)
-	m.tablePanel.SetSize(style.GetSpan(3, m.width), tableHeight)
+	m.tableInfoPanel.SetSize(leftWidth, tableInfoHeight)
+	m.tablePanel.SetSize(leftWidth, tableHeight)
 
 	// right
 	resultsHeight := style.GetSpan(6, availableHeight)
@@ -303,9 +340,16 @@ func (m *model) adjustSizes() {
 	if queryHeight < QueryPanelMinHeight {
 		m.windowTooSmall = true
 	}
-	m.resultsPanel.SetSize(m.getRightWidth(m.width), resultsHeight)
-	m.queryPanel.SetSize(m.getRightWidth(m.width), queryHeight)
+	m.resultsPanel.SetSize(rightWidth, resultsHeight)
+	m.queryPanel.SetSize(rightWidth, queryHeight)
 
+	// store the bounding boxes for the panels
+	m.tablePanelBounds = bounds{x1: 1, x2: leftWidth + 1, y1: 1, y2: tableHeight + 1}
+	m.tableInfoPanelBounds = bounds{x1: 1, x2: leftWidth + 1, y1: 2 + tableHeight, y2: m.height - StatusBarHeight - 1}
+	m.queryPanelBounds = bounds{x1: leftWidth + 4, x2: m.width - 1, y1: 1, y2: queryHeight + 1}
+	m.resultsPanelBounds = bounds{x1: leftWidth + 2, x2: m.width - 1, y1: queryHeight + 2, y2: m.height - StatusBarHeight - 1}
+
+	// set non panel component sizes
 	m.statusBar.SetSize(m.width, StatusBarHeight)
 	m.titleBar.SetSize(m.width, TitleBarHeight)
 	m.errorPopup.SetSize(m.width/2, 5)
@@ -353,30 +397,30 @@ func (m model) View() string {
 		right,
 	)
 
-	finalView := mainContent
+	contentView := mainContent
 	if len(m.errorMessage) > 0 {
 		p := m.errorPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		finalView = style.PlaceOverlay(x, y, p, mainContent)
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	}
 	if m.showResultRowPopup {
 		p := m.resultRowPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		finalView = style.PlaceOverlay(x, y, p, mainContent)
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	}
 	if m.showHelpPopup {
 		p := m.help.View(keys.DefaultKeyMap)
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		helpStyle := style.BasePanelStyle.BorderForeground(colour.HelpBorder)
-		finalView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
+		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
 	}
 
 	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
 		m.titleBar.View(),
-		finalView,
+		contentView,
 		m.statusBar.View(),
 	))
 }
