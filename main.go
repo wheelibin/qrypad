@@ -92,7 +92,7 @@ func main() {
 	p := tea.NewProgram(
 		m,
 		tea.WithAltScreen(),
-	// tea.WithMouseCellMotion(),
+		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		exitWithError("unexpected error\n\n", err)
