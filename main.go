@@ -89,7 +89,11 @@ func main() {
 
 	m := ui.NewModel(dbAlias, db.DBConn{DB: dbConn, DriverName: conn.Driver})
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(
+		m,
+		tea.WithAltScreen(),
+	// tea.WithMouseCellMotion(),
+	)
 	if _, err := p.Run(); err != nil {
 		exitWithError("unexpected error\n\n", err)
 	}

@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/xwb1989/sqlparser"
 )
 
 type Table struct {
@@ -53,17 +53,18 @@ func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
 	queryCtx, cancel := context.WithTimeout(context.Background(), timeoutSecs*time.Second)
 	defer cancel()
 
-	stmt, err := sqlparser.Parse(query)
+	// crude way to decide whether the query should returns rows or use execute
+	isStatement, err := regexp.MatchString(`(?i)^\s*(UPDATE|INSERT|DELETE|DROP|TRUNCATE|CREATE|ALTER)\s+`, query)
 	if err != nil {
 		return nil, err
 	}
 
-	switch stmt.(type) {
-	case *sqlparser.Select:
-		return fetchRows(queryCtx, dbConn.DB, query)
-	default:
+	if isStatement {
 		return execStatement(queryCtx, dbConn.DB, query)
+	} else {
+		return fetchRows(queryCtx, dbConn.DB, query)
 	}
+
 }
 
 func getTimeoutSecs() time.Duration {
