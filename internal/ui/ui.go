@@ -55,6 +55,7 @@ type model struct {
 	lastSavedQueryContents string
 	showResultRowPopup     bool
 	showHelpPopup          bool
+	mouseEvent             tea.MouseEvent
 }
 
 func NewModel(dbAlias string, db db.DBConn) model {
@@ -154,6 +155,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commands.TableSelectedMsg:
 		cmd = commands.GetTableInfo(m.db, string(msg))
 		cmds = append(cmds, cmd)
+
+	// case tea.MouseMsg:
+	// 	log.Printf("(X: %d, Y: %d) %s", msg.X, msg.Y, tea.MouseEvent(msg))
 
 	case tea.KeyMsg:
 
