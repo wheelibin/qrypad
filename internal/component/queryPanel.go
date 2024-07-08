@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/dbee/internal/colour"
 	"github.com/wheelibin/dbee/internal/commands"
 	"github.com/wheelibin/dbee/internal/keys"
 	"github.com/wheelibin/dbee/internal/style"
+	"github.com/wheelibin/dbee/internal/textarea"
 )
 
 type QueryPanelModel struct {
@@ -30,6 +30,10 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 	ta.Prompt = "┃ "
 	ta.Cursor.SetMode(cursor.CursorBlink)
 	ta.CharLimit = 0
+
+	ta.Highlights = []textarea.Highlight{}
+	ta.Highlights = append(ta.Highlights, textarea.Highlight{Symbols: []string{"select", "from", "where"}, Style: lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0000"))})
+	ta.Highlights = append(ta.Highlights, textarea.Highlight{Symbols: []string{"update", "set", "values"}, Style: lipgloss.NewStyle().Foreground(lipgloss.Color("#00ff00"))})
 
 	// Remove cursor line styling
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
