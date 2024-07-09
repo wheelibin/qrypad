@@ -19,3 +19,6 @@ type QueryFileReadMsg string
 
 // sent when the query file has been saved
 type QueryFileSavedMsg struct{}
+
+// sent when the user navigates to another tab in the table info panel
+type TableInfoTabChangedMsg int

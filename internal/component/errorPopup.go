@@ -1,8 +1,6 @@
 package component
 
 import (
-	"log"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/dbee/internal/colour"
@@ -58,7 +56,6 @@ func (m ErrorPopupModel) View() string {
 	err := errStyle.Render(m.text)
 
 	errHeight := lipgloss.Height(err)
-	log.Println(errHeight)
 	popupStyle = popupStyle.Height(errHeight + 3)
 
 	title := style.Title(m.width-2, false).

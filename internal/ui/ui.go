@@ -23,7 +23,7 @@ const (
 	TitleBarHeight          = 0
 	ResultsPanelMinHeight   = 8
 	QueryPanelMinHeight     = 5
-	TableInfoPanelMinHeight = 6
+	TableInfoPanelMinHeight = 8
 	TablePanelMinHeight     = 10
 )
 
@@ -62,7 +62,6 @@ type model struct {
 	lastSavedQueryContents string
 	showResultRowPopup     bool
 	showHelpPopup          bool
-	mouseEvent             tea.MouseEvent
 	tablePanelBounds       bounds
 	tableInfoPanelBounds   bounds
 	queryPanelBounds       bounds
@@ -140,6 +139,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case db.TableInfoDataMsg:
 		m.loading = false
 		m.tableInfoPanel.SetData(msg)
+		m.adjustSizes()
 
 	case db.SchemaTablesMsg:
 		m.loading = false
@@ -164,7 +164,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case commands.TableSelectedMsg:
-		cmd = commands.GetTableInfo(m.db, string(msg))
+		switch m.tableInfoPanel.GetActiveTabIndex() {
+		case component.TableInfoTabIndexColumns:
+			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+		case component.TableInfoTabIndexIndexes:
+			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+		}
+		cmds = append(cmds, cmd)
+
+	case commands.TableInfoTabChangedMsg:
+		switch msg {
+		case component.TableInfoTabIndexColumns:
+			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+		case component.TableInfoTabIndexIndexes:
+			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+		}
 		cmds = append(cmds, cmd)
 
 	case tea.MouseMsg:
