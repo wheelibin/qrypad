@@ -19,6 +19,8 @@ type keyMap struct {
 	ReloadQuery         key.Binding
 	CloseResultRowPopup key.Binding
 	Help                key.Binding
+	NextTab             key.Binding
+	PrevTab             key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -93,5 +95,13 @@ var DefaultKeyMap = keyMap{
 	CloseResultRowPopup: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "close popup"),
+	),
+	NextTab: key.NewBinding(
+		key.WithKeys("]"),
+		key.WithHelp("]", "next tab"),
+	),
+	PrevTab: key.NewBinding(
+		key.WithKeys("["),
+		key.WithHelp("[", "previous tab"),
 	),
 }

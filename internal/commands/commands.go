@@ -11,6 +11,16 @@ import (
 	"github.com/wheelibin/dbee/internal/db"
 )
 
+type TableInfoKindType string
+
+var TableInfoKind = struct {
+	Columns TableInfoKindType
+	Indexes TableInfoKindType
+}{
+	Columns: "cols",
+	Indexes: "inds",
+}
+
 func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
 	return func() tea.Msg {
 		data, err := db.GetTableRows(dbConn, tableName)
@@ -21,9 +31,18 @@ func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
 	}
 }
 
-func GetTableInfo(dbConn db.DBConn, tableName string) tea.Cmd {
+func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
 	return func() tea.Msg {
-		data, err := db.GetTableColumns(dbConn, tableName)
+		var (
+			data *db.Data
+			err  error
+		)
+		switch kind {
+		case TableInfoKind.Columns:
+			data, err = db.GetTableColumns(dbConn, tableName)
+		case TableInfoKind.Indexes:
+			data, err = db.GetTableIndexes(dbConn, tableName)
+		}
 		if err != nil {
 			return ErrMsg{err}
 		}
@@ -54,6 +73,12 @@ func ExecuteQuery(dbConn db.DBConn, query string) tea.Cmd {
 func SetActivePanel(panelIndex int) tea.Cmd {
 	return func() tea.Msg {
 		return ActivePanelChangedMsg(panelIndex)
+	}
+}
+
+func SetActiveTableInfoTab(tabIndex int) tea.Cmd {
+	return func() tea.Msg {
+		return TableInfoTabChangedMsg(tabIndex)
 	}
 }
 

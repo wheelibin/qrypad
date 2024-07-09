@@ -3,22 +3,32 @@ package component
 import (
 	"math"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/dbee/internal/colour"
+	"github.com/wheelibin/dbee/internal/commands"
 	"github.com/wheelibin/dbee/internal/db"
+	"github.com/wheelibin/dbee/internal/keys"
 	"github.com/wheelibin/dbee/internal/style"
 )
 
+const (
+	TableInfoTabCount        = 2
+	TableInfoTabIndexColumns = 0
+	TableInfoTabIndexIndexes = 1
+)
+
 type TableInfoPanelModel struct {
-	active  bool
-	width   int
-	height  int
-	loading bool
-	spinner spinner.Model
-	table   table.Model
+	active         bool
+	width          int
+	height         int
+	loading        bool
+	spinner        spinner.Model
+	table          table.Model
+	activeTabIndex int
 }
 
 func NewTableInfoPanelModel() TableInfoPanelModel {
@@ -29,7 +39,7 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 				// Foreground(lipgloss.Color("#a7a")).
 				Align(lipgloss.Left),
 		).
-		WithHeaderVisibility(false).
+		HeaderStyle(style.TableHeaderStyle).
 		Filtered(true)
 
 	s := spinner.New()
@@ -59,6 +69,28 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 	if m.active {
 		m.table, cmd = m.table.Update(msg)
 		cmds = append(cmds, cmd)
+	}
+
+	switch msg := msg.(type) {
+
+	case tea.KeyMsg:
+
+		switch {
+		case key.Matches(msg, keys.DefaultKeyMap.NextTab):
+			m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount
+			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+			cmds = append(cmds, cmd)
+
+		case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
+			i := m.activeTabIndex - 1
+			if i < 0 {
+				i = TableInfoTabCount - 1
+			}
+			m.activeTabIndex = i
+			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+			cmds = append(cmds, cmd)
+		}
+
 	}
 
 	return m, tea.Batch(cmds...)
@@ -93,7 +125,7 @@ func (m *TableInfoPanelModel) SetActive(active bool) {
 func (m *TableInfoPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Max(float64(h-6), 1)
+	rowsInTable := math.Max(float64(h-7), 1)
 	m.table = m.table.WithPageSize(int(rowsInTable))
 	m.table = m.table.WithMinimumHeight(h - 1)
 	m.table = m.table.WithTargetWidth(w)
@@ -101,6 +133,10 @@ func (m *TableInfoPanelModel) SetSize(w, h int) {
 
 func (m *TableInfoPanelModel) SetLoading(loading bool) {
 	m.loading = loading
+}
+
+func (m TableInfoPanelModel) GetActiveTabIndex() int {
+	return m.activeTabIndex
 }
 
 func (m TableInfoPanelModel) View() string {
@@ -117,7 +153,21 @@ func (m TableInfoPanelModel) View() string {
 	if m.loading {
 		content = m.spinner.View()
 	}
-	title := style.Title(m.width-2, m.active).Render("table info")
+	titleStyle := style.Title(m.width-2, m.active)
+	title := titleStyle.Render("table info")
+
+	tw := lipgloss.Width(title)
+
+	tabTextStyle := lipgloss.NewStyle().Background(titleStyle.GetBackground())
+	var tabText string
+	switch m.activeTabIndex {
+	case TableInfoTabIndexColumns:
+		tabText = "[columns]  indexes "
+	case TableInfoTabIndexIndexes:
+		tabText = " columns  [indexes]"
+	}
+	title = style.Title(m.width-2, m.active).Render("table info" + lipgloss.PlaceHorizontal(tw-13, lipgloss.Right, tabTextStyle.Render(tabText)))
+
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
 

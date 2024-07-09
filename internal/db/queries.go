@@ -42,6 +42,53 @@ func GetTableColumns(dbConn DBConn, tableName string) (*Data, error) {
                                         WHERE  TABLE_NAME = '%s';`, tableName))
 }
 
+// fetches the index information for the specified table
+func GetTableIndexes(dbConn DBConn, tableName string) (*Data, error) {
+
+	var query string
+	switch dbConn.DriverName {
+	case DriverNameMySQL:
+		query = fmt.Sprintf(`SELECT
+                        index_name 'name', 
+                        GROUP_CONCAT(column_name) cols, 
+                        case when non_unique = 0 then 'unique' else '' end as 'unique',
+                        case when index_name = 'PRIMARY' then 'primary' else '' end as 'primary'
+                      FROM
+                        INFORMATION_SCHEMA.statistics
+                      WHERE
+                        TABLE_NAME = '%s'
+                        group by index_name, non_unique
+                        order by seq_in_index;`, tableName)
+	case DriverNamePostgres:
+		query = fmt.Sprintf(`select
+                          i.relname as "name",
+                          array_to_string(array_agg(a.attname), ', ') as cols,
+                          ix.indisunique as "unique",
+                          ix.indisprimary as "primary"
+                      from
+                          pg_class t,
+                          pg_class i,
+                          pg_index ix,
+                          pg_attribute a
+                      where
+                          t.oid = ix.indrelid
+                          and i.oid = ix.indexrelid
+                          and a.attrelid = t.oid
+                          and a.attnum = ANY(ix.indkey)
+                          and t.relkind = 'r'
+                          and t.relname like '%s'
+                      group by
+                          t.relname,
+                          i.relname,
+                          ix.indisunique,
+                      ix.indisprimary
+                      order by
+                          t.relname,
+                          i.relname;`, tableName)
+	}
+	return ExecuteQuery(dbConn, query)
+}
+
 // fetches n rows from the specified table
 func GetTableRows(dbConn DBConn, tableName string) (*Data, error) {
 	return ExecuteQuery(dbConn, fmt.Sprintf("SELECT * FROM %s limit %d;", tableName, getTableDataRowLimit()))
