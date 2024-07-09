@@ -27,7 +27,7 @@ func GetSchemaTables(dbConn DBConn) (*Data, error) {
              AND TABLE_TYPE LIKE 'BASE_TABLE'
             ORDER BY name;`
 	case DriverNamePostgres:
-		query = `SELECT relname name, TO_CHAR(n_live_tup, 'FM9,999,999') rows 
+		query = `SELECT relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows 
           FROM pg_stat_user_tables 
         ORDER BY name;`
 	}
