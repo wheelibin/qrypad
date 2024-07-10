@@ -106,7 +106,16 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 
 	// get cols
 	for _, c := range data.Columns {
-		cols = append(cols, table.NewFlexColumn(c, c, 1).WithFiltered(true))
+		switch c {
+		case "unique", "primary":
+			cols = append(cols, table.NewColumn(c, c, 8).WithFiltered(true))
+		case "nullable":
+			cols = append(cols, table.NewColumn(c, c, 9).WithFiltered(true))
+		case "name":
+			cols = append(cols, table.NewFlexColumn(c, c, 9).WithFiltered(true))
+		default:
+			cols = append(cols, table.NewFlexColumn(c, c, 12).WithFiltered(true))
+		}
 	}
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
