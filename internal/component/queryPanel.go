@@ -115,7 +115,13 @@ func (m QueryPanelModel) View() string {
 	currentStatement := currentStatementStyle.Render("")
 
 	if len(m.CurrentStatement) > 0 && m.active {
-		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Keys()[0], strings.ReplaceAll(m.CurrentStatement, "\n", " ")))
+		var truncated string
+		if len(m.CurrentStatement) > m.width-16 {
+			truncated = m.CurrentStatement[:m.width-16]
+		} else {
+			truncated = m.CurrentStatement
+		}
+		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Keys()[0], strings.ReplaceAll(truncated, "\n", " ")))
 	}
 
 	text := "queries"
