@@ -240,6 +240,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
 					m.showResultRowPopup = true
 				}
+			case PanelIndexTableInfo:
+				if !m.showResultRowPopup {
+					m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
+					m.showResultRowPopup = true
+				}
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):

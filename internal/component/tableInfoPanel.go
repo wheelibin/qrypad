@@ -148,6 +148,10 @@ func (m TableInfoPanelModel) GetActiveTabIndex() int {
 	return m.activeTabIndex
 }
 
+func (m TableInfoPanelModel) GetSelectedRow() map[string]any {
+	return m.table.HighlightedRow().Data
+}
+
 func (m TableInfoPanelModel) View() string {
 	var panelStyle = style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)
