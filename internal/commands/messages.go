@@ -14,11 +14,14 @@ type LoadingMsg struct{}
 // contains the selected table name
 type TableSelectedMsg string
 
-// the contents of the query file
-type QueryFileReadMsg string
+// the details of the query file
+type QueryFileReadMsg struct{ FileName, Contents string }
 
 // sent when the query file has been saved
 type QueryFileSavedMsg struct{}
 
 // sent when the user navigates to another tab in the table info panel
 type TableInfoTabChangedMsg int
+
+// fired when external editor is closed
+type EditorFinishedMsg struct{ err error }

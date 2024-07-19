@@ -291,6 +291,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.DefaultKeyMap.Quit):
 			return m, tea.Quit
 
+		case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
+			return m, commands.OpenEditor(m.queryPanel.GetFilename())
+
 		default:
 			// any other key
 			if m.activePanelIndex == PanelIndexQuery {
