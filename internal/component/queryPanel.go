@@ -22,6 +22,7 @@ type QueryPanelModel struct {
 	dbAlias          string
 	CurrentStatement string
 	dirty            bool
+	filename         string
 }
 
 func NewQueryPanelModel(dbAlias string) QueryPanelModel {
@@ -52,8 +53,11 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case commands.QueryFileReadMsg:
-		m.queryBuffer.SetValue(string(msg))
+		m.filename = msg.FileName
+		m.queryBuffer.SetValue(string(msg.Contents))
 
+	case commands.EditorFinishedMsg:
+		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.dbAlias))
 	}
 
 	// update components
@@ -79,6 +83,10 @@ func (m QueryPanelModel) GetCurrentStatement() string {
 
 func (m QueryPanelModel) GetValue() string {
 	return m.queryBuffer.Value()
+}
+
+func (m QueryPanelModel) GetFilename() string {
+	return m.filename
 }
 
 func (m *QueryPanelModel) SetDirty(dirty bool) {

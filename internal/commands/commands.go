@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -112,7 +113,7 @@ func ReadOrCreateQueryFile(dbAlias string) tea.Cmd {
 		if err != nil {
 			return ErrMsg{err}
 		}
-		return QueryFileReadMsg(string(contents))
+		return QueryFileReadMsg{Contents: string(contents), FileName: filename}
 	}
 }
 
@@ -171,4 +172,15 @@ func GetOutputDir() (string, error) {
 	}
 
 	return outputDir, nil
+}
+
+func OpenEditor(file string) tea.Cmd {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
+	c := exec.Command(editor, file) //nolint:gosec
+	return tea.ExecProcess(c, func(err error) tea.Msg {
+		return EditorFinishedMsg{err}
+	})
 }

@@ -21,6 +21,7 @@ type keyMap struct {
 	Help                key.Binding
 	NextTab             key.Binding
 	PrevTab             key.Binding
+	OpenInEditor        key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -34,7 +35,7 @@ func (k keyMap) ShortHelp() []key.Binding {
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.NextPanel, k.PrevPanel, k.ToggleLeftPanel},
-		{k.ExecuteQuery, k.ViewData, k.SaveQuery, k.ReloadQuery},
+		{k.ExecuteQuery, k.ViewData, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
 		{k.Help, k.CloseResultRowPopup, k.Quit},
 	}
 }
@@ -103,5 +104,9 @@ var DefaultKeyMap = keyMap{
 	PrevTab: key.NewBinding(
 		key.WithKeys("["),
 		key.WithHelp("[", "previous tab"),
+	),
+	OpenInEditor: key.NewBinding(
+		key.WithKeys("ctrl+e"),
+		key.WithHelp("ctrl+e", "open query in editor"),
 	),
 }
