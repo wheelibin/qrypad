@@ -1,15 +1,16 @@
 package component
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/dbee/internal/colour"
-	"github.com/wheelibin/dbee/internal/db"
-	"github.com/wheelibin/dbee/internal/style"
+	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/style"
 )
 
 type ResultsPanelModel struct {
@@ -30,6 +31,7 @@ func NewResultsPanelModel() ResultsPanelModel {
 				Align(lipgloss.Left),
 		).
 		HeaderStyle(style.TableHeaderStyle).
+		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
 
 	s := spinner.New()
@@ -74,14 +76,17 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 
 	// get cols
 	for _, c := range data.Columns {
-		cols = append(cols, table.NewFlexColumn(c, c, 1).WithFiltered(true))
+		w := getColumnWidth(c, *data)
+		cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
 	}
 
-	m.table = m.table.WithRows(rows)
-	m.table = m.table.WithColumns(cols)
+	m.table = m.table.
+		WithRows(rows).
+		WithColumns(cols)
+
 	m.loading = false
 	m.SetSize(m.width, m.height)
 }
@@ -90,9 +95,10 @@ func (m *ResultsPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	rowsInTable := math.Ceil(math.Max(float64(h-7), 1))
-	m.table = m.table.WithPageSize(int(rowsInTable))
-	m.table = m.table.WithMinimumHeight(h - 1)
-	m.table = m.table.WithTargetWidth(w)
+	m.table = m.table.
+		WithPageSize(int(rowsInTable)).
+		WithMinimumHeight(h - 1).
+		WithMaxTotalWidth(w - 1)
 }
 
 func (m *ResultsPanelModel) SetLoading(loading bool) {
@@ -109,11 +115,10 @@ func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 }
 
 func (m ResultsPanelModel) View() string {
-	var panelStyle = style.BasePanelStyle
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
-
-	panelStyle = panelStyle.BorderForeground(colour.Border)
+	panelStyle := style.BasePanelStyle.
+		Width(m.width).
+		Height(m.height).
+		BorderForeground(colour.Border)
 	if m.active {
 		panelStyle = panelStyle.BorderForeground(colour.BorderActive)
 	}
@@ -126,4 +131,20 @@ func (m ResultsPanelModel) View() string {
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
 
+}
+
+func getColumnWidth(col string, data db.Data) int {
+	maxLen := 0
+	for _, c := range data.Columns {
+		if len(c) > maxLen {
+			maxLen = len(c)
+		}
+	}
+	for _, r := range data.Rows {
+		if len(fmt.Sprintf("%v", r[col])) > maxLen {
+			maxLen = len(r[col].(string))
+		}
+	}
+	padding := 1
+	return maxLen + padding
 }

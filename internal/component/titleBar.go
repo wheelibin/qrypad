@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/dbee/internal/colour"
-	"github.com/wheelibin/dbee/internal/constants"
+	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/constants"
 )
 
 type TitlBarModel struct {
@@ -50,5 +50,5 @@ func (m TitlBarModel) View() string {
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("DBee::%s - Connected to: %s", constants.AppDesc, m.text))
+	return barStyle.Render(fmt.Sprintf("QryPad::%s - Connected to: %s", constants.AppDesc, m.text))
 }

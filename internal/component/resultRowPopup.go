@@ -6,8 +6,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/dbee/internal/colour"
-	"github.com/wheelibin/dbee/internal/style"
+	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/style"
 )
 
 type ResultRowPopupModel struct {
