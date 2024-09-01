@@ -9,7 +9,7 @@ import (
 	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/wheelibin/dbee/internal/db"
+	"github.com/wheelibin/qrypad/internal/db"
 )
 
 type TableInfoKindType string
@@ -152,13 +152,13 @@ func GetOutputDir() (string, error) {
 	switch runtime.GOOS {
 	case "windows":
 		appData := os.Getenv("AppData")
-		outputDir = filepath.Join(appData, "dbee")
+		outputDir = filepath.Join(appData, "qrypad")
 	case "darwin", "linux":
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
-		outputDir = filepath.Join(homeDir, ".local", "share", "dbee")
+		outputDir = filepath.Join(homeDir, ".local", "share", "qrypad")
 	default:
 		return "", fmt.Errorf("error determining folder to hold query files, unsupported OS")
 	}

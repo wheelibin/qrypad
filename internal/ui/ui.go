@@ -5,12 +5,12 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/dbee/internal/colour"
-	"github.com/wheelibin/dbee/internal/commands"
-	"github.com/wheelibin/dbee/internal/component"
-	"github.com/wheelibin/dbee/internal/db"
-	"github.com/wheelibin/dbee/internal/keys"
-	"github.com/wheelibin/dbee/internal/style"
+	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/commands"
+	"github.com/wheelibin/qrypad/internal/component"
+	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/keys"
+	"github.com/wheelibin/qrypad/internal/style"
 )
 
 const (

@@ -10,10 +10,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/spf13/viper"
-	"github.com/wheelibin/dbee/internal/commands"
-	"github.com/wheelibin/dbee/internal/constants"
-	"github.com/wheelibin/dbee/internal/db"
-	"github.com/wheelibin/dbee/internal/ui"
+	"github.com/wheelibin/qrypad/internal/commands"
+	"github.com/wheelibin/qrypad/internal/constants"
+	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/ui"
 )
 
 type config struct {
@@ -31,31 +31,31 @@ type database struct {
 
 func main() {
 
-	viper.SetConfigName("dbee")               // name of config file (without extension)
-	viper.AddConfigPath("$HOME/.config/dbee") // call multiple times to add many search paths
-	viper.AddConfigPath(".")                  // optionally look for config in the working directory
+	viper.SetConfigName("config")               // name of config file (without extension)
+	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
+	viper.AddConfigPath(".")                    // optionally look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			exitWithError("no config found\n(see https://github.com/wheelibin/dbee/blob/main/README.md)\n\n", nil)
+			exitWithError("no config found\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		} else {
-			exitWithError("error reading config\n(for proper format see https://github.com/wheelibin/dbee/blob/main/README.md)\n\n", nil)
+			exitWithError("error reading config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		}
 	}
 	var cfg config
 	err := viper.Unmarshal(&cfg)
 	if err != nil {
-		exitWithError("error unmarshalling config\n(for proper format see https://github.com/wheelibin/dbee/blob/main/README.md)\n\n", nil)
+		exitWithError("error unmarshalling config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 	}
 
 	if len(os.Args[1:]) == 0 {
-		fmt.Printf("\nUsage:  dbee [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n", constants.AppDesc)
+		fmt.Printf("\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n", constants.AppDesc)
 		os.Exit(1)
 	}
 
 	dbAlias := os.Args[1]
 	conn, ok := cfg.Databases[dbAlias]
 	if !ok {
-		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/dbee/blob/main/README.md)\n\n", nil)
+		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 	}
 
 	dir, err := commands.GetOutputDir()
