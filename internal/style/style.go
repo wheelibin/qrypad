@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/dbee/internal/colour"
+	"github.com/wheelibin/qrypad/internal/colour"
 )
 
 const (

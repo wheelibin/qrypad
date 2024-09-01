@@ -1,10 +1,10 @@
-# DBee - A terminal app for running ad-hoc database queries 
+# QryPad - A terminal app for running ad-hoc database queries 
 
 <p align="center">
-  <img src="https://github.com/wheelibin/dbee/blob/main/dbee.png" height="100" />
+  <img src="https://github.com/wheelibin/qrypad/blob/main/qrypad.png" height="100" />
 </p>
 
-DBee is a basic terminal application for running ad-hoc queries against a (mysql / postgres) database.
+QryPad is a basic terminal application for running ad-hoc queries against a (mysql / postgres) database.
 
 It has the following features:
 - view a list of the tables in the database along with the column info for the selected table
@@ -16,22 +16,22 @@ It has the following features:
 
 
 <p align="center">
-  <img src="https://github.com/wheelibin/dbee/blob/main/ss.png" />
+  <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" />
 </p>
 
 ## Usage
 
-`dbee [database alias]`
+`qrypad [database alias]`
 
 The database alias must match the name of a database configuration in your config file.
 
 ## Installation
 
-`go install github.com/wheelibin/dbee@latest`
+`go install github.com/wheelibin/qrypad@latest`
 
 ## Config
 
-Config is read from `~/.config/dbee/dbee.toml`
+Config is read from `~/.config/qrypad/config.toml`
 
 ### example config file
 ```markdown

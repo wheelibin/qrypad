@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/dbee/internal/colour"
-	"github.com/wheelibin/dbee/internal/constants"
+	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/constants"
 )
 
 type StatusBarModel struct {
@@ -50,5 +50,5 @@ func (m StatusBarModel) View() string {
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("DBee - %s [%s]", constants.AppDesc, m.connectedDatabase))
+	return barStyle.Render(fmt.Sprintf("QryPad - %s [%s]", constants.AppDesc, m.connectedDatabase))
 }
