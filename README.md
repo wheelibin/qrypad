@@ -1,8 +1,8 @@
 # QryPad - A terminal app for running ad-hoc database queries 
 
-<p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/qrypad.png" height="100" />
-</p>
+<!-- <p align="center"> -->
+<!--   <img src="https://github.com/wheelibin/qrypad/blob/main/qrypad.png" height="100" /> -->
+<!-- </p> -->
 
 QryPad is a basic terminal application for running ad-hoc queries against a (mysql / postgres) database.
 
