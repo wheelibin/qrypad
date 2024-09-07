@@ -112,6 +112,21 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
+func (m *model) setPanelsActiveState(activePanelIndex int) {
+	if activePanelIndex == -1 {
+		m.tablePanel.SetActive(false)
+		m.tableInfoPanel.SetActive(false)
+		m.queryPanel.SetActive(false)
+		m.resultsPanel.SetActive(false)
+		return
+	}
+
+	m.tablePanel.SetActive(m.activePanelIndex == PanelIndexTables)
+	m.tableInfoPanel.SetActive(m.activePanelIndex == PanelIndexTableInfo)
+	m.queryPanel.SetActive(m.activePanelIndex == PanelIndexQuery)
+	m.resultsPanel.SetActive(m.activePanelIndex == PanelIndexResults)
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// log.Println("ui.model::Update", msg)
 	var (
@@ -131,6 +146,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.adjustSizes()
+
+	case tea.FocusMsg:
+		m.setPanelsActiveState(m.activePanelIndex)
+	case tea.BlurMsg:
+		m.setPanelsActiveState(-1)
 
 	case db.DataMsg:
 		m.loading = false
@@ -154,10 +174,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case commands.ActivePanelChangedMsg:
 		m.activePanelIndex = int(msg)
-		m.tablePanel.SetActive(m.activePanelIndex == PanelIndexTables)
-		m.tableInfoPanel.SetActive(m.activePanelIndex == PanelIndexTableInfo)
-		m.queryPanel.SetActive(m.activePanelIndex == PanelIndexQuery)
-		m.resultsPanel.SetActive(m.activePanelIndex == PanelIndexResults)
+		m.setPanelsActiveState(m.activePanelIndex)
 		if m.activePanelIndex == PanelIndexQuery {
 			m.queryPanel, cmd = m.queryPanel.Update(msg)
 			cmds = append(cmds, cmd)
