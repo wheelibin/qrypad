@@ -106,10 +106,15 @@ func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
 		return nil, err
 	}
 
-	if isStatement {
-		return execStatement(queryCtx, dbConn.DB, query)
+	isReturning, err := regexp.MatchString(`(?i)\s*(RETURNING)\s+`, query)
+	if err != nil {
+		return nil, err
+	}
+
+	if isStatement && !isReturning {
+		return execStatement(queryCtx, dbConn, query)
 	} else {
-		return fetchRows(queryCtx, dbConn.DB, query)
+		return fetchRows(queryCtx, dbConn, query)
 	}
 
 }
@@ -130,8 +135,8 @@ func getTableDataRowLimit() int {
 	return rowLimit
 }
 
-func fetchRows(ctx context.Context, db *sql.DB, query string) (*Data, error) {
-	rows, err := db.QueryContext(ctx, query)
+func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
+	rows, err := dbConn.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +181,8 @@ func fetchRows(ctx context.Context, db *sql.DB, query string) (*Data, error) {
 	return data, nil
 }
 
-func execStatement(ctx context.Context, db *sql.DB, query string) (*Data, error) {
-	res, err := db.ExecContext(ctx, query)
+func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
+	res, err := dbConn.DB.ExecContext(ctx, query)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", getTimeoutSecs())
@@ -189,16 +194,27 @@ func execStatement(ctx context.Context, db *sql.DB, query string) (*Data, error)
 	if err != nil {
 		return nil, err
 	}
-	lastInsertId, err := res.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
 
-	return &Data{
-		Columns: []string{"Rows Affected", "Last Inserted ID"},
-		Rows: []map[string]interface{}{{
-			"Rows Affected":    rowsAffected,
-			"Last Inserted ID": lastInsertId,
-		}}}, nil
+	switch dbConn.DriverName {
+
+	case DriverNameMySQL:
+		lastInsertId, err := res.LastInsertId()
+		if err != nil {
+			return nil, err
+		}
+		return &Data{
+			Columns: []string{"Rows Affected", "Last Inserted ID"},
+			Rows: []map[string]interface{}{{
+				"Rows Affected":    rowsAffected,
+				"Last Inserted ID": lastInsertId,
+			}}}, nil
+
+	default:
+		return &Data{
+			Columns: []string{"Rows Affected"},
+			Rows: []map[string]interface{}{{
+				"Rows Affected": rowsAffected,
+			}}}, nil
+	}
 
 }
