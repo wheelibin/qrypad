@@ -9,7 +9,7 @@ func (e ErrMsg) Error() string { return e.Err.Error() }
 type ActivePanelChangedMsg int
 
 // sent when loading has started
-type LoadingMsg struct{}
+type LoadingMsg struct{ Loading bool }
 
 // contains the selected table name
 type TableSelectedMsg string
