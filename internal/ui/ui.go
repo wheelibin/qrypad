@@ -49,11 +49,11 @@ type model struct {
 	help           help.Model
 
 	// state
-	dbAlias                string
-	db                     db.DBConn
-	activePanelIndex       int
-	errorMessage           string
-	loading                bool
+	dbAlias          string
+	db               db.DBConn
+	activePanelIndex int
+	errorMessage     string
+	// loading                bool
 	windowTooSmall         bool
 	width                  int
 	height                 int
@@ -153,22 +153,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.setPanelsActiveState(-1)
 
 	case db.DataMsg:
-		m.loading = false
+		cmds = append(cmds, commands.SetLoading(false))
 		m.resultsPanel.SetData(msg)
 
 	case db.TableInfoDataMsg:
-		m.loading = false
+		cmds = append(cmds, commands.SetLoading(false))
 		m.tableInfoPanel.SetData(msg)
 		m.adjustSizes()
 
 	case db.SchemaTablesMsg:
-		m.loading = false
+		cmds = append(cmds, commands.SetLoading(false))
 		m.tablePanel.SetData(msg)
 		m.adjustSizes()
 
 	case commands.ErrMsg:
-		m.loading = false
-		m.resultsPanel.SetLoading(false)
+		cmds = append(cmds, commands.SetLoading(false))
 		m.errorMessage = msg.Error()
 		m.errorPopup.SetText(m.errorMessage)
 
@@ -249,9 +248,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.DefaultKeyMap.ViewData):
 			switch m.activePanelIndex {
 			case PanelIndexTables:
-				m.setLoading()
-				cmd = commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable())
-				cmds = append(cmds, cmd)
+				cmds = append(cmds, commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable()))
 			case PanelIndexResults:
 				if !m.showResultRowPopup {
 					m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
@@ -266,10 +263,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):
 			if m.activePanelIndex == PanelIndexQuery {
-				cmds = append(cmds, commands.SetLoading)
-				m.setLoading()
-				cmd = commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement())
-				cmds = append(cmds, cmd)
+				cmds = append(cmds, commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement()))
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ToggleLeftPanel):
@@ -343,10 +337,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	if m.activePanelIndex == PanelIndexResults || m.loading {
-		m.resultsPanel, cmd = m.resultsPanel.Update(msg)
-		cmds = append(cmds, cmd)
-	}
+	// always update the results panel so it can listen for loading messages
+	m.resultsPanel, cmd = m.resultsPanel.Update(msg)
+	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
@@ -395,13 +388,6 @@ func (m *model) adjustSizes() {
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 
 	m.help.Width = m.width
-}
-
-func (m *model) setLoading() {
-	m.errorMessage = ""
-	m.errorPopup.SetText(m.errorMessage)
-	m.resultsPanel.SetLoading(true)
-	m.loading = true
 }
 
 func (m model) getRightWidth(totalWidth int) int {

@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
 )
@@ -53,9 +54,18 @@ func (m ResultsPanelModel) Update(msg tea.Msg) (ResultsPanelModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	if m.loading {
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, m.spinner.Tick, cmd)
+	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		if m.loading {
+			m.spinner, cmd = m.spinner.Update(msg)
+			cmds = append(cmds, cmd)
+		}
+
+	case commands.LoadingMsg:
+		m.loading = msg.Loading
+		if m.loading {
+			cmds = append(cmds, m.spinner.Tick)
+		}
 	}
 
 	if m.active {
@@ -99,10 +109,6 @@ func (m *ResultsPanelModel) SetSize(w, h int) {
 		WithPageSize(int(rowsInTable)).
 		WithMinimumHeight(h - 1).
 		WithMaxTotalWidth(w - 1)
-}
-
-func (m *ResultsPanelModel) SetLoading(loading bool) {
-	m.loading = loading
 }
 
 func (m *ResultsPanelModel) SetActive(active bool) {
