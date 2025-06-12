@@ -22,13 +22,23 @@ var TableInfoKind = struct {
 	Indexes: "inds",
 }
 
+func ConnectToDB(dbConfig db.DBConfig) tea.Cmd {
+	return tea.Batch(func() tea.Msg {
+		dbConn, err := db.Connect(dbConfig)
+		if err != nil {
+			return ErrMsg{err}
+		}
+		return db.DatabaseConnectedMsg(dbConn)
+	}, SetLoading(true))
+}
+
 func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
 	return tea.Batch(func() tea.Msg {
 		data, err := db.GetTableRows(dbConn, tableName)
 		if err != nil {
 			return ErrMsg{err}
 		}
-		return db.DataMsg(data)
+		return db.DataFetchedMsg(data)
 	}, SetLoading(true))
 }
 
@@ -47,7 +57,17 @@ func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) te
 		if err != nil {
 			return ErrMsg{err}
 		}
-		return db.TableInfoDataMsg(data)
+		return db.TableInfoDataFetchedMsg(data)
+	}
+}
+
+func GetDatabases(dbConn db.DBConn) tea.Cmd {
+	return func() tea.Msg {
+		data, err := db.GetDatabases(dbConn)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return db.DatabaseListFetchedMsg(data)
 	}
 }
 
@@ -57,7 +77,7 @@ func GetSchemaTables(dbConn db.DBConn) tea.Cmd {
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		return db.SchemaTablesMsg(data)
+		return db.SchemaTablesFetchedMsg(data)
 	}
 }
 
@@ -67,7 +87,7 @@ func ExecuteQuery(dbConn db.DBConn, query string) tea.Cmd {
 		if err != nil {
 			return ErrMsg{err}
 		}
-		return db.DataMsg(data)
+		return db.DataFetchedMsg(data)
 	}, SetLoading(true))
 }
 
@@ -95,9 +115,14 @@ func TableSelectionChanged(tableName string) tea.Cmd {
 	}
 }
 
+func DatabaseSelectionChanged(name string) tea.Cmd {
+	return func() tea.Msg {
+		return DatabaseSelectedMsg(name)
+	}
+}
+
 func ReadOrCreateQueryFile(dbAlias string) tea.Cmd {
 	return func() tea.Msg {
-
 		dir, err := GetOutputDir()
 		if err != nil {
 			return ErrMsg{err}
@@ -121,7 +146,6 @@ func ReadOrCreateQueryFile(dbAlias string) tea.Cmd {
 
 func SaveQueryFile(dbAlias string, contents string) tea.Cmd {
 	return func() tea.Msg {
-
 		dir, err := GetOutputDir()
 		if err != nil {
 			return ErrMsg{err}

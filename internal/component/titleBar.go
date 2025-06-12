@@ -10,13 +10,14 @@ import (
 )
 
 type TitlBarModel struct {
-	width  int
-	height int
-	text   string
+	width   int
+	height  int
+	text    string
+	dbAlias string
 }
 
-func NewTitlBarModel() TitlBarModel {
-	return TitlBarModel{}
+func NewTitlBarModel(dbAlias string) TitlBarModel {
+	return TitlBarModel{dbAlias: dbAlias}
 }
 
 func (m TitlBarModel) Init() tea.Cmd {
@@ -42,13 +43,14 @@ func (m *TitlBarModel) SetText(text string) {
 }
 
 func (m TitlBarModel) View() string {
-	var barStyle = lipgloss.NewStyle().
+	barStyle := lipgloss.NewStyle().
 		Background(colour.TitleBarBG).
 		Foreground(colour.TitleBarFG).
-		Padding(0, 2)
+		Padding(0, 2).
+		Bold(true)
 
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("QryPad::%s - Connected to: %s", constants.AppDesc, m.text))
+	return barStyle.Render(fmt.Sprintf("QryPad - %s [%s]", constants.AppDesc, m.dbAlias))
 }

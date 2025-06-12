@@ -97,7 +97,7 @@ func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	m.queryBuffer.SetWidth(m.width)
-	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1)
+	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1 )
 }
 
 func (m *QueryPanelModel) SetActive(active bool) {
