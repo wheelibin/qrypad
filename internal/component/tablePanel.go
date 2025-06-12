@@ -41,11 +41,8 @@ func NewTablePanelModel() TablePanelModel {
 	return TablePanelModel{table: t, spinner: s, active: true}
 }
 
-func (m TablePanelModel) Init(db db.DBConn) tea.Cmd {
-	return tea.Batch(
-		commands.GetSchemaTables(db),
-		m.spinner.Tick,
-	)
+func (m TablePanelModel) Init() tea.Cmd {
+	return nil
 }
 
 func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
@@ -56,7 +53,7 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 	)
 
 	switch msg.(type) {
-	case db.SchemaTablesMsg:
+	case db.SchemaTablesFetchedMsg:
 		m.selectedTable = m.table.HighlightedRow().Data["name"].(string)
 		cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 	}
@@ -127,7 +124,7 @@ func (m *TablePanelModel) SetLoading(loading bool) {
 }
 
 func (m TablePanelModel) View() string {
-	var panelStyle = style.BasePanelStyle
+	panelStyle := style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
@@ -143,5 +140,4 @@ func (m TablePanelModel) View() string {
 	title := style.Title(m.width-2, m.active).Render("tables")
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
-
 }

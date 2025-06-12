@@ -16,6 +16,24 @@ type Table struct {
 	RowCount int
 }
 
+func GetDatabases(dbConn DBConn) (*Data, error) {
+	var query string
+	switch dbConn.DriverName {
+	case DriverNameMySQL:
+		query = `SELECT SCHEMA_NAME name FROM information_schema.SCHEMATA 
+						WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'sys') 
+						ORDER BY name;`
+	case DriverNamePostgres:
+		query = `SELECT datname name
+						FROM pg_database
+						WHERE has_database_privilege(datname, 'CONNECT')
+							AND NOT datistemplate
+						ORDER BY datname;`
+	}
+
+	return ExecuteQuery(dbConn, query)
+}
+
 // fetches the user tables in the database
 func GetSchemaTables(dbConn DBConn) (*Data, error) {
 	var query string
@@ -44,7 +62,6 @@ func GetTableColumns(dbConn DBConn, tableName string) (*Data, error) {
 
 // fetches the index information for the specified table
 func GetTableIndexes(dbConn DBConn, tableName string) (*Data, error) {
-
 	var query string
 	switch dbConn.DriverName {
 	case DriverNameMySQL:
@@ -96,8 +113,8 @@ func GetTableRows(dbConn DBConn, tableName string) (*Data, error) {
 
 // executes a user supplied sql query or statement
 func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
-	timeoutSecs := getTimeoutSecs()
-	queryCtx, cancel := context.WithTimeout(context.Background(), timeoutSecs*time.Second)
+	timeout := getTimeoutSecs()
+	queryCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// crude way to decide whether the query should returns rows or use execute
@@ -116,15 +133,14 @@ func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
 	} else {
 		return fetchRows(queryCtx, dbConn, query)
 	}
-
 }
 
 func getTimeoutSecs() time.Duration {
 	timeoutSecs := viper.GetInt(TimeoutConfigKey)
 	if timeoutSecs == 0 {
-		return 30
+		return time.Duration(30 * time.Second)
 	}
-	return time.Duration(timeoutSecs)
+	return time.Duration(timeoutSecs * int(time.Second))
 }
 
 func getTableDataRowLimit() int {
@@ -148,24 +164,24 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 	}
 
 	values := make([]sql.RawBytes, len(columns))
-	scanArgs := make([]interface{}, len(values))
+	scanArgs := make([]any, len(values))
 	for i := range values {
 		scanArgs[i] = &values[i]
 	}
 
-	data := &Data{Columns: columns, Rows: []map[string]interface{}{}}
+	data := &Data{Columns: columns, Rows: []map[string]any{}}
 	for rows.Next() {
 		err = rows.Scan(scanArgs...)
 		if err != nil {
 			return nil, err
 		}
 
-		row := make(map[string]interface{})
+		row := make(map[string]any)
 		for i, val := range values {
 			if val == nil {
 				row[columns[i]] = "NULL"
 			} else {
-				row[columns[i]] = string(val)
+				row[columns[i]] = truncateToSize(string(val), 100_000) // max 100k to not break the UI
 			}
 		}
 		data.Rows = append(data.Rows, row)
@@ -177,7 +193,6 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 		}
 		return nil, err
 	}
-
 	return data, nil
 }
 
@@ -204,17 +219,33 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 		}
 		return &Data{
 			Columns: []string{"Rows Affected", "Last Inserted ID"},
-			Rows: []map[string]interface{}{{
+			Rows: []map[string]any{{
 				"Rows Affected":    rowsAffected,
 				"Last Inserted ID": lastInsertId,
-			}}}, nil
+			}},
+		}, nil
 
 	default:
 		return &Data{
 			Columns: []string{"Rows Affected"},
-			Rows: []map[string]interface{}{{
+			Rows: []map[string]any{{
 				"Rows Affected": rowsAffected,
-			}}}, nil
+			}},
+		}, nil
+	}
+}
+
+func truncateToSize(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
 	}
 
+	var size int
+	for i := range s {
+		if i > maxBytes {
+			return s[:size]
+		}
+		size = i
+	}
+	return s // all runes fit exactly
 }

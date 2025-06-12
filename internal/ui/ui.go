@@ -20,7 +20,7 @@ const (
 	PanelIndexResults   = 3
 
 	StatusBarHeight         = 1
-	TitleBarHeight          = 0
+	TitleBarHeight          = 1
 	ResultsPanelMinHeight   = 8
 	QueryPanelMinHeight     = 5
 	TableInfoPanelMinHeight = 8
@@ -38,70 +38,78 @@ var appStyle = lipgloss.NewStyle()
 
 type model struct {
 	// components
-	tablePanel     component.TablePanelModel
-	tableInfoPanel component.TableInfoPanelModel
-	queryPanel     component.QueryPanelModel
-	resultsPanel   component.ResultsPanelModel
-	statusBar      component.StatusBarModel
-	titleBar       component.TitlBarModel
-	errorPopup     component.ErrorPopupModel
-	resultRowPopup component.ResultRowPopupModel
-	help           help.Model
+	tablePanel            component.TablePanelModel
+	tableInfoPanel        component.TableInfoPanelModel
+	queryPanel            component.QueryPanelModel
+	resultsPanel          component.ResultsPanelModel
+	statusBar             component.StatusBarModel
+	titleBar              component.TitlBarModel
+	errorPopup            component.ErrorPopupModel
+	resultRowPopup        component.ResultRowPopupModel
+	databaseSwitcherPopup component.DatabaseSwitcherPopupModel
+	help                  help.Model
 
 	// state
 	dbAlias          string
+	dbConfig         db.DBConfig
 	db               db.DBConn
 	activePanelIndex int
 	errorMessage     string
+	selectedDatabase string
+
 	// loading                bool
-	windowTooSmall         bool
-	width                  int
-	height                 int
-	leftPanelHidden        bool
-	selectablePanelCount   int
-	lastSavedQueryContents string
-	showResultRowPopup     bool
-	showHelpPopup          bool
-	tablePanelBounds       bounds
-	tableInfoPanelBounds   bounds
-	queryPanelBounds       bounds
-	resultsPanelBounds     bounds
+	windowTooSmall            bool
+	width                     int
+	height                    int
+	leftPanelHidden           bool
+	selectablePanelCount      int
+	lastSavedQueryContents    string
+	showResultRowPopup        bool
+	showHelpPopup             bool
+	showDatabaseSwitcherPopup bool
+	tablePanelBounds          bounds
+	tableInfoPanelBounds      bounds
+	queryPanelBounds          bounds
+	resultsPanelBounds        bounds
 }
 
-func NewModel(dbAlias string, db db.DBConn) model {
+func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 	tablePanel := component.NewTablePanelModel()
 	tableInfoPanel := component.NewTableInfoPanelModel()
 	queryPanel := component.NewQueryPanelModel(dbAlias)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(dbAlias)
-	titleBar := component.NewTitlBarModel()
+	titleBar := component.NewTitlBarModel(dbAlias)
 	errorPopup := component.NewErrorPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
+	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 
 	help := help.New()
 	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.HelpKey)
 	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.HelpDesc)
 
 	return model{
-		dbAlias:              dbAlias,
-		db:                   db,
-		tablePanel:           tablePanel,
-		tableInfoPanel:       tableInfoPanel,
-		queryPanel:           queryPanel,
-		resultsPanel:         resultsPanel,
-		statusBar:            statusBar,
-		titleBar:             titleBar,
-		errorPopup:           errorPopup,
-		resultRowPopup:       resultRowPopup,
-		help:                 help,
-		selectablePanelCount: 4,
+		dbAlias:               dbAlias,
+		dbConfig:              dbConfig,
+		tablePanel:            tablePanel,
+		tableInfoPanel:        tableInfoPanel,
+		queryPanel:            queryPanel,
+		resultsPanel:          resultsPanel,
+		statusBar:             statusBar,
+		titleBar:              titleBar,
+		errorPopup:            errorPopup,
+		resultRowPopup:        resultRowPopup,
+		databaseSwitcherPopup: databaseSwitcherPopup,
+		help:                  help,
+		selectablePanelCount:  4,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	// Initialize sub-models
 	return tea.Batch(
-		m.tablePanel.Init(m.db),
+		commands.ConnectToDB(m.dbConfig),
+		m.tablePanel.Init(),
 		m.tableInfoPanel.Init(),
 		m.queryPanel.Init(),
 		m.resultsPanel.Init(),
@@ -152,18 +160,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.BlurMsg:
 		m.setPanelsActiveState(-1)
 
-	case db.DataMsg:
+	case db.DatabaseConnectedMsg:
+		if m.db.DB != nil {
+			m.db.DB.Close()
+		}
+		m.db = db.DBConn(msg)
+		cmds = append(cmds, commands.GetSchemaTables(m.db))
+
+	case db.DataFetchedMsg:
 		cmds = append(cmds, commands.SetLoading(false))
 		m.resultsPanel.SetData(msg)
 
-	case db.TableInfoDataMsg:
+	case db.TableInfoDataFetchedMsg:
 		cmds = append(cmds, commands.SetLoading(false))
 		m.tableInfoPanel.SetData(msg)
 		m.adjustSizes()
 
-	case db.SchemaTablesMsg:
+	case db.SchemaTablesFetchedMsg:
 		cmds = append(cmds, commands.SetLoading(false))
 		m.tablePanel.SetData(msg)
+		m.adjustSizes()
+
+	case db.DatabaseListFetchedMsg:
+		cmds = append(cmds, commands.SetLoading(false))
+		m.databaseSwitcherPopup.SetData(msg)
 		m.adjustSizes()
 
 	case commands.ErrMsg:
@@ -197,9 +217,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds = append(cmds, cmd)
 
+	case commands.DatabaseSelectedMsg:
+		m.selectedDatabase = string(msg)
+		m.statusBar.SetSelectedDatabase(m.selectedDatabase)
+		m.dbConfig.Database = string(msg)
+		cmds = append(cmds, commands.ConnectToDB(m.dbConfig))
+
 	case tea.MouseMsg:
 		if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
-
 			if isInBounds(msg.X, msg.Y, m.tablePanelBounds) {
 				if m.activePanelIndex != PanelIndexTables {
 					cmd = commands.SetActivePanel(PanelIndexTables)
@@ -221,7 +246,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, cmd)
 				}
 			}
-
 		}
 
 	case tea.KeyMsg:
@@ -246,18 +270,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 		case key.Matches(msg, keys.DefaultKeyMap.ViewData):
-			switch m.activePanelIndex {
-			case PanelIndexTables:
-				cmds = append(cmds, commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable()))
-			case PanelIndexResults:
-				if !m.showResultRowPopup {
-					m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
-					m.showResultRowPopup = true
-				}
-			case PanelIndexTableInfo:
-				if !m.showResultRowPopup {
-					m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
-					m.showResultRowPopup = true
+			if m.showDatabaseSwitcherPopup {
+				cmds = append(cmds, commands.DatabaseSelectionChanged(m.databaseSwitcherPopup.GetSelectedDatabase()))
+				m.showDatabaseSwitcherPopup = false
+			} else {
+				switch m.activePanelIndex {
+				case PanelIndexTables:
+					cmds = append(cmds, commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable()))
+				case PanelIndexResults:
+					if !m.showResultRowPopup {
+						m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
+						m.showResultRowPopup = true
+					}
+				case PanelIndexTableInfo:
+					if !m.showResultRowPopup {
+						m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
+						m.showResultRowPopup = true
+					}
 				}
 			}
 
@@ -292,14 +321,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, commands.ReadOrCreateQueryFile(m.dbAlias))
 			}
 
-		case key.Matches(msg, keys.DefaultKeyMap.CloseResultRowPopup):
-			m.showResultRowPopup = false
+		case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):
+			if m.showDatabaseSwitcherPopup {
+				m.showDatabaseSwitcherPopup = false
+			}
+			if m.showResultRowPopup {
+				m.showResultRowPopup = false
+			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.Help):
 			m.help.ShowAll = true
 			m.showHelpPopup = !m.showHelpPopup
 
+		case key.Matches(msg, keys.DefaultKeyMap.SwitchDatabase):
+			if !m.showDatabaseSwitcherPopup {
+				m.showDatabaseSwitcherPopup = true
+				cmds = append(cmds, commands.GetDatabases(m.db))
+			}
+
 		case key.Matches(msg, keys.DefaultKeyMap.Quit):
+			m.db.DB.Close()
 			return m, tea.Quit
 
 		case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
@@ -326,6 +367,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// skip other component updates if popup is shown
 		return m, tea.Batch(cmds...)
 	}
+	if m.showDatabaseSwitcherPopup {
+		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
+		cmds = append(cmds, cmd)
+		// skip other component updates if popup is shown
+		return m, tea.Batch(cmds...)
+	}
 
 	if m.activePanelIndex == PanelIndexTables {
 		m.tablePanel, cmd = m.tablePanel.Update(msg)
@@ -341,6 +388,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.resultsPanel, cmd = m.resultsPanel.Update(msg)
 	cmds = append(cmds, cmd)
 
+	// always update the status bar
+	m.statusBar, cmd = m.statusBar.Update(msg)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -351,11 +402,8 @@ func (m *model) adjustSizes() {
 	leftWidth := style.GetSpan(3, m.width)
 	rightWidth := m.getRightWidth(m.width)
 
-	//left
-	tableInfoHeight := style.GetSpan(3, availableHeight)
-	if tableInfoHeight < TableInfoPanelMinHeight {
-		tableInfoHeight = TableInfoPanelMinHeight
-	}
+	// left
+	tableInfoHeight := max(style.GetSpan(3, availableHeight), TableInfoPanelMinHeight)
 	tableHeight := availableHeight - tableInfoHeight - 4
 	if tableHeight < TablePanelMinHeight {
 		m.windowTooSmall = true
@@ -364,10 +412,7 @@ func (m *model) adjustSizes() {
 	m.tablePanel.SetSize(leftWidth, tableHeight)
 
 	// right
-	resultsHeight := style.GetSpan(6, availableHeight)
-	if resultsHeight < ResultsPanelMinHeight {
-		resultsHeight = ResultsPanelMinHeight
-	}
+	resultsHeight := max(style.GetSpan(6, availableHeight), ResultsPanelMinHeight)
 	queryHeight := availableHeight - resultsHeight - 4
 	if queryHeight < QueryPanelMinHeight {
 		m.windowTooSmall = true
@@ -386,6 +431,7 @@ func (m *model) adjustSizes() {
 	m.titleBar.SetSize(m.width, TitleBarHeight)
 	m.errorPopup.SetSize(m.width/2, 5)
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
+	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
 
 	m.help.Width = m.width
 }
@@ -399,7 +445,6 @@ func (m model) getRightWidth(totalWidth int) int {
 }
 
 func (m model) View() string {
-
 	if m.windowTooSmall {
 		return appStyle.Render("window too small")
 	}
@@ -441,6 +486,12 @@ func (m model) View() string {
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		helpStyle := style.BasePanelStyle.BorderForeground(colour.HelpBorder)
 		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
+	}
+	if m.showDatabaseSwitcherPopup {
+		p := m.databaseSwitcherPopup.View()
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	}
 
 	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,

@@ -17,11 +17,12 @@ type keyMap struct {
 	ToggleLeftPanel     key.Binding
 	SaveQuery           key.Binding
 	ReloadQuery         key.Binding
-	CloseResultRowPopup key.Binding
+	ClosePopup key.Binding
 	Help                key.Binding
 	NextTab             key.Binding
 	PrevTab             key.Binding
 	OpenInEditor        key.Binding
+	SwitchDatabase      key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -34,9 +35,9 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.ToggleLeftPanel},
+		{k.SwitchDatabase, k.NextPanel, k.PrevPanel, k.ToggleLeftPanel},
 		{k.ExecuteQuery, k.ViewData, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
-		{k.Help, k.CloseResultRowPopup, k.Quit},
+		{k.Help, k.ClosePopup, k.Quit},
 	}
 }
 
@@ -46,8 +47,12 @@ var DefaultKeyMap = keyMap{
 		key.WithHelp("ctrl+c", "quit"),
 	),
 	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
+		key.WithKeys("f1"),
+		key.WithHelp("f1", "toggle help"),
+	),
+	SwitchDatabase: key.NewBinding(
+		key.WithKeys("f2"),
+		key.WithHelp("f2", "switch database"),
 	),
 	// Up: key.NewBinding(
 	// 	key.WithKeys("k", "up"),        // actual keybindings
@@ -93,7 +98,7 @@ var DefaultKeyMap = keyMap{
 		key.WithKeys("ctrl+r"),
 		key.WithHelp("ctrl+r", "reload query"),
 	),
-	CloseResultRowPopup: key.NewBinding(
+	ClosePopup: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "close popup"),
 	),
