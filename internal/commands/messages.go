@@ -11,8 +11,11 @@ type ActivePanelChangedMsg int
 // sent when loading has started
 type LoadingMsg struct{ Loading bool }
 
-// contains the selected table name
-type TableSelectedMsg string
+// contains the selected database/table name
+type (
+	DatabaseSelectedMsg string
+	TableSelectedMsg    string
+)
 
 // the details of the query file
 type QueryFileReadMsg struct{ FileName, Contents string }

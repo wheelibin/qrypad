@@ -5,6 +5,10 @@ type Data struct {
 	Rows    []map[string]any
 }
 
-type DataMsg *Data
-type TableInfoDataMsg *Data
-type SchemaTablesMsg *Data
+type (
+	DatabaseConnectedMsg    DBConn
+	DataFetchedMsg          *Data
+	TableInfoDataFetchedMsg *Data
+	SchemaTablesFetchedMsg  *Data
+	DatabaseListFetchedMsg  *Data
+)

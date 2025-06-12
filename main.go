@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,20 +16,11 @@ import (
 )
 
 type config struct {
-	Debug     bool                `mapstructure:"debug"`
-	Databases map[string]database `mapstructure:"databases"`
-}
-type database struct {
-	Driver   string `mapstructure:"driver"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
+	Debug     bool                   `mapstructure:"debug"`
+	Databases map[string]db.DBConfig `mapstructure:"databases"`
 }
 
 func main() {
-
 	viper.SetConfigName("config")               // name of config file (without extension)
 	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
 	viper.AddConfigPath(".")                    // optionally look for config in the working directory
@@ -69,25 +59,7 @@ func main() {
 	}
 	defer f.Close()
 
-	var (
-		connString string
-		driver     string
-	)
-	switch conn.Driver {
-	case db.DriverNameMySQL:
-		connString = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conn.User, conn.Password, conn.Host, conn.Port, conn.Database)
-		driver = conn.Driver
-	case db.DriverNamePostgres:
-		connString = fmt.Sprintf("postgres://%s:%s@%s:%d/%s", conn.User, conn.Password, conn.Host, conn.Port, conn.Database)
-		driver = "pgx"
-	}
-	dbConn, err := sql.Open(driver, connString)
-	if err != nil {
-		exitWithError("error connecting to database\n\n", err)
-	}
-	defer dbConn.Close()
-
-	m := ui.NewModel(dbAlias, db.DBConn{DB: dbConn, DriverName: conn.Driver})
+	m := ui.NewModel(dbAlias, conn)
 
 	p := tea.NewProgram(
 		m,

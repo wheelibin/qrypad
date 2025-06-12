@@ -6,18 +6,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
-	"github.com/wheelibin/qrypad/internal/constants"
 )
 
 type StatusBarModel struct {
-	width             int
-	height            int
-	text              string
-	connectedDatabase string
+	width            int
+	height           int
+	text             string
+	selectedDatabase string
 }
 
-func NewStatusBarModel(dbAlias string) StatusBarModel {
-	return StatusBarModel{connectedDatabase: dbAlias}
+func NewStatusBarModel(selectedDatabase string) StatusBarModel {
+	return StatusBarModel{selectedDatabase: selectedDatabase}
 }
 
 func (m StatusBarModel) Init() tea.Cmd {
@@ -33,6 +32,10 @@ func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m *StatusBarModel) SetSelectedDatabase(dbName string) {
+	m.selectedDatabase = dbName
+}
+
 func (m *StatusBarModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
@@ -43,12 +46,14 @@ func (m *StatusBarModel) SetText(text string) {
 }
 
 func (m StatusBarModel) View() string {
-	var barStyle = lipgloss.NewStyle().
+	barStyle := lipgloss.NewStyle().
 		Background(colour.StatusBarBG).
 		Foreground(colour.StatusBarFG).
-		Padding(0, 2)
+		Padding(0, 2).
+		Bold(true)
+
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("QryPad - %s [%s]", constants.AppDesc, m.connectedDatabase))
+	return barStyle.Render(fmt.Sprintf("database: %s", m.selectedDatabase))
 }
