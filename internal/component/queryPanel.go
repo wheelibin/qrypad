@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/textarea"
 )
 
 type QueryPanelModel struct {
@@ -34,6 +34,8 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 
 	// Remove cursor line styling
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
 
 	return QueryPanelModel{dbAlias: dbAlias, queryBuffer: ta}
@@ -97,7 +99,7 @@ func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	m.queryBuffer.SetWidth(m.width)
-	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1 )
+	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1)
 }
 
 func (m *QueryPanelModel) SetActive(active bool) {
