@@ -55,5 +55,5 @@ func (m StatusBarModel) View() string {
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("database: %s", m.selectedDatabase))
+	return barStyle.Render(fmt.Sprintf("%s [F2] to switch", lipgloss.NewStyle().Italic(true).Render(" "+m.selectedDatabase+" ")))
 }
