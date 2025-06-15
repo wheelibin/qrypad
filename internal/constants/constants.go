@@ -1,5 +1,5 @@
 package constants
 
 const (
-	AppDesc = "A simple scratchpad for running ad-hoc database queries"
+	AppDesc = "A simple client for quick, ad-hoc database exploration"
 )
