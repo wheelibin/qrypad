@@ -49,6 +49,7 @@ type Theme struct {
 	PopupTable       TC `json:"popupTable"`
 	DatabaseSwitcher TC `json:"databaseSwitcher"`
 	Help             TC `json:"help"`
+	HelpDesc         TC `json:"helpDesc"`
 	TableHeader      TC `json:"tableHeader"`
 }
 

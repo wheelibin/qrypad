@@ -86,7 +86,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 
 	help := help.New()
 	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().Help.BG)
-	// help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.HelpDesc)
+	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
 
 	return model{
 		dbAlias:               dbAlias,
