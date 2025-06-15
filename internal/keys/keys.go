@@ -5,24 +5,24 @@ import (
 )
 
 type keyMap struct {
-	Quit                key.Binding
-	Up                  key.Binding
-	Down                key.Binding
-	Left                key.Binding
-	Right               key.Binding
-	NextPanel           key.Binding
-	PrevPanel           key.Binding
-	ExecuteQuery        key.Binding
-	ViewData            key.Binding
-	ToggleLeftPanel     key.Binding
-	SaveQuery           key.Binding
-	ReloadQuery         key.Binding
-	ClosePopup key.Binding
-	Help                key.Binding
-	NextTab             key.Binding
-	PrevTab             key.Binding
-	OpenInEditor        key.Binding
-	SwitchDatabase      key.Binding
+	Quit            key.Binding
+	Up              key.Binding
+	Down            key.Binding
+	Left            key.Binding
+	Right           key.Binding
+	NextPanel       key.Binding
+	PrevPanel       key.Binding
+	ExecuteQuery    key.Binding
+	ViewData        key.Binding
+	ToggleLeftPanel key.Binding
+	SaveQuery       key.Binding
+	ReloadQuery     key.Binding
+	ClosePopup      key.Binding
+	Help            key.Binding
+	NextTab         key.Binding
+	PrevTab         key.Binding
+	OpenInEditor    key.Binding
+	SwitchDatabase  key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -48,11 +48,11 @@ var DefaultKeyMap = keyMap{
 	),
 	Help: key.NewBinding(
 		key.WithKeys("f1"),
-		key.WithHelp("f1", "toggle help"),
+		key.WithHelp("F1", "toggle help"),
 	),
 	SwitchDatabase: key.NewBinding(
 		key.WithKeys("f2"),
-		key.WithHelp("f2", "switch database"),
+		key.WithHelp("F2", "switch database"),
 	),
 	// Up: key.NewBinding(
 	// 	key.WithKeys("k", "up"),        // actual keybindings
@@ -80,7 +80,7 @@ var DefaultKeyMap = keyMap{
 	),
 	ExecuteQuery: key.NewBinding(
 		key.WithKeys("f5"),
-		key.WithHelp("f5", "execute query"),
+		key.WithHelp("F5", "execute query under cursor"),
 	),
 	ViewData: key.NewBinding(
 		key.WithKeys("enter"),

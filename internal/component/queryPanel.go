@@ -132,7 +132,7 @@ func (m QueryPanelModel) View() string {
 			truncated = m.CurrentStatement
 		}
 		s := strings.ReplaceAll(strings.ReplaceAll(truncated, "\n", " "), "  ", " ")
-		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Keys()[0], s))
+		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Help().Key, s))
 	}
 
 	text := "queries"

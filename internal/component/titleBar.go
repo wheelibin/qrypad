@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/constants"
+	"github.com/wheelibin/qrypad/internal/keys"
 )
 
 type TitlBarModel struct {
@@ -55,7 +56,7 @@ func (m TitlBarModel) View() string {
 		Background(colour.GetTheme().TitleBar.BG).
 		Foreground(colour.GetTheme().TitleBar.FG).
 		Width(16).
-		Render("[F1] Show help")
+		Render(fmt.Sprintf("[%s] Show help", keys.DefaultKeyMap.Help.Help().Key))
 
 	return lipgloss.JoinHorizontal(lipgloss.Left, barStyle.Render(fmt.Sprintf("QryPad - %s (config: %s)", constants.AppDesc, m.dbAlias)), helpStyle)
 }

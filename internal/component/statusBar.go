@@ -1,9 +1,12 @@
 package component
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/keys"
 )
 
 type StatusBarModel struct {
@@ -64,7 +67,7 @@ func (m StatusBarModel) View() string {
 		Background(colour.GetTheme().StatusBar.BG).
 		Foreground(colour.GetTheme().StatusBar.FG).
 		Bold(true).
-		Render(" [F2] to switch")
+		Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
 
 	return barStyle.Render(content + content2)
 }
