@@ -85,8 +85,8 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 
 	help := help.New()
-	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.HelpKey)
-	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.HelpDesc)
+	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().Help.BG)
+	// help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.HelpDesc)
 
 	return model{
 		dbAlias:               dbAlias,
@@ -484,7 +484,7 @@ func (m model) View() string {
 		p := m.help.View(keys.DefaultKeyMap)
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		helpStyle := style.BasePanelStyle.BorderForeground(colour.HelpBorder)
+		helpStyle := style.BasePanelStyle.BorderForeground(colour.GetTheme().Help.BG)
 		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
 	}
 	if m.showDatabaseSwitcherPopup {
