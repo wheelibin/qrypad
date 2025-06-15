@@ -152,6 +152,7 @@ func getTableDataRowLimit() int {
 }
 
 func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
+	start := time.Now()
 	rows, err := dbConn.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -193,10 +194,14 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 		}
 		return nil, err
 	}
+	end := time.Now()
+	data.QueryTime = end.Sub(start)
+
 	return data, nil
 }
 
 func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
+	start := time.Now()
 	res, err := dbConn.DB.ExecContext(ctx, query)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -204,6 +209,7 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 		}
 		return nil, err
 	}
+	end := time.Now()
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
@@ -223,6 +229,7 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 				"Rows Affected":    rowsAffected,
 				"Last Inserted ID": lastInsertId,
 			}},
+			QueryTime: end.Sub(start),
 		}, nil
 
 	default:
@@ -231,6 +238,7 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 			Rows: []map[string]any{{
 				"Rows Affected": rowsAffected,
 			}},
+			QueryTime: end.Sub(start),
 		}, nil
 	}
 }

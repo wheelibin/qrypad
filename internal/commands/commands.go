@@ -23,23 +23,23 @@ var TableInfoKind = struct {
 }
 
 func ConnectToDB(dbConfig db.DBConfig) tea.Cmd {
-	return tea.Batch(func() tea.Msg {
+	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		dbConn, err := db.Connect(dbConfig)
 		if err != nil {
 			return ErrMsg{err}
 		}
 		return db.DatabaseConnectedMsg(dbConn)
-	}, SetLoading(true))
+	})
 }
 
 func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
-	return tea.Batch(func() tea.Msg {
+	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		data, err := db.GetTableRows(dbConn, tableName)
 		if err != nil {
 			return ErrMsg{err}
 		}
 		return db.DataFetchedMsg(data)
-	}, SetLoading(true))
+	})
 }
 
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
@@ -82,13 +82,13 @@ func GetSchemaTables(dbConn db.DBConn) tea.Cmd {
 }
 
 func ExecuteQuery(dbConn db.DBConn, query string) tea.Cmd {
-	return tea.Batch(func() tea.Msg {
+	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		data, err := db.ExecuteQuery(dbConn, query)
 		if err != nil {
 			return ErrMsg{err}
 		}
 		return db.DataFetchedMsg(data)
-	}, SetLoading(true))
+	})
 }
 
 func SetActivePanel(panelIndex int) tea.Cmd {
