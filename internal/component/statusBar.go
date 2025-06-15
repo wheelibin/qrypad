@@ -47,8 +47,8 @@ func (m *StatusBarModel) SetText(text string) {
 
 func (m StatusBarModel) View() string {
 	barStyle := lipgloss.NewStyle().
-		Background(colour.StatusBarBG).
-		Foreground(colour.StatusBarFG).
+		Background(colour.GetTheme().StatusBar.BG).
+		Foreground(colour.GetTheme().StatusBar.FG).
 		Padding(0, 2).
 		Bold(true)
 

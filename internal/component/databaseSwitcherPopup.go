@@ -22,19 +22,14 @@ type DatabaseSwitcherPopupModel struct {
 
 func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 	t := table.New([]table.Column{}).
-		WithBaseStyle(
-			lipgloss.NewStyle().
-				BorderForeground(colour.ResultsTableBorder).
-				// Foreground(lipgloss.Color("#a7a")).
-				Align(lipgloss.Left),
-		).
+		WithBaseStyle(style.TableColumn()).
 		WithHeaderVisibility(false).
 		Filtered(true).
 		Focused(true)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points
-	s.Style = lipgloss.NewStyle().Foreground(colour.Spinner)
+	s.Style = style.Spinner
 	return DatabaseSwitcherPopupModel{table: t, spinner: s}
 }
 
@@ -106,7 +101,7 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.DatabaseSwitcherPopupTitleFG)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().DatabaseSwitcher.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 	if m.loading {
@@ -114,8 +109,8 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	}
 
 	title := style.Title(m.width-2, false).
-		Background(colour.ResultRowPopupTitleBG).
-		Foreground(colour.PanelTitleActiveFG).
+		Background(colour.GetTheme().DatabaseSwitcher.BG).
+		Foreground(colour.GetTheme().DatabaseSwitcher.FG).
 		Align(lipgloss.Center).
 		Render("switch database (switch=enter, cancel=esc)")
 

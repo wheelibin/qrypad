@@ -18,12 +18,7 @@ type ResultRowPopupModel struct {
 
 func NewResultRowPopupModel() ResultRowPopupModel {
 	t := table.New([]table.Column{}).
-		WithBaseStyle(
-			lipgloss.NewStyle().
-				BorderForeground(colour.ResultsTableBorder).
-				// Foreground(lipgloss.Color("#a7a")).
-				Align(lipgloss.Left),
-		).
+		WithBaseStyle(style.TableColumn()).
 		WithHeaderVisibility(false).
 		Filtered(true).
 		Focused(true)
@@ -78,21 +73,20 @@ func (m *ResultRowPopupModel) SetSize(w, h int) {
 }
 
 func (m ResultRowPopupModel) View() string {
-	var panelStyle = style.BasePanelStyle
+	panelStyle := style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.ResultRowPopupTitleBG)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().PopupTable.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 
 	title := style.Title(m.width-2, false).
-		Background(colour.ResultRowPopupTitleBG).
-		Foreground(colour.PanelTitleActiveFG).
+		Background(colour.GetTheme().PopupTable.BG).
+		Foreground(colour.GetTheme().PopupTable.FG).
 		Align(lipgloss.Center).
 		Render("record details")
 
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
-
 }
