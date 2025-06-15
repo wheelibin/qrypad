@@ -1,8 +1,6 @@
 package component
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
@@ -55,5 +53,18 @@ func (m StatusBarModel) View() string {
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("%s [F2] to switch", lipgloss.NewStyle().Italic(true).Render(" "+m.selectedDatabase+" ")))
+	content := lipgloss.NewStyle().
+		Background(colour.GetTheme().StatusBar.BG).
+		Foreground(colour.GetTheme().StatusBar.FG).
+		Bold(true).
+		Italic(true).
+		Render(" " + m.selectedDatabase + " ")
+
+	content2 := lipgloss.NewStyle().
+		Background(colour.GetTheme().StatusBar.BG).
+		Foreground(colour.GetTheme().StatusBar.FG).
+		Bold(true).
+		Render(" [F2] to switch")
+
+	return barStyle.Render(content + content2)
 }
