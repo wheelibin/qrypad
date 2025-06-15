@@ -23,6 +23,7 @@ type keyMap struct {
 	PrevTab         key.Binding
 	OpenInEditor    key.Binding
 	SwitchDatabase  key.Binding
+	CopyValue       key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -113,5 +114,9 @@ var DefaultKeyMap = keyMap{
 	OpenInEditor: key.NewBinding(
 		key.WithKeys("ctrl+e"),
 		key.WithHelp("ctrl+e", "open query in editor"),
+	),
+	CopyValue: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "copy value"),
 	),
 }

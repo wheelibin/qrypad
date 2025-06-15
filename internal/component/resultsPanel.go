@@ -1,7 +1,9 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -132,6 +134,14 @@ func (m *ResultsPanelModel) SetActive(active bool) {
 
 func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 	return m.table.HighlightedRow().Data
+}
+
+func (m ResultsPanelModel) GetSelectedRowJSON() string {
+	j, err := json.Marshal(m.table.HighlightedRow().Data)
+	if err != nil {
+		log.Println(err)
+	}
+	return string(j)
 }
 
 func (m ResultsPanelModel) View() string {

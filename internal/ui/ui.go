@@ -11,6 +11,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"golang.design/x/clipboard"
 )
 
 const (
@@ -323,15 +324,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):
-			if m.showHelpPopup {
-				m.showHelpPopup = false
-			}
-			if m.showDatabaseSwitcherPopup {
-				m.showDatabaseSwitcherPopup = false
-			}
-			if m.showResultRowPopup {
-				m.showResultRowPopup = false
-			}
+			m.handleClosePopup()
 
 		case key.Matches(msg, keys.DefaultKeyMap.Help):
 			m.help.ShowAll = true
@@ -349,6 +342,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
 			return m, commands.OpenEditor(m.queryPanel.GetFilename())
+
+		case key.Matches(msg, keys.DefaultKeyMap.CopyValue):
+			m.handleCopyValue()
 
 		default:
 			// any other key
@@ -397,6 +393,42 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *model) handleClosePopup() {
+	if m.showHelpPopup {
+		m.showHelpPopup = false
+	}
+	if m.showDatabaseSwitcherPopup {
+		m.showDatabaseSwitcherPopup = false
+	}
+	if m.showResultRowPopup {
+		m.showResultRowPopup = false
+	}
+}
+
+func (m *model) handleCopyValue() {
+	var valueToCopy, copiedTextInfo string
+
+	switch m.activePanelIndex {
+	case PanelIndexTables:
+		valueToCopy = m.tablePanel.GetSelectedTable()
+	case PanelIndexTableInfo:
+		valueToCopy = m.tableInfoPanel.GetSelectedRow()["name"].(string)
+	case PanelIndexResults:
+		if m.showResultRowPopup {
+			valueToCopy = m.resultRowPopup.GetSelectedValue()
+		} else {
+			valueToCopy = m.resultsPanel.GetSelectedRowJSON()
+			copiedTextInfo = "(row as json)"
+		}
+	}
+	if copiedTextInfo != "" {
+		m.statusBar.SetCopiedTextInfo(copiedTextInfo)
+	} else {
+		m.statusBar.SetCopiedTextInfo(valueToCopy)
+	}
+	clipboard.Write(clipboard.FmtText, []byte(valueToCopy))
 }
 
 func (m *model) adjustSizes() {

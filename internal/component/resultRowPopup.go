@@ -43,6 +43,10 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 	return m, tea.Batch(cmds...)
 }
 
+func (m ResultRowPopupModel) GetSelectedValue() string {
+	return m.table.HighlightedRow().Data["value"].(string)
+}
+
 func (m *ResultRowPopupModel) SetData(data map[string]any) {
 	if data == nil {
 		return

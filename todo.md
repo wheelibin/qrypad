@@ -1,6 +1,7 @@
 # issues
 
 - very large colums don't show their name
+- queryPanel shouldn't be "dirty" after cursor movements
 
 # to add
 

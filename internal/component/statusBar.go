@@ -14,6 +14,7 @@ type StatusBarModel struct {
 	height           int
 	text             string
 	selectedDatabase string
+	copiedTextInfo   string
 }
 
 func NewStatusBarModel(selectedDatabase string) StatusBarModel {
@@ -46,28 +47,38 @@ func (m *StatusBarModel) SetText(text string) {
 	m.text = text
 }
 
+func (m *StatusBarModel) SetCopiedTextInfo(info string) {
+	m.copiedTextInfo = info
+}
+
 func (m StatusBarModel) View() string {
-	barStyle := lipgloss.NewStyle().
+	containerStyle := lipgloss.NewStyle().
 		Background(colour.GetTheme().StatusBar.BG).
-		Foreground(colour.GetTheme().StatusBar.FG).
-		Padding(0, 2).
-		Bold(true)
+		Foreground(colour.GetTheme().StatusBar.FG)
 
-	barStyle = barStyle.Width(m.width)
-	barStyle = barStyle.Height(m.height)
+	selectedDatabaseStyle := containerStyle
+	helpTextStyle := containerStyle
+	copiedTextInfoStyle := containerStyle.Foreground(colour.GetTheme().PanelTitleActive.BG)
 
-	content := lipgloss.NewStyle().
-		Background(colour.GetTheme().StatusBar.BG).
-		Foreground(colour.GetTheme().StatusBar.FG).
-		Bold(true).
+	containerStyle = containerStyle.
+		Width(m.width).
+		Height(m.height).
+		Padding(0, 2)
+
+	selectedDatabase := selectedDatabaseStyle.
 		Italic(true).
+		Bold(true).
 		Render(" " + m.selectedDatabase + " ")
 
-	content2 := lipgloss.NewStyle().
-		Background(colour.GetTheme().StatusBar.BG).
-		Foreground(colour.GetTheme().StatusBar.FG).
-		Bold(true).
-		Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
+	helpText := helpTextStyle.Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
 
-	return barStyle.Render(content + content2)
+	var copiedTextInfo string
+	if m.copiedTextInfo != "" {
+		copiedTextInfo = copiedTextInfoStyle.
+			AlignHorizontal(lipgloss.Right).
+			Width(m.width - lipgloss.Width(selectedDatabase+helpText) - 4).
+			Render(fmt.Sprintf("copied: %s", m.copiedTextInfo))
+	}
+
+	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText, copiedTextInfo))
 }
