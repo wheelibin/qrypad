@@ -25,6 +25,7 @@ const (
 	QueryPanelMinHeight     = 5
 	TableInfoPanelMinHeight = 8
 	TablePanelMinHeight     = 10
+	LeftPanelSpan           = 3
 )
 
 type bounds struct {
@@ -322,6 +323,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):
+			if m.showHelpPopup {
+				m.showHelpPopup = false
+			}
 			if m.showDatabaseSwitcherPopup {
 				m.showDatabaseSwitcherPopup = false
 			}
@@ -399,7 +403,7 @@ func (m *model) adjustSizes() {
 	m.windowTooSmall = false
 
 	availableHeight := m.height - TitleBarHeight - StatusBarHeight
-	leftWidth := style.GetSpan(3, m.width)
+	leftWidth := style.GetSpan(LeftPanelSpan, m.width)
 	rightWidth := m.getRightWidth(m.width)
 
 	// left
@@ -440,7 +444,7 @@ func (m model) getRightWidth(totalWidth int) int {
 	if m.leftPanelHidden {
 		return style.GetSpan(12, totalWidth) - 6
 	} else {
-		return style.GetSpan(9, totalWidth) - 8
+		return style.GetSpan(12-LeftPanelSpan, totalWidth) - 8
 	}
 }
 
@@ -484,7 +488,7 @@ func (m model) View() string {
 		p := m.help.View(keys.DefaultKeyMap)
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		helpStyle := style.BasePanelStyle.BorderForeground(colour.GetTheme().Help.BG)
+		helpStyle := style.BasePanelStyle.BorderForeground(colour.GetTheme().Help.BG).Padding(1)
 		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
 	}
 	if m.showDatabaseSwitcherPopup {
