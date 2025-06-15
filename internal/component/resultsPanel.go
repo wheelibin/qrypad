@@ -25,19 +25,14 @@ type ResultsPanelModel struct {
 
 func NewResultsPanelModel() ResultsPanelModel {
 	t := table.New([]table.Column{}).
-		WithBaseStyle(
-			lipgloss.NewStyle().
-				BorderForeground(colour.ResultsTableBorder).
-				// Foreground(lipgloss.Color("#a7a")).
-				Align(lipgloss.Left),
-		).
+		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.TableHeaderStyle).
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points
-	s.Style = lipgloss.NewStyle().Foreground(colour.Spinner)
+	s.Style = style.Spinner
 	return ResultsPanelModel{table: t, spinner: s}
 }
 
@@ -124,9 +119,9 @@ func (m ResultsPanelModel) View() string {
 	panelStyle := style.BasePanelStyle.
 		Width(m.width).
 		Height(m.height).
-		BorderForeground(colour.Border)
+		BorderForeground(colour.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.BorderActive)
+		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
 	}
 
 	title := style.Title(m.width-2, m.active).Render("results")
@@ -136,7 +131,6 @@ func (m ResultsPanelModel) View() string {
 	}
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
-
 }
 
 func getColumnWidth(col string, data db.Data) int {

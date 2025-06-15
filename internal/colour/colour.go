@@ -1,40 +1,79 @@
 package colour
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"encoding/json"
+	"log"
+	"os"
+	"sync"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
-	background = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#24273a"}
-	lightGrey  = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#b8c0e0"}
-	darkGrey   = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#494d64"}
-	black      = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#181926"}
-	green      = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#a6da95"}
-	teal       = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#8bd5ca"}
-	blue       = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#91d7e3"}
-	orange     = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#f5a97f"}
-	yellow     = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#eed49f"}
-	red        = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#ed8796"}
-
-	Border             = darkGrey
-	BorderActive       = green
-	PanelTitleActiveBG = green
-	PanelTitleBG       = darkGrey
-	PanelTitleActiveFG = background
-	// ListItemTitleFG = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#a6da95"}
-	ListItemDescFG               = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#8087a2"}
-	ListItemSelectedTitleFG      = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#eed49f"}
-	ListItemSelectedDescFG       = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#eed49f"}
-	CurrentStatementBG           = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#eed49f"}
-	CurrentStatementFG           = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#24273a"}
-	Spinner                      = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#f5bde6"}
-	ResultsTableBorder           = lipgloss.AdaptiveColor{Light: "#1a1a1a", Dark: "#494d64"}
-	StatusBarBG                  = background
-	StatusBarFG                  = yellow
-	TitleBarBG                   = background
-	TitleBarFG                   = blue
-	Error                        = red
-	ResultRowPopupTitleBG        = yellow
-	DatabaseSwitcherPopupTitleFG = orange
-	HelpBorder                   = orange
-	HelpKey                      = orange
-	HelpDesc                     = lipgloss.NoColor{}
+	theme     Theme
+	themeOnce sync.Once
+	themeErr  error
 )
+
+type TC struct {
+	FG lipgloss.Color
+	BG lipgloss.Color
+}
+
+func (tc *TC) UnmarshalJSON(data []byte) error {
+	// Expecting: {"fg": "#fff", "bg": "#000"}
+	var raw map[string]string
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if fg, ok := raw["fg"]; ok {
+		tc.FG = lipgloss.Color(fg)
+	}
+	if bg, ok := raw["bg"]; ok {
+		tc.BG = lipgloss.Color(bg)
+	}
+	return nil
+}
+
+type Theme struct {
+	Text             TC `json:"text"`
+	Border           TC `json:"border"`
+	BorderActive     TC `json:"border.active"`
+	PanelTitle       TC `json:"panelTitle"`
+	PanelTitleActive TC `json:"panelTitle.active"`
+	CurrentStatement TC `json:"currentStatement"`
+	Spinner          TC `json:"spinner"`
+	StatusBar        TC `json:"statusBar"`
+	TitleBar         TC `json:"titleBar"`
+	Error            TC `json:"error"`
+	PopupTable       TC `json:"popupTable"`
+	DatabaseSwitcher TC `json:"databaseSwitcher"`
+	Help             TC `json:"help"`
+	TableHeader      TC `json:"tableHeader"`
+}
+
+func GetTheme() Theme {
+	if err := LoadTheme(); err != nil {
+		log.Fatal(err)
+	}
+	return theme
+}
+
+func LoadTheme() error {
+	themeOnce.Do(func() {
+		file, err := os.Open("internal/colour/themes/catppucin-mocha.json")
+		if err != nil {
+			themeErr = err
+			return
+		}
+		defer file.Close()
+
+		decoder := json.NewDecoder(file)
+		themeErr = decoder.Decode(&theme)
+	})
+
+	if themeErr != nil {
+		return themeErr
+	}
+	return nil
+}

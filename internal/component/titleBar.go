@@ -44,13 +44,18 @@ func (m *TitlBarModel) SetText(text string) {
 
 func (m TitlBarModel) View() string {
 	barStyle := lipgloss.NewStyle().
-		Background(colour.TitleBarBG).
-		Foreground(colour.TitleBarFG).
+		Background(colour.GetTheme().TitleBar.BG).
+		Foreground(colour.GetTheme().TitleBar.FG).
 		Padding(0, 2).
+		Width(m.width - 16).
+		Height(m.height).
 		Bold(true)
 
-	barStyle = barStyle.Width(m.width)
-	barStyle = barStyle.Height(m.height)
+	helpStyle := lipgloss.NewStyle().
+		Background(colour.GetTheme().TitleBar.BG).
+		Foreground(colour.GetTheme().TitleBar.FG).
+		Width(16).
+		Render("[F1] Show help")
 
-	return barStyle.Render(fmt.Sprintf("QryPad - %s [%s]", constants.AppDesc, m.dbAlias))
+	return lipgloss.JoinHorizontal(lipgloss.Left, barStyle.Render(fmt.Sprintf("QryPad - %s (config: %s)", constants.AppDesc, m.dbAlias)), helpStyle)
 }
