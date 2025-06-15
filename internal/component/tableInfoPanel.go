@@ -33,18 +33,13 @@ type TableInfoPanelModel struct {
 
 func NewTableInfoPanelModel() TableInfoPanelModel {
 	t := table.New([]table.Column{}).
-		WithBaseStyle(
-			lipgloss.NewStyle().
-				BorderForeground(colour.ResultsTableBorder).
-				// Foreground(lipgloss.Color("#a7a")).
-				Align(lipgloss.Left),
-		).
+		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.TableHeaderStyle).
 		Filtered(true)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points
-	s.Style = lipgloss.NewStyle().Foreground(colour.Spinner)
+	s.Style = style.Spinner
 	return TableInfoPanelModel{table: t, spinner: s}
 }
 
@@ -72,7 +67,6 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 	}
 
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
 
 		switch {
@@ -90,7 +84,6 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
 			cmds = append(cmds, cmd)
 		}
-
 	}
 
 	return m, tea.Batch(cmds...)
@@ -153,13 +146,13 @@ func (m TableInfoPanelModel) GetSelectedRow() map[string]any {
 }
 
 func (m TableInfoPanelModel) View() string {
-	var panelStyle = style.BasePanelStyle
+	panelStyle := style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.Border)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.BorderActive)
+		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
@@ -183,5 +176,4 @@ func (m TableInfoPanelModel) View() string {
 
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)
-
 }

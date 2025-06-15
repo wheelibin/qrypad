@@ -45,11 +45,12 @@ func (m *ErrorPopupModel) SetText(text string) {
 }
 
 func (m ErrorPopupModel) View() string {
-	popupStyle := style.BasePanelStyle
-	popupStyle = popupStyle.Width(m.width)
+	popupStyle := style.BasePanelStyle.
+		Width(m.width).
+		BorderForeground(colour.GetTheme().Error.FG)
 
-	var errStyle = lipgloss.NewStyle().
-		Foreground(colour.Error).
+	errStyle := lipgloss.NewStyle().
+		Foreground(colour.GetTheme().Error.FG).
 		Padding(0, 2).
 		Align(lipgloss.Center).
 		Width(m.width - 2)
@@ -59,8 +60,8 @@ func (m ErrorPopupModel) View() string {
 	popupStyle = popupStyle.Height(errHeight + 3)
 
 	title := style.Title(m.width-2, false).
-		Background(colour.Error).
-		Foreground(colour.PanelTitleActiveFG).
+		Background(colour.GetTheme().Error.FG).
+		Foreground(colour.GetTheme().Error.BG).
 		MarginBottom(1).
 		Align(lipgloss.Center).
 		Render("error")

@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/textarea"
 )
 
 type QueryPanelModel struct {
@@ -34,6 +34,8 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 
 	// Remove cursor line styling
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
+	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
 
 	return QueryPanelModel{dbAlias: dbAlias, queryBuffer: ta}
@@ -97,7 +99,7 @@ func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	m.queryBuffer.SetWidth(m.width)
-	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1 )
+	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1)
 }
 
 func (m *QueryPanelModel) SetActive(active bool) {
@@ -105,18 +107,18 @@ func (m *QueryPanelModel) SetActive(active bool) {
 }
 
 func (m QueryPanelModel) View() string {
-	var panelStyle = style.BasePanelStyle
+	panelStyle := style.BasePanelStyle
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.Border)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.BorderActive)
+		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
 	}
 
 	currentStatementStyle := lipgloss.NewStyle().
-		Background(colour.CurrentStatementBG).
-		Foreground(colour.CurrentStatementFG).
+		Background(colour.GetTheme().CurrentStatement.BG).
+		Foreground(colour.GetTheme().CurrentStatement.FG).
 		MarginLeft(1).
 		MarginTop(1)
 
@@ -124,12 +126,13 @@ func (m QueryPanelModel) View() string {
 
 	if len(m.CurrentStatement) > 0 && m.active {
 		var truncated string
-		if len(m.CurrentStatement) > m.width-16 {
-			truncated = m.CurrentStatement[:m.width-16]
+		if len(m.CurrentStatement) > m.width-14 {
+			truncated = m.CurrentStatement[:m.width-17] + "..."
 		} else {
 			truncated = m.CurrentStatement
 		}
-		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Keys()[0], strings.ReplaceAll(truncated, "\n", " ")))
+		s := strings.ReplaceAll(strings.ReplaceAll(truncated, "\n", " "), "  ", " ")
+		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Keys()[0], s))
 	}
 
 	text := "queries"

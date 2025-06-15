@@ -25,19 +25,14 @@ type TablePanelModel struct {
 
 func NewTablePanelModel() TablePanelModel {
 	t := table.New([]table.Column{}).
-		WithBaseStyle(
-			lipgloss.NewStyle().
-				BorderForeground(colour.ResultsTableBorder).
-				// Foreground(lipgloss.Color("#a7a")).
-				Align(lipgloss.Left),
-		).
+		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.TableHeaderStyle).
 		Filtered(true).
 		Focused(true)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points
-	s.Style = lipgloss.NewStyle().Foreground(colour.Spinner)
+	s.Style = style.Spinner
 	return TablePanelModel{table: t, spinner: s, active: true}
 }
 
@@ -128,9 +123,9 @@ func (m TablePanelModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.Border)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.BorderActive)
+		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())

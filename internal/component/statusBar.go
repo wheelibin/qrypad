@@ -47,13 +47,13 @@ func (m *StatusBarModel) SetText(text string) {
 
 func (m StatusBarModel) View() string {
 	barStyle := lipgloss.NewStyle().
-		Background(colour.StatusBarBG).
-		Foreground(colour.StatusBarFG).
+		Background(colour.GetTheme().StatusBar.BG).
+		Foreground(colour.GetTheme().StatusBar.FG).
 		Padding(0, 2).
 		Bold(true)
 
 	barStyle = barStyle.Width(m.width)
 	barStyle = barStyle.Height(m.height)
 
-	return barStyle.Render(fmt.Sprintf("database: %s", m.selectedDatabase))
+	return barStyle.Render(fmt.Sprintf("%s [F2] to switch", lipgloss.NewStyle().Italic(true).Render(" "+m.selectedDatabase+" ")))
 }
