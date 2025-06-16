@@ -51,6 +51,7 @@ type Theme struct {
 	Help             TC `json:"help"`
 	HelpDesc         TC `json:"helpDesc"`
 	TableHeader      TC `json:"tableHeader"`
+	TableBorder      TC `json:"tableBorder"`
 }
 
 func GetTheme() Theme {

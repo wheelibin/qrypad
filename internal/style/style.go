@@ -52,7 +52,7 @@ func GetSpan(span int, total int) int {
 
 func TableColumn() lipgloss.Style {
 	return lipgloss.NewStyle().
-		BorderForeground(colour.GetTheme().Border.FG).
+		BorderForeground(colour.GetTheme().TableBorder.FG).
 		Foreground(colour.GetTheme().Text.FG).
 		Align(lipgloss.Left)
 }
