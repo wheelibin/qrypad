@@ -426,9 +426,13 @@ func (m *model) handleCopyValue() {
 	if copiedTextInfo != "" {
 		m.statusBar.SetCopiedTextInfo(copiedTextInfo)
 	} else {
-		m.statusBar.SetCopiedTextInfo(valueToCopy)
+		if valueToCopy != "" {
+			m.statusBar.SetCopiedTextInfo(valueToCopy)
+		}
 	}
-	clipboard.Write(clipboard.FmtText, []byte(valueToCopy))
+	if valueToCopy != "" {
+		clipboard.Write(clipboard.FmtText, []byte(valueToCopy))
+	}
 }
 
 func (m *model) adjustSizes() {
