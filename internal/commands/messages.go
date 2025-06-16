@@ -23,8 +23,11 @@ type QueryFileReadMsg struct{ FileName, Contents string }
 // sent when the query file has been saved
 type QueryFileSavedMsg struct{}
 
-// sent when the user navigates to another tab in the table info panel
-type TableInfoTabChangedMsg int
+// sent when the user navigates to another tab in the table info panels
+type (
+	TablePanelTabChangedMsg int
+	TableInfoTabChangedMsg  int
+)
 
 // fired when external editor is closed
 type EditorFinishedMsg struct{ err error }

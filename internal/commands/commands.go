@@ -12,6 +12,16 @@ import (
 	"github.com/wheelibin/qrypad/internal/db"
 )
 
+type TablePanelKindType string
+
+var TablePanelKind = struct {
+	Tables TablePanelKindType
+	Views  TablePanelKindType
+}{
+	Tables: "tables",
+	Views:  "views",
+}
+
 type TableInfoKindType string
 
 var TableInfoKind = struct {
@@ -71,13 +81,22 @@ func GetDatabases(dbConn db.DBConn) tea.Cmd {
 	}
 }
 
-func GetSchemaTables(dbConn db.DBConn) tea.Cmd {
+func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType) tea.Cmd {
 	return func() tea.Msg {
-		data, err := db.GetSchemaTables(dbConn)
+		var (
+			data *db.Data
+			err  error
+		)
+		switch kind {
+		case TablePanelKind.Tables:
+			data, err = db.GetSchemaTables(dbConn)
+		case TablePanelKind.Views:
+			data, err = db.GetSchemaViews(dbConn)
+		}
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
-		return db.SchemaTablesFetchedMsg(data)
+		return db.SchemaEntitiesFetchedMsg(data)
 	}
 }
 
@@ -94,6 +113,12 @@ func ExecuteQuery(dbConn db.DBConn, query string) tea.Cmd {
 func SetActivePanel(panelIndex int) tea.Cmd {
 	return func() tea.Msg {
 		return ActivePanelChangedMsg(panelIndex)
+	}
+}
+
+func SetActiveTablePanelTab(tabIndex int) tea.Cmd {
+	return func() tea.Msg {
+		return TablePanelTabChangedMsg(tabIndex)
 	}
 }
 

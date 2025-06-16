@@ -9,9 +9,9 @@ type Data struct {
 }
 
 type (
-	DatabaseConnectedMsg    DBConn
-	DataFetchedMsg          *Data
-	TableInfoDataFetchedMsg *Data
-	SchemaTablesFetchedMsg  *Data
-	DatabaseListFetchedMsg  *Data
+	DatabaseConnectedMsg     DBConn
+	DataFetchedMsg           *Data
+	TableInfoDataFetchedMsg  *Data
+	SchemaEntitiesFetchedMsg *Data
+	DatabaseListFetchedMsg   *Data
 )

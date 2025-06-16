@@ -53,6 +53,15 @@ func GetSchemaTables(dbConn DBConn) (*Data, error) {
 	return ExecuteQuery(dbConn, query)
 }
 
+// fetches the user views in the database
+func GetSchemaViews(dbConn DBConn) (*Data, error) {
+	query := `SELECT table_name name
+						FROM information_schema.views
+						WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys', 'pg_catalog')
+						ORDER BY table_name;`
+	return ExecuteQuery(dbConn, query)
+}
+
 // fetches the column information for the specified table
 func GetTableColumns(dbConn DBConn, tableName string) (*Data, error) {
 	return ExecuteQuery(dbConn, fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  

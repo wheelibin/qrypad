@@ -167,7 +167,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.db.DB.Close()
 		}
 		m.db = db.DBConn(msg)
-		cmds = append(cmds, commands.GetSchemaTables(m.db))
+		switch m.tablePanel.GetActiveTabIndex() {
+		case component.TablePanelTabIndexTables:
+			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+		case component.TableInfoTabIndexIndexes:
+			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
+		}
+		cmds = append(cmds, cmd)
 
 	case db.DataFetchedMsg:
 		cmds = append(cmds, commands.SetLoading(false))
@@ -178,7 +184,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tableInfoPanel.SetData(msg)
 		m.adjustSizes()
 
-	case db.SchemaTablesFetchedMsg:
+	case db.SchemaEntitiesFetchedMsg:
 		cmds = append(cmds, commands.SetLoading(false))
 		m.tablePanel.SetData(msg)
 		m.adjustSizes()
@@ -207,6 +213,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
 		case component.TableInfoTabIndexIndexes:
 			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+		}
+		cmds = append(cmds, cmd)
+
+	case commands.TablePanelTabChangedMsg:
+		switch msg {
+		case component.TablePanelTabIndexTables:
+			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+		case component.TableInfoTabIndexIndexes:
+			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
 		}
 		cmds = append(cmds, cmd)
 
