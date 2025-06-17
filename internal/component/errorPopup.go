@@ -1,6 +1,8 @@
 package component
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -49,11 +51,15 @@ func (m ErrorPopupModel) Update(msg tea.Msg) (ErrorPopupModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keymap.updatePassword):
 			if m.isConnectionError {
-				cmds = append(cmds, commands.RequestPasswordInput())
+				return m, commands.RequestPasswordInput()
 			}
 
 		case key.Matches(msg, m.keymap.close):
-			cmds = append(cmds, commands.ClosePopup())
+			if m.isConnectionError {
+				return m, tea.Quit
+			} else {
+				return m, commands.ClosePopup()
+			}
 		}
 	}
 
@@ -86,26 +92,42 @@ func (m *ErrorPopupModel) SetIsConnectionError(v bool) {
 }
 
 func (m ErrorPopupModel) View() string {
+	theme := colour.GetTheme()
 	popupStyle := style.BasePanelStyle.
 		Width(m.width).
-		BorderForeground(colour.GetTheme().Error.FG)
+		BorderForeground(theme.Error.FG)
 
 	errStyle := lipgloss.NewStyle().
-		Foreground(colour.GetTheme().Error.FG).
+		Foreground(theme.Error.FG).
 		Padding(0, 2).
-		Align(lipgloss.Center).
+		Align(lipgloss.Left).
 		Width(m.width - 2)
-	err := errStyle.Render(m.text)
+
+	errMsgStyle := errStyle.
+		UnsetWidth().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(theme.Border.FG)
+
+	err := errMsgStyle.Render(m.text)
 
 	errHeight := lipgloss.Height(err)
-	popupStyle = popupStyle.Height(errHeight + 3)
+	popupStyle = popupStyle.Height(errHeight + 2)
+
+	var extraText string
+	if m.isConnectionError {
+		s := errStyle.MarginBottom(1).Align(lipgloss.Center).Foreground(theme.Text.FG)
+		extraText = s.Render(fmt.Sprintf("There was a problem connecting to the database server, check the connection details in your config, or press %s to update the saved password", keys.DefaultKeyMap.UpdatePassword.Help().Key))
+	}
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().Error.FG).
-		Foreground(colour.GetTheme().Error.BG).
+		Background(theme.Error.FG).
+		Foreground(theme.Error.BG).
 		MarginBottom(1).
 		Align(lipgloss.Center).
 		Render("error")
 
+	if extraText != "" {
+		return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, extraText, err, m.helpView()))
+	}
 	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, err, m.helpView()))
 }
