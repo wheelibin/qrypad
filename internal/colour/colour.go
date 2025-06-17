@@ -2,12 +2,16 @@ package colour
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 )
+
+// TODO: make this configurable, add more themes
+const themeName = "catppuccin-mocha"
 
 var (
 	theme     Theme
@@ -36,6 +40,7 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 }
 
 type Theme struct {
+	ThemeName        string
 	Text             TC `json:"text"`
 	Border           TC `json:"border"`
 	BorderActive     TC `json:"border.active"`
@@ -59,12 +64,13 @@ func GetTheme() Theme {
 	if err := LoadTheme(); err != nil {
 		log.Fatal(err)
 	}
+	theme.ThemeName = themeName
 	return theme
 }
 
 func LoadTheme() error {
 	themeOnce.Do(func() {
-		file, err := os.Open("internal/colour/themes/catppucin-mocha.json")
+		file, err := os.Open(fmt.Sprintf("internal/colour/themes/%s.json", themeName))
 		if err != nil {
 			themeErr = err
 			return

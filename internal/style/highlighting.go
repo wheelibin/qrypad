@@ -5,12 +5,15 @@ import (
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/quick"
+	"github.com/wheelibin/qrypad/internal/colour"
 )
 
+// Render syntax-highlighted code to a string using Chroma
 func HighlightText(txt string) string {
-	// Render syntax-highlighted code to a string using Chroma
+	themeName := colour.GetTheme().ThemeName
+
 	var sb strings.Builder
-	err := quick.Highlight(&sb, txt, "sql", "terminal256", "catppuccin-mocha")
+	err := quick.Highlight(&sb, txt, "sql", "terminal256", themeName)
 	if err != nil {
 		log.Println("error highlighting text", err)
 	}
