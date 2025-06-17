@@ -33,9 +33,9 @@ var TableInfoKind = struct {
 	Indexes: "inds",
 }
 
-func SavePassword(dbAlias, pass string) tea.Cmd {
+func SavePassword(connectionName, pass string) tea.Cmd {
 	return func() tea.Msg {
-		err := password.SetPassword(dbAlias, pass)
+		err := password.SetPassword(connectionName, pass)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
@@ -43,11 +43,11 @@ func SavePassword(dbAlias, pass string) tea.Cmd {
 	}
 }
 
-func ConnectToDB(dbAlias string, dbConfig db.DBConfig) tea.Cmd {
+func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
 	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		var pass string
 		if len(dbConfig.InsecurePassword) == 0 {
-			keyringPass, err := password.GetPassword(dbAlias)
+			keyringPass, err := password.GetPassword(connectionName)
 			if err != nil {
 				if errors.Is(err, password.ErrPasswordNotSaved) {
 					return PasswordInputNeededMsg{}
@@ -197,13 +197,13 @@ func PasswordEntered(pwd string) tea.Cmd {
 	}
 }
 
-func ReadOrCreateQueryFile(dbAlias string) tea.Cmd {
+func ReadOrCreateQueryFile(connectionName string) tea.Cmd {
 	return func() tea.Msg {
 		dir, err := GetOutputDir()
 		if err != nil {
 			return ErrMsg{err}
 		}
-		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", dbAlias))
+		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
 
 		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
 			_, err := os.Create(filename)
@@ -220,13 +220,13 @@ func ReadOrCreateQueryFile(dbAlias string) tea.Cmd {
 	}
 }
 
-func SaveQueryFile(dbAlias string, contents string) tea.Cmd {
+func SaveQueryFile(connectionName string, contents string) tea.Cmd {
 	return func() tea.Msg {
 		dir, err := GetOutputDir()
 		if err != nil {
 			return ErrMsg{err}
 		}
-		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", dbAlias))
+		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
 
 		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
 			_, err := os.Create(filename)

@@ -4,9 +4,9 @@ queryTimeout = 60
 # the max number of rows to fetch when viewing table data (does not apply to ad-hoc queries)
 tableDataRowLimit = 100
 
-[databases]
+[connections]
 
-[databases.music]
+[connections.music]
 driver = "mysql"
 host = "localhost"
 port = 3306
@@ -14,7 +14,7 @@ user = "root"
 password = "123456"
 database = "animals.0"
 
-[databases.animals]
+[connections.animals]
 driver = "postgres"
 host = "localhost"
 port = 50403

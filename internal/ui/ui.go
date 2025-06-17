@@ -69,8 +69,8 @@ type model struct {
 	helpPopup             component.HelpPopupModel
 
 	// state
-	dbAlias          string
-	dbConfig         db.DBConfig
+	connectionName   string
+	dbConfig         db.ConnectionConfig
 	db               db.DBConn
 	activePanelIndex int
 	errorMessage     string
@@ -89,13 +89,13 @@ type model struct {
 	resultsPanelBounds     bounds
 }
 
-func NewModel(dbAlias string, dbConfig db.DBConfig) model {
+func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	tablePanel := component.NewTablePanelModel()
 	tableInfoPanel := component.NewTableInfoPanelModel()
-	queryPanel := component.NewQueryPanelModel(dbAlias)
+	queryPanel := component.NewQueryPanelModel(connectionName)
 	resultsPanel := component.NewResultsPanelModel()
-	statusBar := component.NewStatusBarModel(dbAlias)
-	titleBar := component.NewTitlBarModel(dbAlias)
+	statusBar := component.NewStatusBarModel(connectionName)
+	titleBar := component.NewTitlBarModel(connectionName)
 	errorPopup := component.NewErrorPopupModel()
 	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
@@ -103,7 +103,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 	helpPopup := component.NewHelpPopupModel()
 
 	return model{
-		dbAlias:               dbAlias,
+		connectionName:        connectionName,
 		dbConfig:              dbConfig,
 		tablePanel:            tablePanel,
 		tableInfoPanel:        tableInfoPanel,
@@ -123,7 +123,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 func (m model) Init() tea.Cmd {
 	// Initialize sub-models
 	return tea.Batch(
-		commands.ConnectToDB(m.dbAlias, m.dbConfig),
+		commands.ConnectToDB(m.connectionName, m.dbConfig),
 		m.tablePanel.Init(),
 		m.tableInfoPanel.Init(),
 		m.queryPanel.Init(),

@@ -10,7 +10,7 @@ type DBConn struct {
 	DriverName string
 }
 
-type DBConfig struct {
+type ConnectionConfig struct {
 	Driver           string `mapstructure:"driver"`
 	Host             string `mapstructure:"host"`
 	Port             int    `mapstructure:"port"`
@@ -19,7 +19,7 @@ type DBConfig struct {
 	Database         string `mapstructure:"database"`
 }
 
-func Connect(conn DBConfig, password string) (DBConn, error) {
+func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 	var (
 		connString string
 		driver     string

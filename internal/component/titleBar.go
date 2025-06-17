@@ -11,14 +11,14 @@ import (
 )
 
 type TitlBarModel struct {
-	width   int
-	height  int
-	text    string
-	dbAlias string
+	width          int
+	height         int
+	text           string
+	connectionName string
 }
 
-func NewTitlBarModel(dbAlias string) TitlBarModel {
-	return TitlBarModel{dbAlias: dbAlias}
+func NewTitlBarModel(connectionName string) TitlBarModel {
+	return TitlBarModel{connectionName: connectionName}
 }
 
 func (m TitlBarModel) Init() tea.Cmd {
@@ -26,9 +26,7 @@ func (m TitlBarModel) Init() tea.Cmd {
 }
 
 func (m TitlBarModel) Update(msg tea.Msg) (TitlBarModel, tea.Cmd) {
-	var (
-		cmds []tea.Cmd
-	)
+	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)
 }
@@ -57,5 +55,5 @@ func (m TitlBarModel) View() string {
 		Height(m.height).
 		Bold(true)
 
-	return lipgloss.JoinHorizontal(lipgloss.Left, barStyle.Render(fmt.Sprintf("QryPad - %s (config: %s)", constants.AppDesc, m.dbAlias)), helpText)
+	return lipgloss.JoinHorizontal(lipgloss.Left, barStyle.Render(fmt.Sprintf("QryPad - %s (connection: %s)", constants.AppDesc, m.connectionName)), helpText)
 }

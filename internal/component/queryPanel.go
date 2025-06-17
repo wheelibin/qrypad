@@ -19,13 +19,13 @@ type QueryPanelModel struct {
 	width            int
 	height           int
 	queryBuffer      textarea.Model
-	dbAlias          string
+	connectionName   string
 	CurrentStatement string
 	dirty            bool
 	filename         string
 }
 
-func NewQueryPanelModel(dbAlias string) QueryPanelModel {
+func NewQueryPanelModel(connectionName string) QueryPanelModel {
 	ta := textarea.New()
 	ta.Placeholder = "sql statement(s)..."
 	ta.Prompt = "┃ "
@@ -38,11 +38,11 @@ func NewQueryPanelModel(dbAlias string) QueryPanelModel {
 	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
 
-	return QueryPanelModel{dbAlias: dbAlias, queryBuffer: ta}
+	return QueryPanelModel{connectionName: connectionName, queryBuffer: ta}
 }
 
 func (m QueryPanelModel) Init() tea.Cmd {
-	return tea.Batch(commands.ReadOrCreateQueryFile(m.dbAlias))
+	return tea.Batch(commands.ReadOrCreateQueryFile(m.connectionName))
 }
 
 func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
@@ -58,7 +58,7 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		m.queryBuffer.SetValue(string(msg.Contents))
 
 	case commands.EditorFinishedMsg:
-		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.dbAlias))
+		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName))
 	}
 
 	// update components

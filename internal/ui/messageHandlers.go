@@ -112,13 +112,13 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.selectedDatabase = string(msg)
 		m.statusBar.SetSelectedDatabase(m.selectedDatabase)
 		m.dbConfig.Database = string(msg)
-		return commands.ConnectToDB(m.dbAlias, m.dbConfig)
+		return commands.ConnectToDB(m.connectionName, m.dbConfig)
 
 	case commands.PasswordEnteredMsg:
-		return commands.SavePassword(m.dbAlias, string(msg))
+		return commands.SavePassword(m.connectionName, string(msg))
 
 	case commands.PasswordSavedMsg:
-		return commands.ConnectToDB(m.dbAlias, m.dbConfig)
+		return commands.ConnectToDB(m.connectionName, m.dbConfig)
 
 	case commands.PopupClosedMsg:
 		m.closePopup()
@@ -227,13 +227,13 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		if m.activePanelIndex == PanelIndexQuery {
 			m.queryPanel.SetDirty(false)
 			m.lastSavedQueryContents = m.queryPanel.GetValue()
-			return commands.SaveQueryFile(m.dbAlias, m.queryPanel.GetValue())
+			return commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue())
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ReloadQuery):
 		if m.activePanelIndex == PanelIndexQuery {
 			m.queryPanel.SetDirty(false)
-			return commands.ReadOrCreateQueryFile(m.dbAlias)
+			return commands.ReadOrCreateQueryFile(m.connectionName)
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):

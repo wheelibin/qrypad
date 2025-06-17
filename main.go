@@ -16,8 +16,8 @@ import (
 )
 
 type config struct {
-	Debug     bool                   `mapstructure:"debug"`
-	Databases map[string]db.DBConfig `mapstructure:"databases"`
+	Debug       bool                           `mapstructure:"debug"`
+	Connections map[string]db.ConnectionConfig `mapstructure:"connections"`
 }
 
 func main() {
@@ -42,8 +42,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	dbAlias := os.Args[1]
-	conn, ok := cfg.Databases[dbAlias]
+	connectionName := os.Args[1]
+	conn, ok := cfg.Connections[connectionName]
 	if !ok {
 		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 	}
@@ -59,7 +59,7 @@ func main() {
 	}
 	defer f.Close()
 
-	m := ui.NewModel(dbAlias, conn)
+	m := ui.NewModel(connectionName, conn)
 
 	p := tea.NewProgram(
 		m,
