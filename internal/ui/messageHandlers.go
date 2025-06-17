@@ -19,6 +19,7 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		}
 		m.db = db.DBConn(msg)
 		m.closePopup()
+		m.statusBar.SetSelectedDatabase(m.db.ConnectedDatabase)
 		switch m.tablePanel.GetActiveTabIndex() {
 		case component.TablePanelTabIndexTables:
 			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
@@ -110,7 +111,6 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 
 	case commands.DatabaseSelectedMsg:
 		m.selectedDatabase = string(msg)
-		m.statusBar.SetSelectedDatabase(m.selectedDatabase)
 		m.dbConfig.Database = string(msg)
 		return commands.ConnectToDB(m.connectionName, m.dbConfig)
 

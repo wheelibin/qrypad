@@ -6,8 +6,9 @@ import (
 )
 
 type DBConn struct {
-	DB         *sql.DB
-	DriverName string
+	DB                *sql.DB
+	DriverName        string
+	ConnectedDatabase string
 }
 
 type ConnectionConfig struct {
@@ -39,5 +40,23 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 	if err := dbConn.Ping(); err != nil {
 		return DBConn{}, fmt.Errorf("error connecting to database: %w", err)
 	}
-	return DBConn{DB: dbConn, DriverName: conn.Driver}, nil
+
+	connectedDB := conn.Database
+	if connectedDB == "" {
+		// no database specified in the connection, so read it
+		var sql, dbName string
+		switch conn.Driver {
+		case DriverNameMySQL:
+			sql = "SELECT DATABASE()"
+		case DriverNamePostgres:
+			sql = "SELECT current_database()"
+		}
+		row := dbConn.QueryRow(sql)
+		if err := row.Scan(&dbName); err != nil {
+			return DBConn{}, fmt.Errorf("error connecting to database: %w", err)
+		}
+		connectedDB = dbName
+	}
+
+	return DBConn{DB: dbConn, DriverName: conn.Driver, ConnectedDatabase: connectedDB}, nil
 }
