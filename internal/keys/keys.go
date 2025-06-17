@@ -25,6 +25,7 @@ type keyMap struct {
 	SwitchDatabase  key.Binding
 	CopyValue       key.Binding
 	UpdatePassword  key.Binding
+	CancelQuery     key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -88,9 +89,9 @@ var DefaultKeyMap = keyMap{
 		key.WithKeys("ctrl+r"),
 		key.WithHelp("ctrl+r", "reload query"),
 	),
-	ClosePopup: key.NewBinding(
+	CancelQuery: key.NewBinding(
 		key.WithKeys("esc"),
-		key.WithHelp("esc", "close popup"),
+		key.WithHelp("esc", "cancel query"),
 	),
 	NextTab: key.NewBinding(
 		key.WithKeys("]"),

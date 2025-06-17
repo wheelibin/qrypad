@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/commands"
@@ -76,6 +78,7 @@ type model struct {
 	errorMessage     string
 	selectedDatabase string
 	activePopup      PopupKindType
+	cancelQuery      context.CancelFunc
 
 	windowTooSmall         bool
 	width                  int
@@ -179,7 +182,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		db.DatabaseConnectedMsg,
 		db.DatabaseListFetchedMsg,
 		db.SchemaEntitiesFetchedMsg,
-		db.TableInfoDataFetchedMsg:
+		db.TableInfoDataFetchedMsg,
+		db.QueryControlMsg:
 		cmds = append(cmds, m.handleDBMessages(msg))
 
 	case commands.DatabaseConnectErrMsg,
@@ -197,6 +201,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.TablePanelTabChangedMsg,
 		commands.TableSelectedMsg,
 		commands.QueryFileReadMsg:
+
 		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseMsg:

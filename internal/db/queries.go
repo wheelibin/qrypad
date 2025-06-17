@@ -16,7 +16,7 @@ type Table struct {
 	RowCount int
 }
 
-func GetDatabases(dbConn DBConn) (*Data, error) {
+func GetDatabasesSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverNameMySQL:
@@ -31,11 +31,11 @@ func GetDatabases(dbConn DBConn) (*Data, error) {
 						ORDER BY datname;`
 	}
 
-	return ExecuteQuery(dbConn, query)
+	return query
 }
 
 // fetches the user tables in the database
-func GetSchemaTables(dbConn DBConn) (*Data, error) {
+func GetSchemaTablesSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverNameMySQL:
@@ -50,27 +50,27 @@ func GetSchemaTables(dbConn DBConn) (*Data, error) {
         ORDER BY name;`
 	}
 
-	return ExecuteQuery(dbConn, query)
+	return query
 }
 
 // fetches the user views in the database
-func GetSchemaViews(dbConn DBConn) (*Data, error) {
+func GetSchemaViewsSQL(dbConn DBConn) string {
 	query := `SELECT table_name name
 						FROM information_schema.views
 						WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys', 'pg_catalog')
 						ORDER BY table_name;`
-	return ExecuteQuery(dbConn, query)
+	return query
 }
 
 // fetches the column information for the specified table
-func GetTableColumns(dbConn DBConn, tableName string) (*Data, error) {
-	return ExecuteQuery(dbConn, fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
+func GetTableColumnsSQL(tableName string) string {
+	return fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
                                         FROM INFORMATION_SCHEMA.COLUMNS
-                                        WHERE  TABLE_NAME = '%s';`, tableName))
+                                        WHERE  TABLE_NAME = '%s';`, tableName)
 }
 
 // fetches the index information for the specified table
-func GetTableIndexes(dbConn DBConn, tableName string) (*Data, error) {
+func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverNameMySQL:
@@ -112,20 +112,16 @@ func GetTableIndexes(dbConn DBConn, tableName string) (*Data, error) {
                           t.relname,
                           i.relname;`, tableName)
 	}
-	return ExecuteQuery(dbConn, query)
+	return query
 }
 
 // fetches n rows from the specified table
-func GetTableRows(dbConn DBConn, tableName string) (*Data, error) {
-	return ExecuteQuery(dbConn, fmt.Sprintf("SELECT * FROM %s limit %d;", tableName, getTableDataRowLimit()))
+func GetTableRowsSQL(tableName string) string {
+	return fmt.Sprintf("SELECT * FROM %s limit %d;", tableName, getTableDataRowLimit())
 }
 
 // executes a user supplied sql query or statement
-func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
-	timeout := getTimeoutSecs()
-	queryCtx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
+func ExecuteQuery(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
 	// crude way to decide whether the query should returns rows or use execute
 	isStatement, err := regexp.MatchString(`(?i)^\s*(UPDATE|INSERT|DELETE|DROP|TRUNCATE|CREATE|ALTER)\s+`, query)
 	if err != nil {
@@ -138,13 +134,13 @@ func ExecuteQuery(dbConn DBConn, query string) (*Data, error) {
 	}
 
 	if isStatement && !isReturning {
-		return execStatement(queryCtx, dbConn, query)
+		return execStatement(ctx, dbConn, query)
 	} else {
-		return fetchRows(queryCtx, dbConn, query)
+		return fetchRows(ctx, dbConn, query)
 	}
 }
 
-func getTimeoutSecs() time.Duration {
+func GetTimeoutSecs() time.Duration {
 	timeoutSecs := viper.GetInt(TimeoutConfigKey)
 	if timeoutSecs == 0 {
 		return time.Duration(30 * time.Second)
@@ -199,7 +195,7 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 
 	if err = rows.Err(); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", getTimeoutSecs())
+			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", GetTimeoutSecs())
 		}
 		return nil, err
 	}
@@ -214,7 +210,7 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 	res, err := dbConn.DB.ExecContext(ctx, query)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", getTimeoutSecs())
+			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", GetTimeoutSecs())
 		}
 		return nil, err
 	}

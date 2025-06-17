@@ -1,17 +1,31 @@
 package db
 
-import "time"
+import (
+	"context"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 type Data struct {
 	Columns   []string
 	Rows      []map[string]any
 	QueryTime time.Duration
+	Cancel    context.CancelFunc
 }
 
 type (
-	DatabaseConnectedMsg     DBConn
-	DataFetchedMsg           *Data
-	TableInfoDataFetchedMsg  *Data
-	SchemaEntitiesFetchedMsg *Data
-	DatabaseListFetchedMsg   *Data
+	DatabaseConnectedMsg DBConn
+	QueryResultMsg       struct {
+		Data *Data
+		Err  error
+	}
+	QueryControlMsg struct {
+		Cancel     context.CancelFunc
+		ResultChan <-chan tea.Msg
+	}
+	DataFetchedMsg           QueryResultMsg
+	TableInfoDataFetchedMsg  QueryResultMsg
+	SchemaEntitiesFetchedMsg QueryResultMsg
+	DatabaseListFetchedMsg   QueryResultMsg
 )

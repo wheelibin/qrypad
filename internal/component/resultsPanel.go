@@ -7,6 +7,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,6 +17,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 )
 
@@ -27,6 +30,7 @@ type ResultsPanelModel struct {
 	stopwatch     stopwatch.Model
 	table         table.Model
 	lastQueryTime time.Duration
+	help          help.Model
 }
 
 func NewResultsPanelModel() ResultsPanelModel {
@@ -43,6 +47,7 @@ func NewResultsPanelModel() ResultsPanelModel {
 		table:     t,
 		spinner:   s,
 		stopwatch: stopwatch.New(),
+		help:      makeHelp(),
 	}
 }
 
@@ -143,6 +148,12 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	return string(j)
 }
 
+func (m ResultsPanelModel) helpView() string {
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		keys.DefaultKeyMap.CancelQuery,
+	})
+}
+
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.BasePanelStyle.
 		Width(m.width).
@@ -160,7 +171,7 @@ func (m ResultsPanelModel) View() string {
 	if m.loading {
 		content = lipgloss.PlaceVertical(m.height-1, lipgloss.Center,
 			lipgloss.PlaceHorizontal(m.width, lipgloss.Center,
-				lipgloss.JoinVertical(lipgloss.Center, m.spinner.View(), m.stopwatch.Elapsed().String())))
+				lipgloss.JoinVertical(lipgloss.Center, m.spinner.View(), m.stopwatch.Elapsed().String(), m.helpView())))
 	}
 	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
 	return panelStyle.Render(v)

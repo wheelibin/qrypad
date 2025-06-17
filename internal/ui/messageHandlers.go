@@ -10,6 +10,12 @@ import (
 	"golang.design/x/clipboard"
 )
 
+func waitForResult(ch <-chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		return <-ch
+	}
+}
+
 func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 
@@ -27,22 +33,29 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
 		}
 
+	case db.QueryControlMsg:
+		m.cancelQuery = msg.Cancel
+		return tea.Batch(
+			commands.SetLoading(true),
+			waitForResult(msg.ResultChan),
+		)
+
 	case db.DataFetchedMsg:
-		m.resultsPanel.SetData(msg)
+		m.resultsPanel.SetData(msg.Data)
 		return commands.SetLoading(false)
 
 	case db.TableInfoDataFetchedMsg:
-		m.tableInfoPanel.SetData(msg)
+		m.tableInfoPanel.SetData(msg.Data)
 		m.adjustSizes()
 		return commands.SetLoading(false)
 
 	case db.SchemaEntitiesFetchedMsg:
-		m.tablePanel.SetData(msg)
+		m.tablePanel.SetData(msg.Data)
 		m.adjustSizes()
 		return commands.SetLoading(false)
 
 	case db.DatabaseListFetchedMsg:
-		m.databaseSwitcherPopup.SetData(msg)
+		m.databaseSwitcherPopup.SetData(msg.Data)
 		m.adjustSizes()
 		return commands.SetLoading(false)
 
@@ -183,6 +196,10 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	switch {
+
+	case key.Matches(msg, keys.DefaultKeyMap.CancelQuery):
+		m.cancelQuery()
+
 	case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 		return commands.SetActivePanel((m.activePanelIndex + 1) % m.selectablePanelCount)
 
@@ -211,7 +228,7 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):
 		if m.activePanelIndex == PanelIndexQuery {
-			return commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement())
+			return commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement(), commands.QueryResultBuilder)
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ToggleLeftPanel):

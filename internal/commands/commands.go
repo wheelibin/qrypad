@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,72 +71,67 @@ func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
 	})
 }
 
+var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
+	return db.DataFetchedMsg{Data: d, Err: err}
+}
+
 func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
-	return tea.Sequence(SetLoading(true), func() tea.Msg {
-		data, err := db.GetTableRows(dbConn, tableName)
-		if err != nil {
-			return ErrMsg{err}
-		}
-		return db.DataFetchedMsg(data)
-	})
+	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName), QueryResultBuilder)
 }
 
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
-	return func() tea.Msg {
-		var (
-			data *db.Data
-			err  error
-		)
-		switch kind {
-		case TableInfoKind.Columns:
-			data, err = db.GetTableColumns(dbConn, tableName)
-		case TableInfoKind.Indexes:
-			data, err = db.GetTableIndexes(dbConn, tableName)
-		}
-		if err != nil {
-			return ErrMsg{err}
-		}
-		return db.TableInfoDataFetchedMsg(data)
+	switch kind {
+	case TableInfoKind.Columns:
+		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(tableName), func(d *db.Data, err error) tea.Msg {
+			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+		})
+	case TableInfoKind.Indexes:
+		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
+			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+		})
 	}
+	return nil
 }
 
 func GetDatabases(dbConn db.DBConn) tea.Cmd {
-	return func() tea.Msg {
-		data, err := db.GetDatabases(dbConn)
-		if err != nil {
-			return ErrMsg{Err: err}
-		}
-		return db.DatabaseListFetchedMsg(data)
-	}
+	return ExecuteQuery(dbConn, db.GetDatabasesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
+		return db.DatabaseListFetchedMsg{Data: d, Err: err}
+	})
 }
 
 func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType) tea.Cmd {
-	return func() tea.Msg {
-		var (
-			data *db.Data
-			err  error
-		)
-		switch kind {
-		case TablePanelKind.Tables:
-			data, err = db.GetSchemaTables(dbConn)
-		case TablePanelKind.Views:
-			data, err = db.GetSchemaViews(dbConn)
-		}
-		if err != nil {
-			return ErrMsg{Err: err}
-		}
-		return db.SchemaEntitiesFetchedMsg(data)
+	switch kind {
+	case TablePanelKind.Tables:
+		return ExecuteQuery(dbConn, db.GetSchemaTablesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
+			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
+		})
+	case TablePanelKind.Views:
+		return ExecuteQuery(dbConn, db.GetSchemaViewsSQL(dbConn), func(d *db.Data, err error) tea.Msg {
+			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
+		})
 	}
+	return nil
 }
 
-func ExecuteQuery(dbConn db.DBConn, query string) tea.Cmd {
-	return tea.Sequence(SetLoading(true), func() tea.Msg {
-		data, err := db.ExecuteQuery(dbConn, query)
-		if err != nil {
-			return ErrMsg{err}
-		}
-		return db.DataFetchedMsg(data)
-	})
+type queryResultBuilder func(*db.Data, error) tea.Msg
+
+func ExecuteQuery(dbConn db.DBConn, query string, resultBuilder queryResultBuilder) tea.Cmd {
+	timeout := db.GetTimeoutSecs()
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+		// Send cancel control back
+		log.Println("Query started")
+		resultCh := make(chan tea.Msg, 1)
+
+		go func() {
+			data, err := db.ExecuteQuery(ctx, dbConn, query)
+			resultCh <- resultBuilder(data, err)
+		}()
+
+		// Return control message now, and separately return result later
+		return db.QueryControlMsg{Cancel: cancel, ResultChan: resultCh}
+	}
 }
 
 func SetActivePanel(panelIndex int) tea.Cmd {
