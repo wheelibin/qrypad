@@ -2,6 +2,10 @@ package component
 
 import (
 	"strings"
+
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/wheelibin/qrypad/internal/colour"
 )
 
 func getStatementAtCursor(text string, cursorLine int) string {
@@ -37,4 +41,14 @@ func getStatementAtCursor(text string, cursorLine int) string {
 	}
 
 	return "" // statement not found
+}
+
+func makeHelp() help.Model {
+	help := help.New()
+	help.ShowAll = true
+	help.Styles.ShortKey = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpKey.FG)
+	help.Styles.ShortDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
+	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().Help.BG)
+	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
+	return help
 }

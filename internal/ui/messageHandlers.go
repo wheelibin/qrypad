@@ -124,9 +124,6 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.closePopup()
 
 	case commands.PasswordInputNeededMsg:
-		if len(m.errorMessage) == 0 {
-			m.errorMessage = ""
-		}
 		m.passwordPopup.Clear()
 		m.showPopup(PopupKind.Password)
 
@@ -243,7 +240,6 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		m.closePopup()
 
 	case key.Matches(msg, keys.DefaultKeyMap.Help):
-		m.help.ShowAll = true
 		if !m.popupIsActive(PopupKind.Help) {
 			m.showPopup(PopupKind.Help)
 		} else {

@@ -36,7 +36,7 @@ func NewPasswordPopupModel() PasswordPopupModel {
 
 	return PasswordPopupModel{
 		input: ti,
-		help:  help.New(),
+		help: makeHelp(),
 		keymap: passwordKeymap{
 			accept: key.NewBinding(
 				key.WithKeys("enter"),

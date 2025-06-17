@@ -50,7 +50,7 @@ var DefaultKeyMap = keyMap{
 	),
 	Help: key.NewBinding(
 		key.WithKeys("f1"),
-		key.WithHelp("F1", "toggle help"),
+		key.WithHelp("F1", "show help"),
 	),
 	SwitchDatabase: key.NewBinding(
 		key.WithKeys("f2"),

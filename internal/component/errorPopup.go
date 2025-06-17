@@ -27,7 +27,7 @@ type ErrorPopupModel struct {
 
 func NewErrorPopupModel() ErrorPopupModel {
 	return ErrorPopupModel{
-		help: help.New(),
+		help: makeHelp(),
 		keymap: errorKeymap{
 			updatePassword: keys.DefaultKeyMap.UpdatePassword,
 			close: key.NewBinding(
@@ -67,7 +67,9 @@ func (m ErrorPopupModel) helpView() string {
 			m.keymap.close,
 		})
 	}
-	return ""
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.close,
+	})
 }
 
 func (m *ErrorPopupModel) SetSize(w, h int) {

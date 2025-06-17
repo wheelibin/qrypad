@@ -43,7 +43,7 @@ func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 	return DatabaseSwitcherPopupModel{
 		table:   t,
 		spinner: s,
-		help:    help.New(),
+		help: makeHelp(),
 		keymap: dbSwitcherKeymap{
 			connect: key.NewBinding(
 				key.WithKeys("enter"),

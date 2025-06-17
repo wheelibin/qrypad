@@ -1,14 +1,11 @@
 package ui
 
 import (
-	"github.com/charmbracelet/bubbles/help"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
-	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 )
 
@@ -69,7 +66,7 @@ type model struct {
 	passwordPopup         component.PasswordPopupModel
 	resultRowPopup        component.ResultRowPopupModel
 	databaseSwitcherPopup component.DatabaseSwitcherPopupModel
-	help                  help.Model
+	helpPopup             component.HelpPopupModel
 
 	// state
 	dbAlias          string
@@ -103,10 +100,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
-
-	help := help.New()
-	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().Help.BG)
-	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
+	helpPopup := component.NewHelpPopupModel()
 
 	return model{
 		dbAlias:               dbAlias,
@@ -121,7 +115,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 		passwordPopup:         passwordPopup,
 		resultRowPopup:        resultRowPopup,
 		databaseSwitcherPopup: databaseSwitcherPopup,
-		help:                  help,
+		helpPopup:             helpPopup,
 		selectablePanelCount:  4,
 	}
 }
@@ -164,7 +158,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	// update this now so the query text value is updated and can be used below
-	if len(m.errorMessage) == 0 {
+	if !m.hasActivePopup() {
 		m.queryPanel, cmd = m.queryPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -222,6 +216,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.activePopup == PopupKind.Help {
 		// skip other component updates if popup is shown
+		m.helpPopup, cmd = m.helpPopup.Update(msg)
+		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	}
 
@@ -315,7 +311,7 @@ func (m *model) adjustSizes() {
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
 	m.passwordPopup.SetSize(m.width/3, 5)
-	m.help.Width = m.width
+	m.helpPopup.SetSize(100, 5)
 }
 
 func (m model) getRightWidth(totalWidth int) int {
@@ -364,11 +360,10 @@ func (m model) View() string {
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	case PopupKind.Help:
-		p := m.help.View(keys.DefaultKeyMap)
+		p := m.helpPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		helpStyle := style.BasePanelStyle.BorderForeground(colour.GetTheme().Help.BG).Padding(1)
-		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	case PopupKind.Password:
 		p := m.passwordPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
