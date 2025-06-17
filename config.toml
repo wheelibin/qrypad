@@ -19,5 +19,5 @@ driver = "postgres"
 host = "localhost"
 port = 50403
 user = "postgres"
-password = "postgres"
+insecurePassword = "postgres"
 database = "postgres"

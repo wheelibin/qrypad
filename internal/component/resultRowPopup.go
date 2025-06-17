@@ -3,17 +3,28 @@ package component
 import (
 	"math"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/commands"
+	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 )
+
+type resultRowPopupKeymap struct {
+	copy  key.Binding
+	close key.Binding
+}
 
 type ResultRowPopupModel struct {
 	width  int
 	height int
 	table  table.Model
+	keymap resultRowPopupKeymap
+	help   help.Model
 }
 
 func NewResultRowPopupModel() ResultRowPopupModel {
@@ -23,7 +34,23 @@ func NewResultRowPopupModel() ResultRowPopupModel {
 		Filtered(true).
 		Focused(true)
 
-	return ResultRowPopupModel{table: t}
+	return ResultRowPopupModel{
+		table: t,
+		help:  help.New(),
+		keymap: resultRowPopupKeymap{
+			copy: keys.DefaultKeyMap.CopyValue,
+			close: key.NewBinding(
+				key.WithKeys("esc"),
+				key.WithHelp("esc", "close"),
+			),
+		},
+	}
+}
+
+func (m ResultRowPopupModel) helpView() string {
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.copy,
+	})
 }
 
 func (m ResultRowPopupModel) Init() tea.Cmd {
@@ -31,11 +58,27 @@ func (m ResultRowPopupModel) Init() tea.Cmd {
 }
 
 func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) {
-	// log.Println("resultRowPopup.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keymap.copy):
+			var valDesc string
+			val := m.GetSelectedValue()
+			maxLength := 30
+			if len(val) > maxLength {
+				valDesc = val[0:maxLength-3] + "..."
+			}
+			cmds = append(cmds, commands.CopyValue(val, valDesc))
+
+		case key.Matches(msg, m.keymap.close):
+			cmds = append(cmds, commands.ClosePopup())
+		}
+	}
 
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
@@ -91,6 +134,6 @@ func (m ResultRowPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("record details")
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
+	v := lipgloss.JoinVertical(lipgloss.Left, title, content, m.helpView())
 	return panelStyle.Render(v)
 }

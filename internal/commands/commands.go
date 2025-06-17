@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/password"
 )
 
 type TablePanelKindType string
@@ -32,11 +33,37 @@ var TableInfoKind = struct {
 	Indexes: "inds",
 }
 
-func ConnectToDB(dbConfig db.DBConfig) tea.Cmd {
-	return tea.Sequence(SetLoading(true), func() tea.Msg {
-		dbConn, err := db.Connect(dbConfig)
+func SavePassword(dbAlias, pass string) tea.Cmd {
+	return func() tea.Msg {
+		err := password.SetPassword(dbAlias, pass)
 		if err != nil {
-			return ErrMsg{err}
+			return ErrMsg{Err: err}
+		}
+		return PasswordSavedMsg{}
+	}
+}
+
+func ConnectToDB(dbAlias string, dbConfig db.DBConfig) tea.Cmd {
+	return tea.Sequence(SetLoading(true), func() tea.Msg {
+		var pass string
+		if len(dbConfig.InsecurePassword) == 0 {
+			keyringPass, err := password.GetPassword(dbAlias)
+			if err != nil {
+				if errors.Is(err, password.ErrPasswordNotSaved) {
+					return PasswordInputNeededMsg{}
+				}
+			}
+			pass = keyringPass
+		} else {
+			pass = dbConfig.InsecurePassword
+		}
+
+		dbConn, err := db.Connect(dbConfig, pass)
+		if err != nil {
+			if errors.Is(err, password.ErrPasswordNotSaved) {
+				return PasswordInputNeededMsg{}
+			}
+			return DatabaseConnectErrMsg{err}
 		}
 		return db.DatabaseConnectedMsg(dbConn)
 	})
@@ -143,6 +170,30 @@ func TableSelectionChanged(tableName string) tea.Cmd {
 func DatabaseSelectionChanged(name string) tea.Cmd {
 	return func() tea.Msg {
 		return DatabaseSelectedMsg(name)
+	}
+}
+
+func ClosePopup() tea.Cmd {
+	return func() tea.Msg {
+		return PopupClosedMsg{}
+	}
+}
+
+func CopyValue(value string, valueDesc string) tea.Cmd {
+	return func() tea.Msg {
+		return CopyValueMsg{Value: value, ValueDesc: valueDesc}
+	}
+}
+
+func RequestPasswordInput() tea.Cmd {
+	return func() tea.Msg {
+		return PasswordInputNeededMsg{}
+	}
+}
+
+func PasswordEntered(pwd string) tea.Cmd {
+	return func() tea.Msg {
+		return PasswordEnteredMsg(pwd)
 	}
 }
 
