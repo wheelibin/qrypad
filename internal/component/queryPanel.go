@@ -51,12 +51,7 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-
-	case commands.QueryFileReadMsg:
-		m.filename = msg.FileName
-		m.queryBuffer.SetValue(string(msg.Contents))
-
+	switch msg.(type) {
 	case commands.EditorFinishedMsg:
 		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName))
 	}
@@ -88,6 +83,14 @@ func (m QueryPanelModel) GetValue() string {
 
 func (m QueryPanelModel) GetFilename() string {
 	return m.filename
+}
+
+func (m *QueryPanelModel) SetValue(value string) {
+	m.queryBuffer.SetValue(value)
+}
+
+func (m *QueryPanelModel) SetFilename(f string) {
+	m.filename = f
 }
 
 func (m *QueryPanelModel) SetDirty(dirty bool) {

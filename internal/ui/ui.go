@@ -195,7 +195,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.PasswordSavedMsg,
 		commands.TableInfoTabChangedMsg,
 		commands.TablePanelTabChangedMsg,
-		commands.TableSelectedMsg:
+		commands.TableSelectedMsg,
+		commands.QueryFileReadMsg:
 		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseMsg:

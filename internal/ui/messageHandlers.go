@@ -136,6 +136,10 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 
 		clipboard.Write(clipboard.FmtText, []byte(msg.Value))
 
+	case commands.QueryFileReadMsg:
+		m.queryPanel.SetValue(msg.Contents)
+		m.queryPanel.SetFilename(msg.FileName)
+		m.lastSavedQueryContents = msg.Contents
 	}
 
 	return nil
