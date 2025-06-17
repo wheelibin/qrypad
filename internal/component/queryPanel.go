@@ -46,7 +46,6 @@ func (m QueryPanelModel) Init() tea.Cmd {
 }
 
 func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
-	// log.Println("queryPanel.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd

@@ -24,6 +24,7 @@ type keyMap struct {
 	OpenInEditor    key.Binding
 	SwitchDatabase  key.Binding
 	CopyValue       key.Binding
+	UpdatePassword  key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -55,22 +56,10 @@ var DefaultKeyMap = keyMap{
 		key.WithKeys("f2"),
 		key.WithHelp("F2", "switch database"),
 	),
-	// Up: key.NewBinding(
-	// 	key.WithKeys("k", "up"),        // actual keybindings
-	// 	key.WithHelp("↑/k", "move up"), // corresponding help text
-	// ),
-	// Down: key.NewBinding(
-	// 	key.WithKeys("j", "down"),
-	// 	key.WithHelp("↓/j", "move down"),
-	// ),
-	// Left: key.NewBinding(
-	// 	key.WithKeys("h", "left"),
-	// 	key.WithHelp("↓/h", "move left"),
-	// ),
-	// Right: key.NewBinding(
-	// 	key.WithKeys("l", "right"),
-	// 	key.WithHelp("↓/l", "move right"),
-	// ),
+	UpdatePassword: key.NewBinding(
+		key.WithKeys("f3"),
+		key.WithHelp("F3", "update password"),
+	),
 	NextPanel: key.NewBinding(
 		key.WithKeys("tab"),
 		key.WithHelp("tab", "next panel"),

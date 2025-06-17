@@ -26,10 +26,7 @@ func (m StatusBarModel) Init() tea.Cmd {
 }
 
 func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
-	// log.Println("statusBar.model::Update", msg)
-	var (
-		cmds []tea.Cmd
-	)
+	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)
 }
@@ -77,7 +74,7 @@ func (m StatusBarModel) View() string {
 		copiedTextInfo = copiedTextInfoStyle.
 			AlignHorizontal(lipgloss.Right).
 			Width(m.width - lipgloss.Width(selectedDatabase+helpText) - 4).
-			Render(fmt.Sprintf("copied: %s", m.copiedTextInfo))
+			Render(fmt.Sprintf(`copied: "%s"`, m.copiedTextInfo))
 	}
 
 	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText, copiedTextInfo))

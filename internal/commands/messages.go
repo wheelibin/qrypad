@@ -5,6 +5,10 @@ type ErrMsg struct{ Err error }
 
 func (e ErrMsg) Error() string { return e.Err.Error() }
 
+type DatabaseConnectErrMsg struct{ Err error }
+
+func (e DatabaseConnectErrMsg) Error() string { return e.Err.Error() }
+
 // sent when the user navigates to another panel
 type ActivePanelChangedMsg int
 
@@ -31,3 +35,14 @@ type (
 
 // fired when external editor is closed
 type EditorFinishedMsg struct{ err error }
+
+type (
+	PasswordEnteredMsg     string
+	PopupClosedMsg         struct{}
+	PasswordInputNeededMsg struct{}
+	PasswordSavedMsg       struct{}
+	CopyValueMsg           struct {
+		Value     string
+		ValueDesc string
+	}
+)

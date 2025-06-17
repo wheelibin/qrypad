@@ -54,7 +54,6 @@ func (m ResultsPanelModel) Init() tea.Cmd {
 }
 
 func (m ResultsPanelModel) Update(msg tea.Msg) (ResultsPanelModel, tea.Cmd) {
-	// log.Println("resultsPanel.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -139,7 +138,7 @@ func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	j, err := json.Marshal(m.table.HighlightedRow().Data)
 	if err != nil {
-		log.Println(err)
+		log.Println("error converting row to json", err)
 	}
 	return string(j)
 }

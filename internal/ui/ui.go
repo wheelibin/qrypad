@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/wheelibin/qrypad/internal/colour"
@@ -11,7 +10,6 @@ import (
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
-	"golang.design/x/clipboard"
 )
 
 const (
@@ -27,7 +25,28 @@ const (
 	TableInfoPanelMinHeight = 8
 	TablePanelMinHeight     = 10
 	LeftPanelSpan           = 3
+
+	PopupError     = 1
+	PopupHelp      = 2
+	PopupPassword  = 3
+	PopupResultRow = 4
 )
+
+type PopupKindType int
+
+var PopupKind = struct {
+	Error            PopupKindType
+	Help             PopupKindType
+	Password         PopupKindType
+	ResultRow        PopupKindType
+	DatabaseSwitcher PopupKindType
+}{
+	Error:            1,
+	Help:             2,
+	Password:         3,
+	ResultRow:        4,
+	DatabaseSwitcher: 5,
+}
 
 type bounds struct {
 	x1 int
@@ -47,6 +66,7 @@ type model struct {
 	statusBar             component.StatusBarModel
 	titleBar              component.TitlBarModel
 	errorPopup            component.ErrorPopupModel
+	passwordPopup         component.PasswordPopupModel
 	resultRowPopup        component.ResultRowPopupModel
 	databaseSwitcherPopup component.DatabaseSwitcherPopupModel
 	help                  help.Model
@@ -58,21 +78,18 @@ type model struct {
 	activePanelIndex int
 	errorMessage     string
 	selectedDatabase string
+	activePopup      PopupKindType
 
-	// loading                bool
-	windowTooSmall            bool
-	width                     int
-	height                    int
-	leftPanelHidden           bool
-	selectablePanelCount      int
-	lastSavedQueryContents    string
-	showResultRowPopup        bool
-	showHelpPopup             bool
-	showDatabaseSwitcherPopup bool
-	tablePanelBounds          bounds
-	tableInfoPanelBounds      bounds
-	queryPanelBounds          bounds
-	resultsPanelBounds        bounds
+	windowTooSmall         bool
+	width                  int
+	height                 int
+	leftPanelHidden        bool
+	selectablePanelCount   int
+	lastSavedQueryContents string
+	tablePanelBounds       bounds
+	tableInfoPanelBounds   bounds
+	queryPanelBounds       bounds
+	resultsPanelBounds     bounds
 }
 
 func NewModel(dbAlias string, dbConfig db.DBConfig) model {
@@ -83,6 +100,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 	statusBar := component.NewStatusBarModel(dbAlias)
 	titleBar := component.NewTitlBarModel(dbAlias)
 	errorPopup := component.NewErrorPopupModel()
+	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 
@@ -100,6 +118,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 		statusBar:             statusBar,
 		titleBar:              titleBar,
 		errorPopup:            errorPopup,
+		passwordPopup:         passwordPopup,
 		resultRowPopup:        resultRowPopup,
 		databaseSwitcherPopup: databaseSwitcherPopup,
 		help:                  help,
@@ -110,7 +129,7 @@ func NewModel(dbAlias string, dbConfig db.DBConfig) model {
 func (m model) Init() tea.Cmd {
 	// Initialize sub-models
 	return tea.Batch(
-		commands.ConnectToDB(m.dbConfig),
+		commands.ConnectToDB(m.dbAlias, m.dbConfig),
 		m.tablePanel.Init(),
 		m.tableInfoPanel.Init(),
 		m.queryPanel.Init(),
@@ -118,6 +137,7 @@ func (m model) Init() tea.Cmd {
 		m.statusBar.Init(),
 		m.titleBar.Init(),
 		m.errorPopup.Init(),
+		m.passwordPopup.Init(),
 		m.resultRowPopup.Init(),
 	)
 }
@@ -138,7 +158,6 @@ func (m *model) setPanelsActiveState(activePanelIndex int) {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// log.Println("ui.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -162,227 +181,56 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.BlurMsg:
 		m.setPanelsActiveState(-1)
 
-	case db.DatabaseConnectedMsg:
-		if m.db.DB != nil {
-			m.db.DB.Close()
-		}
-		m.db = db.DBConn(msg)
-		switch m.tablePanel.GetActiveTabIndex() {
-		case component.TablePanelTabIndexTables:
-			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
-		case component.TableInfoTabIndexIndexes:
-			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
-		}
-		cmds = append(cmds, cmd)
+	case db.DataFetchedMsg,
+		db.DatabaseConnectedMsg,
+		db.DatabaseListFetchedMsg,
+		db.SchemaEntitiesFetchedMsg,
+		db.TableInfoDataFetchedMsg:
+		cmds = append(cmds, m.handleDBMessages(msg))
 
-	case db.DataFetchedMsg:
-		cmds = append(cmds, commands.SetLoading(false))
-		m.resultsPanel.SetData(msg)
+	case commands.DatabaseConnectErrMsg,
+		commands.ErrMsg:
+		cmds = append(cmds, m.handleErrorMessages(msg))
 
-	case db.TableInfoDataFetchedMsg:
-		cmds = append(cmds, commands.SetLoading(false))
-		m.tableInfoPanel.SetData(msg)
-		m.adjustSizes()
-
-	case db.SchemaEntitiesFetchedMsg:
-		cmds = append(cmds, commands.SetLoading(false))
-		m.tablePanel.SetData(msg)
-		m.adjustSizes()
-
-	case db.DatabaseListFetchedMsg:
-		cmds = append(cmds, commands.SetLoading(false))
-		m.databaseSwitcherPopup.SetData(msg)
-		m.adjustSizes()
-
-	case commands.ErrMsg:
-		cmds = append(cmds, commands.SetLoading(false))
-		m.errorMessage = msg.Error()
-		m.errorPopup.SetText(m.errorMessage)
-
-	case commands.ActivePanelChangedMsg:
-		m.activePanelIndex = int(msg)
-		m.setPanelsActiveState(m.activePanelIndex)
-		if m.activePanelIndex == PanelIndexQuery {
-			m.queryPanel, cmd = m.queryPanel.Update(msg)
-			cmds = append(cmds, cmd)
-		}
-
-	case commands.TableSelectedMsg:
-		switch m.tableInfoPanel.GetActiveTabIndex() {
-		case component.TableInfoTabIndexColumns:
-			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
-		case component.TableInfoTabIndexIndexes:
-			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
-		}
-		cmds = append(cmds, cmd)
-
-	case commands.TablePanelTabChangedMsg:
-		switch msg {
-		case component.TablePanelTabIndexTables:
-			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
-		case component.TableInfoTabIndexIndexes:
-			cmd = commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
-		}
-		cmds = append(cmds, cmd)
-
-	case commands.TableInfoTabChangedMsg:
-		switch msg {
-		case component.TableInfoTabIndexColumns:
-			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
-		case component.TableInfoTabIndexIndexes:
-			cmd = commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
-		}
-		cmds = append(cmds, cmd)
-
-	case commands.DatabaseSelectedMsg:
-		m.selectedDatabase = string(msg)
-		m.statusBar.SetSelectedDatabase(m.selectedDatabase)
-		m.dbConfig.Database = string(msg)
-		cmds = append(cmds, commands.ConnectToDB(m.dbConfig))
+	case commands.ActivePanelChangedMsg,
+		commands.CopyValueMsg,
+		commands.DatabaseSelectedMsg,
+		commands.PasswordEnteredMsg,
+		commands.PasswordInputNeededMsg,
+		commands.PopupClosedMsg,
+		commands.PasswordSavedMsg,
+		commands.TableInfoTabChangedMsg,
+		commands.TablePanelTabChangedMsg,
+		commands.TableSelectedMsg:
+		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseMsg:
-		if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
-			if isInBounds(msg.X, msg.Y, m.tablePanelBounds) {
-				if m.activePanelIndex != PanelIndexTables {
-					cmd = commands.SetActivePanel(PanelIndexTables)
-					cmds = append(cmds, cmd)
-				}
-			} else if isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds) {
-				if m.activePanelIndex != PanelIndexTableInfo {
-					cmd = commands.SetActivePanel(PanelIndexTableInfo)
-					cmds = append(cmds, cmd)
-				}
-			} else if isInBounds(msg.X, msg.Y, m.queryPanelBounds) {
-				if m.activePanelIndex != PanelIndexQuery {
-					cmd = commands.SetActivePanel(PanelIndexQuery)
-					cmds = append(cmds, cmd)
-				}
-			} else if isInBounds(msg.X, msg.Y, m.resultsPanelBounds) {
-				if m.activePanelIndex != PanelIndexResults {
-					cmd = commands.SetActivePanel(PanelIndexResults)
-					cmds = append(cmds, cmd)
-				}
-			}
-		}
+		cmds = append(cmds, m.handleMouseMessages(msg))
 
 	case tea.KeyMsg:
+		cmds = append(cmds, m.handleKeyMessages(msg))
 
-		if len(m.errorMessage) > 0 {
-			// the error popup is shown, so any key should remove it
-			m.errorMessage = ""
-			return m, nil
-		}
-
-		switch {
-		case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
-			cmd = commands.SetActivePanel((m.activePanelIndex + 1) % m.selectablePanelCount)
-			cmds = append(cmds, cmd)
-
-		case key.Matches(msg, keys.DefaultKeyMap.PrevPanel):
-			i := m.activePanelIndex - 1
-			if i < 0 {
-				i = m.selectablePanelCount - 1
-			}
-			cmd = commands.SetActivePanel(i)
-			cmds = append(cmds, cmd)
-
-		case key.Matches(msg, keys.DefaultKeyMap.ViewData):
-			if m.showDatabaseSwitcherPopup {
-				cmds = append(cmds, commands.DatabaseSelectionChanged(m.databaseSwitcherPopup.GetSelectedDatabase()))
-				m.showDatabaseSwitcherPopup = false
-			} else {
-				switch m.activePanelIndex {
-				case PanelIndexTables:
-					cmds = append(cmds, commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable()))
-				case PanelIndexResults:
-					if !m.showResultRowPopup {
-						m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
-						m.showResultRowPopup = true
-					}
-				case PanelIndexTableInfo:
-					if !m.showResultRowPopup {
-						m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
-						m.showResultRowPopup = true
-					}
-				}
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):
-			if m.activePanelIndex == PanelIndexQuery {
-				cmds = append(cmds, commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement()))
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.ToggleLeftPanel):
-			m.leftPanelHidden = !m.leftPanelHidden
-			if m.leftPanelHidden {
-				m.selectablePanelCount = 2
-				m.adjustSizes()
-				if m.activePanelIndex < 2 {
-					return m, commands.SetActivePanel(PanelIndexQuery)
-				}
-			} else {
-				m.selectablePanelCount = 4
-				m.adjustSizes()
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.SaveQuery):
-			if m.activePanelIndex == PanelIndexQuery {
-				m.queryPanel.SetDirty(false)
-				m.lastSavedQueryContents = m.queryPanel.GetValue()
-				cmds = append(cmds, commands.SaveQueryFile(m.dbAlias, m.queryPanel.GetValue()))
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.ReloadQuery):
-			if m.activePanelIndex == PanelIndexQuery {
-				m.queryPanel.SetDirty(false)
-				cmds = append(cmds, commands.ReadOrCreateQueryFile(m.dbAlias))
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):
-			m.handleClosePopup()
-
-		case key.Matches(msg, keys.DefaultKeyMap.Help):
-			m.help.ShowAll = true
-			m.showHelpPopup = !m.showHelpPopup
-
-		case key.Matches(msg, keys.DefaultKeyMap.SwitchDatabase):
-			if !m.showDatabaseSwitcherPopup {
-				m.showDatabaseSwitcherPopup = true
-				cmds = append(cmds, commands.GetDatabases(m.db))
-			}
-
-		case key.Matches(msg, keys.DefaultKeyMap.Quit):
-			m.db.DB.Close()
-			return m, tea.Quit
-
-		case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
-			return m, commands.OpenEditor(m.queryPanel.GetFilename())
-
-		case key.Matches(msg, keys.DefaultKeyMap.CopyValue):
-			m.handleCopyValue()
-
-		default:
-			// any other key
-			if m.activePanelIndex == PanelIndexQuery {
-				if m.lastSavedQueryContents != m.queryPanel.GetValue() {
-					m.queryPanel.SetDirty(true)
-				}
-			}
-		}
 	}
 
 	// update components
-	if m.showResultRowPopup {
+	if m.activePopup == PopupKind.ResultRow {
 		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
 		cmds = append(cmds, cmd)
 		// skip other component updates if popup is shown
 		return m, tea.Batch(cmds...)
 	}
-	if m.showHelpPopup {
+
+	if m.activePopup == PopupKind.Help {
 		// skip other component updates if popup is shown
 		return m, tea.Batch(cmds...)
 	}
-	if m.showDatabaseSwitcherPopup {
+
+	if m.activePopup == PopupKind.Password {
+		m.passwordPopup, cmd = m.passwordPopup.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	if m.activePopup == PopupKind.DatabaseSwitcher {
 		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
 		cmds = append(cmds, cmd)
 		// skip other component updates if popup is shown
@@ -407,47 +255,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.statusBar, cmd = m.statusBar.Update(msg)
 	cmds = append(cmds, cmd)
 
+	m.errorPopup, cmd = m.errorPopup.Update(msg)
+	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 
-func (m *model) handleClosePopup() {
-	if m.showHelpPopup {
-		m.showHelpPopup = false
-	}
-	if m.showDatabaseSwitcherPopup {
-		m.showDatabaseSwitcherPopup = false
-	}
-	if m.showResultRowPopup {
-		m.showResultRowPopup = false
-	}
+func (m *model) closePopup() {
+	m.activePopup = 0
 }
 
-func (m *model) handleCopyValue() {
-	var valueToCopy, copiedTextInfo string
+func (m model) hasActivePopup() bool {
+	return m.activePopup > 0
+}
 
-	switch m.activePanelIndex {
-	case PanelIndexTables:
-		valueToCopy = m.tablePanel.GetSelectedTable()
-	case PanelIndexTableInfo:
-		valueToCopy = m.tableInfoPanel.GetSelectedRow()["name"].(string)
-	case PanelIndexResults:
-		if m.showResultRowPopup {
-			valueToCopy = m.resultRowPopup.GetSelectedValue()
-		} else {
-			valueToCopy = m.resultsPanel.GetSelectedRowJSON()
-			copiedTextInfo = "(row as json)"
-		}
-	}
-	if copiedTextInfo != "" {
-		m.statusBar.SetCopiedTextInfo(copiedTextInfo)
-	} else {
-		if valueToCopy != "" {
-			m.statusBar.SetCopiedTextInfo(valueToCopy)
-		}
-	}
-	if valueToCopy != "" {
-		clipboard.Write(clipboard.FmtText, []byte(valueToCopy))
-	}
+func (m *model) showPopup(p PopupKindType) {
+	m.activePopup = p
+}
+
+func (m model) popupIsActive(p PopupKindType) bool {
+	return m.activePopup == p
 }
 
 func (m *model) adjustSizes() {
@@ -487,7 +314,7 @@ func (m *model) adjustSizes() {
 	m.errorPopup.SetSize(m.width/2, 5)
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
-
+	m.passwordPopup.SetSize(m.width/3, 5)
 	m.help.Width = m.width
 }
 
@@ -523,26 +350,31 @@ func (m model) View() string {
 	)
 
 	contentView := mainContent
-	if len(m.errorMessage) > 0 {
+
+	switch m.activePopup {
+	case PopupKind.Error:
 		p := m.errorPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	}
-	if m.showResultRowPopup {
+
+	case PopupKind.ResultRow:
 		p := m.resultRowPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	}
-	if m.showHelpPopup {
+	case PopupKind.Help:
 		p := m.help.View(keys.DefaultKeyMap)
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		helpStyle := style.BasePanelStyle.BorderForeground(colour.GetTheme().Help.BG).Padding(1)
 		contentView = style.PlaceOverlay(x, y, helpStyle.Render(p), mainContent)
-	}
-	if m.showDatabaseSwitcherPopup {
+	case PopupKind.Password:
+		p := m.passwordPopup.View()
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
+	case PopupKind.DatabaseSwitcher:
 		p := m.databaseSwitcherPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2

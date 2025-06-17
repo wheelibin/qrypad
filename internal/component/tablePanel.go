@@ -50,7 +50,6 @@ func (m TablePanelModel) Init() tea.Cmd {
 }
 
 func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
-	// log.Println("tablePanel.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd

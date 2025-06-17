@@ -3,14 +3,22 @@ package component
 import (
 	"math"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
 )
+
+type dbSwitcherKeymap struct {
+	connect key.Binding
+	cancel  key.Binding
+}
 
 type DatabaseSwitcherPopupModel struct {
 	width   int
@@ -18,6 +26,8 @@ type DatabaseSwitcherPopupModel struct {
 	loading bool
 	spinner spinner.Model
 	table   table.Model
+	keymap  dbSwitcherKeymap
+	help    help.Model
 }
 
 func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
@@ -30,7 +40,28 @@ func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 	s := spinner.New()
 	s.Spinner = spinner.Points
 	s.Style = style.Spinner
-	return DatabaseSwitcherPopupModel{table: t, spinner: s}
+	return DatabaseSwitcherPopupModel{
+		table:   t,
+		spinner: s,
+		help:    help.New(),
+		keymap: dbSwitcherKeymap{
+			connect: key.NewBinding(
+				key.WithKeys("enter"),
+				key.WithHelp("enter", "connect"),
+			),
+			cancel: key.NewBinding(
+				key.WithKeys("esc"),
+				key.WithHelp("esc", "cancel"),
+			),
+		},
+	}
+}
+
+func (m DatabaseSwitcherPopupModel) helpView() string {
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.connect,
+		m.keymap.cancel,
+	})
 }
 
 func (m DatabaseSwitcherPopupModel) Init() tea.Cmd {
@@ -38,7 +69,6 @@ func (m DatabaseSwitcherPopupModel) Init() tea.Cmd {
 }
 
 func (m DatabaseSwitcherPopupModel) Update(msg tea.Msg) (DatabaseSwitcherPopupModel, tea.Cmd) {
-	// log.Println("resultRowPopup.model::Update", msg)
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -46,6 +76,19 @@ func (m DatabaseSwitcherPopupModel) Update(msg tea.Msg) (DatabaseSwitcherPopupMo
 
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keymap.connect):
+			cmd = commands.DatabaseSelectionChanged(m.GetSelectedDatabase())
+			cmds = append(cmds, cmd)
+
+		case key.Matches(msg, m.keymap.cancel):
+			cmd = commands.ClosePopup()
+			cmds = append(cmds, cmd)
+		}
+	}
 
 	if m.loading {
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -114,6 +157,6 @@ func (m DatabaseSwitcherPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("switch database (switch=enter, cancel=esc)")
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
+	v := lipgloss.JoinVertical(lipgloss.Left, title, content, m.helpView())
 	return panelStyle.Render(v)
 }
