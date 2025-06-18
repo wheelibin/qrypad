@@ -1,10 +1,10 @@
-# QryPad - A terminal app for running ad-hoc database queries 
+# QryPad - A simple client for quick, ad-hoc database exploration 
 
 <!-- <p align="center"> -->
-<!--   <img src="https://github.com/wheelibin/qrypad/blob/main/qrypad.png" height="100" /> -->
+<!--   <img src="https://github.com/wheelibin/qrypad/blob/main/icon.png" height="100" /> -->
 <!-- </p> -->
 
-QryPad is a basic terminal application for running ad-hoc queries against a (mysql / postgres) database.
+QryPad is a simple client for quick, ad-hoc database exploration of mysql and postgres databases.
 
 It has the following features:
 - view a list of the tables in the database along with the column info for the selected table
@@ -21,7 +21,7 @@ It has the following features:
 
 ## Usage
 
-`qrypad [database alias]`
+`qrypad [connection name]`
 
 The database alias must match the name of a database configuration in your config file.
 
@@ -41,22 +41,20 @@ queryTimeout = 60
 # the max number of rows to fetch when viewing table data (does not apply to ad-hoc queries)
 tableDataRowLimit = 100
 
-[databases]
+[connections]
 
-[databases.animals]
+[connections.animals]
 driver = "mysql"
 host = "localhost"
 port = 3306
 user = "root"
-password = "123456"
 database = "animals.0"
 
-[databases.music]
+[connections.music]
 driver = "postgres"
 host = "localhost"
 port = 5432
 user = "postgres"
-password = "123456"
 database = "music-store"
 
 ```
