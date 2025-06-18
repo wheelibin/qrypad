@@ -1,14 +1,17 @@
 package colour
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 )
+
+//go:embed themes/*
+var themes embed.FS
 
 // TODO: make this configurable, add more themes
 const themeName = "catppuccin-mocha"
@@ -70,15 +73,12 @@ func GetTheme() Theme {
 
 func LoadTheme() error {
 	themeOnce.Do(func() {
-		file, err := os.Open(fmt.Sprintf("internal/colour/themes/%s.json", themeName))
+		data, err := themes.ReadFile(fmt.Sprintf("themes/%s.json", themeName))
 		if err != nil {
 			themeErr = err
 			return
 		}
-		defer file.Close()
-
-		decoder := json.NewDecoder(file)
-		themeErr = decoder.Decode(&theme)
+		themeErr = json.Unmarshal(data, &theme)
 	})
 
 	if themeErr != nil {
