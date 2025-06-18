@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"context"
+	"errors"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wheelibin/qrypad/internal/commands"
@@ -14,6 +17,15 @@ func waitForResult(ch <-chan tea.Msg) tea.Cmd {
 	return func() tea.Msg {
 		return <-ch
 	}
+}
+
+func (m *model) handleError(err error) {
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+	m.errorMessage = err.Error()
+	m.errorPopup.SetText(m.errorMessage)
+	m.showPopup(PopupKind.Error)
 }
 
 func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
@@ -41,22 +53,38 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		)
 
 	case db.DataFetchedMsg:
-		m.resultsPanel.SetData(msg.Data)
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.resultsPanel.SetData(msg.Data)
+		}
 		return commands.SetLoading(false)
 
 	case db.TableInfoDataFetchedMsg:
-		m.tableInfoPanel.SetData(msg.Data)
-		m.adjustSizes()
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.tableInfoPanel.SetData(msg.Data)
+			m.adjustSizes()
+		}
 		return commands.SetLoading(false)
 
 	case db.SchemaEntitiesFetchedMsg:
-		m.tablePanel.SetData(msg.Data)
-		m.adjustSizes()
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.tablePanel.SetData(msg.Data)
+			m.adjustSizes()
+		}
 		return commands.SetLoading(false)
 
 	case db.DatabaseListFetchedMsg:
-		m.databaseSwitcherPopup.SetData(msg.Data)
-		m.adjustSizes()
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.databaseSwitcherPopup.SetData(msg.Data)
+			m.adjustSizes()
+		}
 		return commands.SetLoading(false)
 
 	}
@@ -68,17 +96,12 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 
 	case commands.ErrMsg:
-		m.errorMessage = msg.Error()
-		m.errorPopup.SetText(m.errorMessage)
-		m.showPopup(PopupKind.Error)
+		m.handleError(msg.Err)
 		return commands.SetLoading(false)
 
 	case commands.DatabaseConnectErrMsg:
-		m.closePopup()
-		m.errorMessage = msg.Error()
-		m.errorPopup.SetText(m.errorMessage)
 		m.errorPopup.SetIsConnectionError(true)
-		m.showPopup(PopupKind.Error)
+		m.handleError(msg.Err)
 		return commands.SetLoading(false)
 
 	}
