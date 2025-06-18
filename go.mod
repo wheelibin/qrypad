@@ -2,8 +2,6 @@ module github.com/wheelibin/qrypad
 
 go 1.24
 
-toolchain go1.24.4
-
 require (
 	github.com/alecthomas/chroma/v2 v2.18.0
 	github.com/atotto/clipboard v0.1.4
