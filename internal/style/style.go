@@ -14,15 +14,23 @@ const (
 )
 
 var BasePanelStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder())
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderForeground(colour.GetTheme().Border.FG)
 
 var (
 	TableHeaderStyle = lipgloss.NewStyle().
 				Bold(true).
 				Background(colour.GetTheme().TableHeader.BG).
 				Foreground(colour.GetTheme().TableHeader.FG)
-	Spinner = lipgloss.NewStyle().Foreground(colour.GetTheme().Spinner.FG)
+	Spinner = lipgloss.NewStyle().
+		Foreground(colour.GetTheme().Spinner.FG)
 )
+
+func ShortHelp(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Width(width).
+		Align(lipgloss.Center)
+}
 
 func Title(width int, active bool) lipgloss.Style {
 	theme := colour.GetTheme()

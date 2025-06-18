@@ -43,7 +43,7 @@ func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 	return DatabaseSwitcherPopupModel{
 		table:   t,
 		spinner: s,
-		help: makeHelp(),
+		help:    makeHelp(),
 		keymap: dbSwitcherKeymap{
 			connect: key.NewBinding(
 				key.WithKeys("enter"),
@@ -157,6 +157,9 @@ func (m DatabaseSwitcherPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("switch database (switch=enter, cancel=esc)")
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content, m.helpView())
-	return panelStyle.Render(v)
+	return panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+		style.ShortHelp(m.width).Render(m.helpView())),
+	)
 }

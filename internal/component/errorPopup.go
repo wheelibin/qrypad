@@ -127,7 +127,16 @@ func (m ErrorPopupModel) View() string {
 		Render("error")
 
 	if extraText != "" {
-		return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, extraText, err, m.helpView()))
+		return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+			title,
+			extraText,
+			err,
+			style.ShortHelp(m.width).Render(m.helpView()),
+		))
 	}
-	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, err, m.helpView()))
+	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		err,
+		style.ShortHelp(m.width).Render(m.helpView()),
+	))
 }

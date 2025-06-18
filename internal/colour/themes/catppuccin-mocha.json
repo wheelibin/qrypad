@@ -10,7 +10,7 @@
   "panelTitle": {"bg": "#45475a", "fg":"#a6adc8"},
   "panelTitle.active": {"bg": "#a6e3a1", "fg": "#1e1e2e"},
   "popupTable": {"bg":"#f9e2af", "fg":"#1e1e2e"},
-  "spinner":{"bg":"", "fg":"#94e2d5"},
+  "spinner":{"bg":"", "fg":"#fab387"},
   "statusBar":{"bg":"#45475a", "fg":"#74c7ec"},
   "tableBorder": { "fg":"#313244"},
   "tableHeader": { "fg":"#cdd6f4"},

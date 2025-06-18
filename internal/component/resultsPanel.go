@@ -41,7 +41,7 @@ func NewResultsPanelModel() ResultsPanelModel {
 		Filtered(true)
 
 	s := spinner.New()
-	s.Spinner = spinner.Points
+	s.Spinner = spinner.Meter
 	s.Style = style.Spinner
 	return ResultsPanelModel{
 		table:     t,
@@ -157,8 +157,7 @@ func (m ResultsPanelModel) helpView() string {
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.BasePanelStyle.
 		Width(m.width).
-		Height(m.height).
-		BorderForeground(colour.GetTheme().Border.FG)
+		Height(m.height)
 	if m.active {
 		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
 	}
@@ -167,14 +166,36 @@ func (m ResultsPanelModel) View() string {
 	if m.lastQueryTime > 0 {
 		title = style.Title(m.width-2, m.active).Render(fmt.Sprintf("results (%s)", m.lastQueryTime.String()))
 	}
+
 	content := lipgloss.JoinVertical(lipgloss.Bottom, m.table.View())
+
+	panel := panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+	))
+
 	if m.loading {
-		content = lipgloss.PlaceVertical(m.height-1, lipgloss.Center,
-			lipgloss.PlaceHorizontal(m.width, lipgloss.Center,
-				lipgloss.JoinVertical(lipgloss.Center, m.spinner.View(), m.stopwatch.Elapsed().String(), m.helpView())))
+		loadingPopupWidth := 20
+		spinner := lipgloss.NewStyle().
+			MarginRight(2).
+			Render(m.spinner.View())
+		stopwatch := style.Spinner.
+			Render(m.stopwatch.Elapsed().String())
+		spinnerDisplay := lipgloss.JoinHorizontal(lipgloss.Center, spinner, stopwatch)
+		helpView := style.ShortHelp(loadingPopupWidth).
+			Render(m.helpView())
+		loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
+		loadingPopup := style.BasePanelStyle.
+			Width(loadingPopupWidth).
+			Height(3).Render(loadingPopupContent)
+
+		x := (m.width+2)/2 - lipgloss.Width(loadingPopup)/2
+		y := m.height/2 - lipgloss.Height(loadingPopup)/2
+
+		return style.PlaceOverlay(x, y, loadingPopup, panel)
 	}
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
-	return panelStyle.Render(v)
+
+	return panel
 }
 
 func getColumnWidth(col string, data db.Data) int {

@@ -36,7 +36,7 @@ func NewPasswordPopupModel() PasswordPopupModel {
 
 	return PasswordPopupModel{
 		input: ti,
-		help: makeHelp(),
+		help:  makeHelp(),
 		keymap: passwordKeymap{
 			accept: key.NewBinding(
 				key.WithKeys("enter"),
@@ -109,5 +109,9 @@ func (m PasswordPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("enter password")
 
-	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, m.input.View(), m.helpView()))
+	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		m.input.View(),
+		style.ShortHelp(m.width).Render(m.helpView()),
+	))
 }

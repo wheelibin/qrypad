@@ -134,6 +134,9 @@ func (m ResultRowPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("record details")
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content, m.helpView())
-	return panelStyle.Render(v)
+	return panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+		style.ShortHelp(m.width).Render(m.helpView()),
+	))
 }

@@ -75,5 +75,9 @@ func (m HelpPopupModel) View() string {
 		Align(lipgloss.Center).
 		Render("help")
 
-	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center, title, m.help.View(keys.DefaultKeyMap), m.helpView()))
+	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+		title,
+		m.help.View(keys.DefaultKeyMap),
+		style.ShortHelp(m.width).Render(m.helpView()),
+	))
 }
