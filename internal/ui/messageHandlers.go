@@ -228,7 +228,9 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.ExecuteQuery):
 		if m.activePanelIndex == PanelIndexQuery {
-			return commands.ExecuteQuery(m.db, m.queryPanel.GetCurrentStatement(), commands.QueryResultBuilder)
+			if sql := m.queryPanel.GetCurrentStatement(); sql != "" {
+				return commands.ExecuteQuery(m.db, sql, commands.QueryResultBuilder)
+			}
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ToggleLeftPanel):
