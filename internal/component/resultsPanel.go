@@ -105,7 +105,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 
 	// get cols
 	for _, c := range data.Columns {
-		w := getColumnWidth(c, *data)
+		w := m.getColumnWidth(c, *data)
 		cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
@@ -198,18 +198,19 @@ func (m ResultsPanelModel) View() string {
 	return panel
 }
 
-func getColumnWidth(col string, data db.Data) int {
-	maxLen := 0
+func (m ResultsPanelModel) getColumnWidth(col string, data db.Data) int {
+	maxAllowedLen := m.width / 2
+	maxNeededLen := 0
 	for _, c := range data.Columns {
-		if len(c) > maxLen {
-			maxLen = len(c)
+		if len(c) > maxNeededLen {
+			maxNeededLen = len(c)
 		}
 	}
 	for _, r := range data.Rows {
-		if len(fmt.Sprintf("%v", r[col])) > maxLen {
-			maxLen = len(r[col].(string))
+		if len(fmt.Sprintf("%v", r[col])) > maxNeededLen {
+			maxNeededLen = len(r[col].(string))
 		}
 	}
 	padding := 1
-	return maxLen + padding
+	return int(math.Min(float64(maxNeededLen), float64(maxAllowedLen))) + padding
 }
