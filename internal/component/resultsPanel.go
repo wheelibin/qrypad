@@ -34,12 +34,7 @@ type ResultsPanelModel struct {
 }
 
 func NewResultsPanelModel() ResultsPanelModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.TableHeaderStyle).
-		WithHorizontalFreezeColumnCount(1).
-		Filtered(true)
-
+	t := newTable([]table.Column{})
 	s := spinner.New()
 	s.Spinner = spinner.Meter
 	s.Style = style.Spinner
@@ -112,9 +107,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 		rows = append(rows, table.Row{Data: row})
 	}
 
-	m.table = m.table.
-		WithRows(rows).
-		WithColumns(cols)
+	m.table = newTable(cols).WithRows(rows)
 
 	m.loading = false
 	m.SetSize(m.width, m.height)
@@ -213,4 +206,12 @@ func (m ResultsPanelModel) getColumnWidth(col string, data db.Data) int {
 	}
 	padding := 1
 	return int(math.Min(float64(maxNeededLen), float64(maxAllowedLen))) + padding
+}
+
+func newTable(cols []table.Column) table.Model {
+	return table.New(cols).
+		WithBaseStyle(style.TableColumn()).
+		HeaderStyle(style.TableHeaderStyle).
+		WithHorizontalFreezeColumnCount(1).
+		Filtered(true)
 }
