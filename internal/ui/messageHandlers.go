@@ -113,11 +113,13 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 
 	case commands.LoadingMsg:
-		if msg.Loading {
+		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
 			m.showPopup(PopupKind.LoadingPopup)
 		} else {
 			// loading finished
-			m.closePopup()
+			if !m.popupIsActive(PopupKind.Error) {
+				m.closePopup()
+			}
 		}
 
 	case commands.CancelQueryMsg:
