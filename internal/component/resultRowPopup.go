@@ -36,7 +36,7 @@ func NewResultRowPopupModel() ResultRowPopupModel {
 
 	return ResultRowPopupModel{
 		table: t,
-		help:  help.New(),
+		help:  makeHelp(),
 		keymap: resultRowPopupKeymap{
 			copy: keys.DefaultKeyMap.CopyValue,
 			close: key.NewBinding(
