@@ -45,4 +45,5 @@ type (
 		Value     string
 		ValueDesc string
 	}
+	CancelQueryMsg struct{}
 )

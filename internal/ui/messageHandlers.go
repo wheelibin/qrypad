@@ -112,6 +112,17 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 
+	case commands.LoadingMsg:
+		if msg.Loading {
+			m.showPopup(PopupKind.LoadingPopup)
+		} else {
+			// loading finished
+			m.closePopup()
+		}
+
+	case commands.CancelQueryMsg:
+		m.cancelQuery()
+
 	case commands.ActivePanelChangedMsg:
 		m.activePanelIndex = int(msg)
 		m.setPanelsActiveState(m.activePanelIndex)
@@ -219,9 +230,6 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	switch {
-
-	case key.Matches(msg, keys.DefaultKeyMap.CancelQuery):
-		m.cancelQuery()
 
 	case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 		return commands.SetActivePanel((m.activePanelIndex + 1) % m.selectablePanelCount)

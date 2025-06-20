@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -121,7 +120,6 @@ func ExecuteQuery(dbConn db.DBConn, query string, resultBuilder queryResultBuild
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
 		// Send cancel control back
-		log.Println("Query started")
 		resultCh := make(chan tea.Msg, 1)
 
 		go func() {
@@ -155,6 +153,12 @@ func SetActiveTableInfoTab(tabIndex int) tea.Cmd {
 func SetLoading(loading bool) tea.Cmd {
 	return func() tea.Msg {
 		return LoadingMsg{Loading: loading}
+	}
+}
+
+func CancelQuery() tea.Cmd {
+	return func() tea.Msg {
+		return CancelQueryMsg{}
 	}
 }
 

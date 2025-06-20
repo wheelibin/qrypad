@@ -8,26 +8,21 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/colour"
-	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
-	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 )
 
 type ResultsPanelModel struct {
-	active        bool
-	width         int
-	height        int
-	loading       bool
-	spinner       spinner.Model
-	stopwatch     stopwatch.Model
+	active bool
+	width  int
+	height int
+	// loading       bool
+	// spinner       spinner.Model
+	// stopwatch     stopwatch.Model
 	table         table.Model
 	lastQueryTime time.Duration
 	help          help.Model
@@ -35,21 +30,21 @@ type ResultsPanelModel struct {
 
 func NewResultsPanelModel() ResultsPanelModel {
 	t := newTable([]table.Column{})
-	s := spinner.New()
-	s.Spinner = spinner.Meter
-	s.Style = style.Spinner
+	// s := spinner.New()
+	// s.Spinner = spinner.Meter
+	// s.Style = style.Spinner
 	return ResultsPanelModel{
-		table:     t,
-		spinner:   s,
-		stopwatch: stopwatch.New(),
-		help:      makeHelp(),
+		table: t,
+		// spinner:   s,
+		// stopwatch: stopwatch.New(),
+		help: makeHelp(),
 	}
 }
 
 func (m ResultsPanelModel) Init() tea.Cmd {
 	return tea.Batch(
-		m.spinner.Tick,
-		m.stopwatch.Init(),
+	// m.spinner.Tick,
+	// m.stopwatch.Init(),
 	)
 }
 
@@ -59,33 +54,33 @@ func (m ResultsPanelModel) Update(msg tea.Msg) (ResultsPanelModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case spinner.TickMsg:
-		if m.loading {
-			m.spinner, cmd = m.spinner.Update(msg)
-			cmds = append(cmds, cmd)
-		}
-
-	case commands.LoadingMsg:
-		m.loading = msg.Loading
-		if m.loading {
-			cmds = append(cmds, m.spinner.Tick)
-			cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
-		} else {
-			// loading finished
-			cmds = append(cmds, m.stopwatch.Stop())
-		}
-	}
+	// switch msg := msg.(type) {
+	// case spinner.TickMsg:
+	// 	if m.loading {
+	// 		m.spinner, cmd = m.spinner.Update(msg)
+	// 		cmds = append(cmds, cmd)
+	// 	}
+	//
+	// case commands.LoadingMsg:
+	// 	m.loading = msg.Loading
+	// 	if m.loading {
+	// 		cmds = append(cmds, m.spinner.Tick)
+	// 		cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
+	// 	} else {
+	// 		// loading finished
+	// 		cmds = append(cmds, m.stopwatch.Stop())
+	// 	}
+	// }
 
 	if m.active {
 		m.table, cmd = m.table.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
-	if m.loading {
-		m.stopwatch, cmd = m.stopwatch.Update(msg)
-		cmds = append(cmds, cmd)
-	}
+	// if m.loading {
+	// 	m.stopwatch, cmd = m.stopwatch.Update(msg)
+	// 	cmds = append(cmds, cmd)
+	// }
 
 	return m, tea.Batch(cmds...)
 }
@@ -109,7 +104,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 
 	m.table = newTable(cols).WithRows(rows)
 
-	m.loading = false
+	// m.loading = false
 	m.SetSize(m.width, m.height)
 	m.lastQueryTime = data.QueryTime
 }
@@ -141,11 +136,11 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	return string(j)
 }
 
-func (m ResultsPanelModel) helpView() string {
-	return "\n" + m.help.ShortHelpView([]key.Binding{
-		keys.DefaultKeyMap.CancelQuery,
-	})
-}
+// func (m ResultsPanelModel) helpView() string {
+// 	return "\n" + m.help.ShortHelpView([]key.Binding{
+// 		keys.DefaultKeyMap.CancelQuery,
+// 	})
+// }
 
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.BasePanelStyle.
@@ -167,26 +162,26 @@ func (m ResultsPanelModel) View() string {
 		content,
 	))
 
-	if m.loading {
-		loadingPopupWidth := 20
-		spinner := lipgloss.NewStyle().
-			MarginRight(2).
-			Render(m.spinner.View())
-		stopwatch := style.Spinner.
-			Render(m.stopwatch.Elapsed().String())
-		spinnerDisplay := lipgloss.JoinHorizontal(lipgloss.Center, spinner, stopwatch)
-		helpView := style.ShortHelp(loadingPopupWidth).
-			Render(m.helpView())
-		loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
-		loadingPopup := style.BasePanelStyle.
-			Width(loadingPopupWidth).
-			Height(3).Render(loadingPopupContent)
-
-		x := (m.width+2)/2 - lipgloss.Width(loadingPopup)/2
-		y := m.height/2 - lipgloss.Height(loadingPopup)/2
-
-		return style.PlaceOverlay(x, y, loadingPopup, panel)
-	}
+	// if m.loading {
+	// 	loadingPopupWidth := 20
+	// 	spinner := lipgloss.NewStyle().
+	// 		MarginRight(2).
+	// 		Render(m.spinner.View())
+	// 	stopwatch := style.Spinner.
+	// 		Render(m.stopwatch.Elapsed().String())
+	// 	spinnerDisplay := lipgloss.JoinHorizontal(lipgloss.Center, spinner, stopwatch)
+	// 	helpView := style.ShortHelp(loadingPopupWidth).
+	// 		Render(m.helpView())
+	// 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
+	// 	loadingPopup := style.BasePanelStyle.
+	// 		Width(loadingPopupWidth).
+	// 		Height(3).Render(loadingPopupContent)
+	//
+	// 	x := (m.width+2)/2 - lipgloss.Width(loadingPopup)/2
+	// 	y := m.height/2 - lipgloss.Height(loadingPopup)/2
+	//
+	// 	return style.PlaceOverlay(x, y, loadingPopup, panel)
+	// }
 
 	return panel
 }

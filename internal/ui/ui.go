@@ -39,12 +39,14 @@ var PopupKind = struct {
 	Password         PopupKindType
 	ResultRow        PopupKindType
 	DatabaseSwitcher PopupKindType
+	LoadingPopup     PopupKindType
 }{
 	Error:            1,
 	Help:             2,
 	Password:         3,
 	ResultRow:        4,
 	DatabaseSwitcher: 5,
+	LoadingPopup:     6,
 }
 
 type bounds struct {
@@ -69,6 +71,7 @@ type model struct {
 	resultRowPopup        component.ResultRowPopupModel
 	databaseSwitcherPopup component.DatabaseSwitcherPopupModel
 	helpPopup             component.HelpPopupModel
+	loadingPopup          component.LoadingPopupModel
 
 	// state
 	connectionName   string
@@ -104,6 +107,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	resultRowPopup := component.NewResultRowPopupModel()
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 	helpPopup := component.NewHelpPopupModel()
+	loadingPopup := component.NewLoadingPopupModel()
 
 	return model{
 		connectionName:        connectionName,
@@ -119,6 +123,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 		resultRowPopup:        resultRowPopup,
 		databaseSwitcherPopup: databaseSwitcherPopup,
 		helpPopup:             helpPopup,
+		loadingPopup:          loadingPopup,
 		selectablePanelCount:  4,
 	}
 }
@@ -136,6 +141,7 @@ func (m model) Init() tea.Cmd {
 		m.errorPopup.Init(),
 		m.passwordPopup.Init(),
 		m.resultRowPopup.Init(),
+		m.loadingPopup.Init(),
 	)
 }
 
@@ -200,8 +206,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.TableInfoTabChangedMsg,
 		commands.TablePanelTabChangedMsg,
 		commands.TableSelectedMsg,
-		commands.QueryFileReadMsg:
-
+		commands.QueryFileReadMsg,
+		commands.LoadingMsg,
+		commands.CancelQueryMsg:
 		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseMsg:
@@ -213,29 +220,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// update components
-	if m.activePopup == PopupKind.ResultRow {
+	switch m.activePopup {
+	case PopupKind.ResultRow:
 		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
 		cmds = append(cmds, cmd)
-		// skip other component updates if popup is shown
 		return m, tea.Batch(cmds...)
-	}
 
-	if m.activePopup == PopupKind.Help {
-		// skip other component updates if popup is shown
+	case PopupKind.Help:
 		m.helpPopup, cmd = m.helpPopup.Update(msg)
 		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
-	}
 
-	if m.activePopup == PopupKind.Password {
+	case PopupKind.Password:
 		m.passwordPopup, cmd = m.passwordPopup.Update(msg)
 		cmds = append(cmds, cmd)
-	}
+		return m, tea.Batch(cmds...)
 
-	if m.activePopup == PopupKind.DatabaseSwitcher {
+	case PopupKind.Error:
+		m.errorPopup, cmd = m.errorPopup.Update(msg)
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
+
+	case PopupKind.DatabaseSwitcher:
 		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
 		cmds = append(cmds, cmd)
-		// skip other component updates if popup is shown
+		return m, tea.Batch(cmds...)
+
+	case PopupKind.LoadingPopup:
+		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
+		cmds = append(cmds, cmd)
 		return m, tea.Batch(cmds...)
 	}
 
@@ -255,9 +268,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// always update the status bar
 	m.statusBar, cmd = m.statusBar.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.errorPopup, cmd = m.errorPopup.Update(msg)
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
@@ -377,6 +387,11 @@ func (m model) View() string {
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	case PopupKind.DatabaseSwitcher:
 		p := m.databaseSwitcherPopup.View()
+		x := m.width/2 - lipgloss.Width(p)/2
+		y := m.height/2 - 2 - lipgloss.Height(p)/2
+		contentView = style.PlaceOverlay(x, y, p, mainContent)
+	case PopupKind.LoadingPopup:
+		p := m.loadingPopup.View()
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
