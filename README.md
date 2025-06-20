@@ -1,39 +1,48 @@
-# QryPad - A simple client for quick, ad-hoc database exploration 
+<p align="center">
+  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" height="250" />
+</p>
 
-<!-- <p align="center"> -->
-<!--   <img src="https://github.com/wheelibin/qrypad/blob/main/icon.png" height="100" /> -->
-<!-- </p> -->
+## Features
 
-QryPad is a simple client for quick, ad-hoc database exploration of mysql and postgres databases.
+### 🚀 Quick Exploration
 
-It has the following features:
-- view a list of the tables in the database along with the column info for the selected table
-- quickly view table data without writing sql
-- keep one or more queries in the query panel and easily run the query under the cursor (queries are saved per database)
+- View a snapshot of the selected table with one keypress
+- Automatically display columns and indexes for the current table
+- Filter result sets interactively to refine your queries
 
-> If you want to browse the table relationships, edit columns, add indexes, or really anything other than running a query, then you need to use another tool. 
+### ✍️ Query Editing
 
+- Write and manage multiple queries in the query pad
+- Run the current statement with a single keypress
+- Save queries per connection for easy reuse
+- Syntax-highlighted query pad for better readability
 
+### 🔄 Connection Management
+
+- Switch databases on the current connection
+- Securely store passwords in the OS keychain
 
 <p align="center">
   <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" />
 </p>
 
+## Installation
+
+`go install github.com/wheelibin/qrypad@latest`
+
 ## Usage
 
 `qrypad [connection name]`
 
-The database alias must match the name of a database configuration in your config file.
-
-## Installation
-
-`go install github.com/wheelibin/qrypad@latest`
+- `[connection name]` must match an entry in the config file (see below)
+- Passwords will be prompted once, then stored securely
 
 ## Config
 
 Config is read from `~/.config/qrypad/config.toml`
 
 ### example config file
+
 ```markdown
 # the timeout for all queries
 queryTimeout = 60 
@@ -59,23 +68,39 @@ database = "music-store"
 
 ```
 
-## Keys
+## ⌨️ Key Bindings
 
-Configurable key map is coming soon, but for now the default keys are:
+### 🧭 General
 
-### general
-- `tab` / `shift+tab` to navigate between panels
-- `ctrl+t` toggle tables
-- `/` to filter in the tables, table info, and results panel (`esc` to cancel) 
+- `Tab` / `Shift+Tab` - switch panels
+- `F1` - show help
+- `F2` - switch database
+- `F3` - update stored password
+- `/` - filter tables (`esc` to cancel)
+- `Ctrl+T` - toggle left-side (tables/info)
 
-### table panel
-- `enter` to fetch the first 100 rows of the selected table
+### 📋 Tables Panel
 
-### query panel
-- `F5` to run the query under the cursor
-- `ctrl+s` to save the query (buffer is saved per db)
-- `ctrl+r` to reload the query file from disk
+- `Enter` - fetch first 100 rows
+- `]` / `[` - switch tabs
+- `c` - copy selected table name
 
+### 🛠 Table Info Panel
 
+- `]` / `[` - switch tabs
+- `c` - copy selected column/index name
+- `/` - filter columns (`esc` to cancel)
 
+### 🧾 Queries Panel
 
+- `F5` - run current query
+- `Ctrl+S` - save query pad (saved per connection)
+- `Ctrl+R` - reload saved query pad file
+- `Ctrl+E` - open query pad in external editor
+
+### 📊 Results Panel
+
+- `enter` - show full row data in popup
+  - `c` - copy selected value
+- `c` - copy selected row as JSON
+- `/` - filter results (`esc` to cancel)
