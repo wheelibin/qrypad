@@ -6,18 +6,18 @@ tableDataRowLimit = 100
 
 [connections]
 
-[connections.music]
+[connections.animals_mysql]
 driver = "mysql"
 host = "localhost"
 port = 3306
-user = "root"
-password = "123456"
-database = "animals.0"
+user = "qrypad"
+insecurePassword = "qrypad"
+database = "qrypad"
 
-[connections.animals]
+[connections.animals_pg]
 driver = "postgres"
 host = "localhost"
 port = 50403
-user = "postgres"
-insecurePassword = "postgres"
-database = "postgres"
+user = "qrypad"
+insecurePassword = "qrypad"
+database = "qrypad"

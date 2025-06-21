@@ -3,9 +3,9 @@ services:
     image: postgres:latest
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=qrypad
+      - POSTGRES_PASSWORD=qrypad
+      - POSTGRES_DB=qrypad
     ports:
       - '50403:5432'
     volumes: 
