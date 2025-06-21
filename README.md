@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" height="250" />
+  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" style="max-width:100%; height:auto;" />
 </p>
 
 ## Features
@@ -23,7 +23,7 @@
 - Securely store passwords in the OS keychain
 
 <p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" />
+  <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" style="max-width:100%; height:auto;"/>
 </p>
 
 ## Installation
