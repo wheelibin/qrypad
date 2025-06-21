@@ -113,6 +113,9 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 
 	case commands.LoadingMsg:
+		if m.popupIsActive(PopupKind.DatabaseSwitcher) {
+			return nil
+		}
 		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
 			m.showPopup(PopupKind.LoadingPopup)
 		} else {
