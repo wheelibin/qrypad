@@ -249,7 +249,9 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.ViewData):
 		switch m.activePanelIndex {
 		case PanelIndexTables:
-			return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable())
+			if m.tablePanel.GetSelectedTable() != "" {
+				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable())
+			}
 		case PanelIndexResults:
 			if !m.popupIsActive(PopupKind.ResultRow) {
 				m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())

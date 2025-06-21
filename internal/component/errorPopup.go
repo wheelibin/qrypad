@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -99,16 +100,15 @@ func (m ErrorPopupModel) View() string {
 
 	errStyle := lipgloss.NewStyle().
 		Foreground(theme.Error.FG).
-		Padding(0, 2).
 		Align(lipgloss.Left).
 		Width(m.width - 2)
 
-	errMsgStyle := errStyle.
-		UnsetWidth().
+	msgWidth := int(math.Min(float64(m.width)-16, float64(len(m.text))))
+	err := errStyle.
+		Width(int(msgWidth)).
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(theme.Border.FG)
-
-	err := errMsgStyle.Render(m.text)
+		BorderForeground(theme.Border.FG).
+		Render(m.text)
 
 	errHeight := lipgloss.Height(err)
 	popupStyle = popupStyle.Height(errHeight + 2)
@@ -122,8 +122,9 @@ func (m ErrorPopupModel) View() string {
 	title := style.Title(m.width-2, false).
 		Background(theme.Error.FG).
 		Foreground(theme.Error.BG).
-		MarginBottom(1).
 		Align(lipgloss.Center).
+		MarginRight(1).
+		MarginBottom(1).
 		Render("error")
 
 	if extraText != "" {

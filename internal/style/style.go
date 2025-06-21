@@ -39,7 +39,6 @@ func Title(width int, active bool) lipgloss.Style {
 		Foreground(theme.PanelTitle.FG).
 		Width(width).
 		Height(1).
-		// MarginBottom(1).
 		MarginLeft(1).
 		PaddingLeft(1).
 		Bold(true)

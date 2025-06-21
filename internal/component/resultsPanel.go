@@ -136,12 +136,6 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	return string(j)
 }
 
-// func (m ResultsPanelModel) helpView() string {
-// 	return "\n" + m.help.ShortHelpView([]key.Binding{
-// 		keys.DefaultKeyMap.CancelQuery,
-// 	})
-// }
-
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.BasePanelStyle.
 		Width(m.width).
@@ -161,27 +155,6 @@ func (m ResultsPanelModel) View() string {
 		title,
 		content,
 	))
-
-	// if m.loading {
-	// 	loadingPopupWidth := 20
-	// 	spinner := lipgloss.NewStyle().
-	// 		MarginRight(2).
-	// 		Render(m.spinner.View())
-	// 	stopwatch := style.Spinner.
-	// 		Render(m.stopwatch.Elapsed().String())
-	// 	spinnerDisplay := lipgloss.JoinHorizontal(lipgloss.Center, spinner, stopwatch)
-	// 	helpView := style.ShortHelp(loadingPopupWidth).
-	// 		Render(m.helpView())
-	// 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
-	// 	loadingPopup := style.BasePanelStyle.
-	// 		Width(loadingPopupWidth).
-	// 		Height(3).Render(loadingPopupContent)
-	//
-	// 	x := (m.width+2)/2 - lipgloss.Width(loadingPopup)/2
-	// 	y := m.height/2 - lipgloss.Height(loadingPopup)/2
-	//
-	// 	return style.PlaceOverlay(x, y, loadingPopup, panel)
-	// }
 
 	return panel
 }
