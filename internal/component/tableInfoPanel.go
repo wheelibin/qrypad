@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
@@ -25,8 +24,6 @@ type TableInfoPanelModel struct {
 	active         bool
 	width          int
 	height         int
-	loading        bool
-	spinner        spinner.Model
 	table          table.Model
 	activeTabIndex int
 }
@@ -37,16 +34,11 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 		HeaderStyle(style.TableHeaderStyle).
 		Filtered(true)
 
-	s := spinner.New()
-	s.Spinner = spinner.Points
-	s.Style = style.Spinner
-	return TableInfoPanelModel{table: t, spinner: s}
+	return TableInfoPanelModel{table: t}
 }
 
 func (m TableInfoPanelModel) Init() tea.Cmd {
-	return tea.Batch(
-		m.spinner.Tick,
-	)
+	return nil
 }
 
 func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) {
@@ -54,11 +46,6 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-
-	if m.loading {
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, m.spinner.Tick, cmd)
-	}
 
 	if m.active {
 		m.table, cmd = m.table.Update(msg)
@@ -115,7 +102,6 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
-	m.loading = false
 }
 
 func (m *TableInfoPanelModel) SetActive(active bool) {
@@ -130,10 +116,6 @@ func (m *TableInfoPanelModel) SetSize(w, h int) {
 	m.table = m.table.WithPageSize(int(rowsInTable))
 	m.table = m.table.WithMinimumHeight(h - 1)
 	m.table = m.table.WithTargetWidth(w)
-}
-
-func (m *TableInfoPanelModel) SetLoading(loading bool) {
-	m.loading = loading
 }
 
 func (m TableInfoPanelModel) GetActiveTabIndex() int {
@@ -155,9 +137,6 @@ func (m TableInfoPanelModel) View() string {
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
-	if m.loading {
-		content = m.spinner.View()
-	}
 	titleStyle := style.Title(m.width-2, m.active)
 	title := titleStyle.Render("table info")
 

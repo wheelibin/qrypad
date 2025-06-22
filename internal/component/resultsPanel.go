@@ -17,12 +17,9 @@ import (
 )
 
 type ResultsPanelModel struct {
-	active bool
-	width  int
-	height int
-	// loading       bool
-	// spinner       spinner.Model
-	// stopwatch     stopwatch.Model
+	active        bool
+	width         int
+	height        int
 	table         table.Model
 	lastQueryTime time.Duration
 	help          help.Model
@@ -30,22 +27,14 @@ type ResultsPanelModel struct {
 
 func NewResultsPanelModel() ResultsPanelModel {
 	t := newTable([]table.Column{})
-	// s := spinner.New()
-	// s.Spinner = spinner.Meter
-	// s.Style = style.Spinner
 	return ResultsPanelModel{
 		table: t,
-		// spinner:   s,
-		// stopwatch: stopwatch.New(),
-		help: makeHelp(),
+		help:  makeHelp(),
 	}
 }
 
 func (m ResultsPanelModel) Init() tea.Cmd {
-	return tea.Batch(
-	// m.spinner.Tick,
-	// m.stopwatch.Init(),
-	)
+	return nil
 }
 
 func (m ResultsPanelModel) Update(msg tea.Msg) (ResultsPanelModel, tea.Cmd) {
@@ -54,33 +43,10 @@ func (m ResultsPanelModel) Update(msg tea.Msg) (ResultsPanelModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	// switch msg := msg.(type) {
-	// case spinner.TickMsg:
-	// 	if m.loading {
-	// 		m.spinner, cmd = m.spinner.Update(msg)
-	// 		cmds = append(cmds, cmd)
-	// 	}
-	//
-	// case commands.LoadingMsg:
-	// 	m.loading = msg.Loading
-	// 	if m.loading {
-	// 		cmds = append(cmds, m.spinner.Tick)
-	// 		cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
-	// 	} else {
-	// 		// loading finished
-	// 		cmds = append(cmds, m.stopwatch.Stop())
-	// 	}
-	// }
-
 	if m.active {
 		m.table, cmd = m.table.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
-	// if m.loading {
-	// 	m.stopwatch, cmd = m.stopwatch.Update(msg)
-	// 	cmds = append(cmds, cmd)
-	// }
 
 	return m, tea.Batch(cmds...)
 }
@@ -104,7 +70,6 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 
 	m.table = newTable(cols).WithRows(rows)
 
-	// m.loading = false
 	m.SetSize(m.width, m.height)
 	m.lastQueryTime = data.QueryTime
 }

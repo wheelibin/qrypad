@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
@@ -25,8 +24,6 @@ type TablePanelModel struct {
 	active         bool
 	width          int
 	height         int
-	loading        bool
-	spinner        spinner.Model
 	table          table.Model
 	selectedTable  string
 	activeTabIndex int
@@ -39,10 +36,7 @@ func NewTablePanelModel() TablePanelModel {
 		Filtered(true).
 		Focused(true)
 
-	s := spinner.New()
-	s.Spinner = spinner.Points
-	s.Style = style.Spinner
-	return TablePanelModel{table: t, spinner: s, active: true}
+	return TablePanelModel{table: t, active: true}
 }
 
 func (m TablePanelModel) Init() tea.Cmd {
@@ -98,11 +92,6 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 		}
 	}
 
-	if m.loading {
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, m.spinner.Tick, cmd)
-	}
-
 	return m, tea.Batch(cmds...)
 }
 
@@ -129,7 +118,6 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
-	m.loading = false
 }
 
 func (m TablePanelModel) GetSelectedTable() string {
@@ -150,10 +138,6 @@ func (m *TablePanelModel) SetSize(w, h int) {
 	m.table = m.table.WithTargetWidth(w)
 }
 
-func (m *TablePanelModel) SetLoading(loading bool) {
-	m.loading = loading
-}
-
 func (m TablePanelModel) GetActiveTabIndex() int {
 	return m.activeTabIndex
 }
@@ -169,9 +153,6 @@ func (m TablePanelModel) View() string {
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
-	if m.loading {
-		content = m.spinner.View()
-	}
 
 	titleStyle := style.Title(m.width-2, m.active)
 
