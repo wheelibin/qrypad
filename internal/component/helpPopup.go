@@ -72,6 +72,7 @@ func (m HelpPopupModel) View() string {
 		Background(colour.GetTheme().Help.BG).
 		Foreground(colour.GetTheme().Help.FG).
 		MarginBottom(1).
+		MarginRight(1).
 		Align(lipgloss.Center).
 		Render("help")
 

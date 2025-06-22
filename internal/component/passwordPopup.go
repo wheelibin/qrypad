@@ -106,6 +106,7 @@ func (m PasswordPopupModel) View() string {
 		Background(colour.GetTheme().Error.FG).
 		Foreground(colour.GetTheme().Error.BG).
 		MarginBottom(1).
+		MarginRight(1).
 		Align(lipgloss.Center).
 		Render("enter password")
 
