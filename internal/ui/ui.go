@@ -327,7 +327,7 @@ func (m *model) adjustSizes() {
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
 	m.passwordPopup.SetSize(m.width/3, 5)
-	m.helpPopup.SetSize(100, 5)
+	m.helpPopup.SetSize(120, 5)
 }
 
 func (m model) getRightWidth(totalWidth int) int {

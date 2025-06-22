@@ -5,27 +5,28 @@ import (
 )
 
 type keyMap struct {
-	Quit            key.Binding
-	Up              key.Binding
-	Down            key.Binding
-	Left            key.Binding
-	Right           key.Binding
-	NextPanel       key.Binding
-	PrevPanel       key.Binding
-	ExecuteQuery    key.Binding
-	ViewData        key.Binding
-	ToggleLeftPanel key.Binding
-	SaveQuery       key.Binding
-	ReloadQuery     key.Binding
-	ClosePopup      key.Binding
-	Help            key.Binding
-	NextTab         key.Binding
-	PrevTab         key.Binding
-	OpenInEditor    key.Binding
-	SwitchDatabase  key.Binding
-	CopyValue       key.Binding
-	UpdatePassword  key.Binding
 	CancelQuery     key.Binding
+	ClosePopup      key.Binding
+	CopyValue       key.Binding
+	Down            key.Binding
+	ExecuteQuery    key.Binding
+	FilterTable     key.Binding
+	Help            key.Binding
+	Left            key.Binding
+	NextPanel       key.Binding
+	NextTab         key.Binding
+	OpenInEditor    key.Binding
+	PrevPanel       key.Binding
+	PrevTab         key.Binding
+	Quit            key.Binding
+	ReloadQuery     key.Binding
+	Right           key.Binding
+	SaveQuery       key.Binding
+	SwitchDatabase  key.Binding
+	ToggleLeftPanel key.Binding
+	Up              key.Binding
+	UpdatePassword  key.Binding
+	ViewData        key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -38,9 +39,9 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.SwitchDatabase, k.NextPanel, k.PrevPanel, k.ToggleLeftPanel},
-		{k.ExecuteQuery, k.ViewData, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
-		{k.Help, k.ClosePopup, k.Quit},
+		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
+		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
+		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue},
 	}
 }
 
@@ -108,5 +109,9 @@ var DefaultKeyMap = keyMap{
 	CopyValue: key.NewBinding(
 		key.WithKeys("c"),
 		key.WithHelp("c", "copy value"),
+	),
+	FilterTable: key.NewBinding(
+		key.WithKeys("/"),
+		key.WithHelp("/", "filter table"),
 	),
 }
