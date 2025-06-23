@@ -28,7 +28,13 @@
 
 ## Installation
 
+### Go Install
+
 `go install github.com/wheelibin/qrypad@latest`
+
+### Binary Install
+
+https://github.com/wheelibin/qrypad/releases
 
 ## Usage
 
