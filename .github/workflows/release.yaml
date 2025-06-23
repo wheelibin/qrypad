@@ -11,6 +11,8 @@ jobs:
     permissions:
       contents: write  # required to publish releases
     steps:
+      - name: Install X11 headers
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
