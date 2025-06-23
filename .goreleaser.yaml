@@ -1,6 +1,6 @@
 project_name: qrypad
 builds:
-  - main: ./cmd/qrypad
+  - main: ./
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
 archives:
