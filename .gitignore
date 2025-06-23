@@ -22,3 +22,5 @@ go.work
 go.work.sum
 debug.log
 notes.md
+# Added by goreleaser init:
+dist/
