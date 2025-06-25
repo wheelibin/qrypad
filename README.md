@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" style="max-width:100%; height:auto;" />
+  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" style="width:600px; height:auto;" />
 </p>
 
 ## Features
