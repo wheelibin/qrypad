@@ -108,7 +108,7 @@ func (m PasswordPopupModel) View() string {
 		MarginBottom(1).
 		MarginRight(1).
 		Align(lipgloss.Center).
-		Render("enter password")
+		Render("set password")
 
 	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
 		title,

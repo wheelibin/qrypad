@@ -48,7 +48,7 @@ func makeHelp() help.Model {
 	help.ShowAll = true
 	help.Styles.ShortKey = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpKey.FG)
 	help.Styles.ShortDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
-	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().Help.BG)
+	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpKey.FG)
 	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
 	return help
 }

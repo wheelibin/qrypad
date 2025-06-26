@@ -155,7 +155,7 @@ func (m DatabaseSwitcherPopupModel) View() string {
 		Background(colour.GetTheme().DatabaseSwitcher.BG).
 		Foreground(colour.GetTheme().DatabaseSwitcher.FG).
 		Align(lipgloss.Center).
-		Render("switch database (switch=enter, cancel=esc)")
+		Render("switch database")
 
 	return panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
 		title,
