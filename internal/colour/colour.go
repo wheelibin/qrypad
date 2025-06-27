@@ -7,6 +7,8 @@ import (
 	"log"
 	"sync"
 
+	"github.com/alecthomas/chroma/v2"
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/viper"
 )
@@ -82,14 +84,31 @@ func LoadTheme() error {
 			fallback, _ := themes.ReadFile(fmt.Sprintf("themes/%s.json", defaultThemeName))
 			themeErr = json.Unmarshal(fallback, &theme)
 			theme.ThemeName = defaultThemeName
+			registerChromaStyle()
 			return
 		}
 		themeErr = json.Unmarshal(data, &theme)
 		theme.ThemeName = themeName
+		registerChromaStyle()
 	})
 
 	if themeErr != nil {
 		return themeErr
 	}
 	return nil
+}
+
+func registerChromaStyle() {
+	if _, found := styles.Registry[theme.ThemeName]; !found {
+		styles.Register(chroma.MustNewStyle(theme.ThemeName, chroma.StyleEntries{
+			chroma.Literal:     string(theme.Text.FG),
+			chroma.Name:        string(theme.Text.FG),
+			chroma.Comment:     fmt.Sprintf("italic %s bg:%s", theme.PanelTitle.FG, theme.PanelTitle.BG),
+			chroma.Keyword:     fmt.Sprintf("bold %s", theme.BorderActive.FG),
+			chroma.Operator:    string(theme.Text.FG),
+			chroma.String:      string(theme.DatabaseSwitcherPopup.BG),
+			chroma.Number:      string(theme.HelpPopup.BG),
+			chroma.Punctuation: string(theme.Text.FG),
+		}))
+	}
 }
