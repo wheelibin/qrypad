@@ -144,7 +144,7 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().DatabaseSwitcher.BG)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().DatabaseSwitcherPopup.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 	if m.loading {
@@ -152,8 +152,8 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	}
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().DatabaseSwitcher.BG).
-		Foreground(colour.GetTheme().DatabaseSwitcher.FG).
+		Background(colour.GetTheme().DatabaseSwitcherPopup.BG).
+		Foreground(colour.GetTheme().DatabaseSwitcherPopup.FG).
 		Align(lipgloss.Center).
 		Render("switch database")
 

@@ -124,13 +124,13 @@ func (m ResultRowPopupModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().PopupTable.BG)
+	panelStyle = panelStyle.BorderForeground(colour.GetTheme().RowDetailsPopup.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().PopupTable.BG).
-		Foreground(colour.GetTheme().PopupTable.FG).
+		Background(colour.GetTheme().RowDetailsPopup.BG).
+		Foreground(colour.GetTheme().RowDetailsPopup.FG).
 		Align(lipgloss.Center).
 		Render("record details")
 

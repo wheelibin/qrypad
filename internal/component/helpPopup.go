@@ -66,11 +66,11 @@ func (m HelpPopupModel) View() string {
 	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height).
-		BorderForeground(colour.GetTheme().Help.BG)
+		BorderForeground(colour.GetTheme().HelpPopup.BG)
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().Help.BG).
-		Foreground(colour.GetTheme().Help.FG).
+		Background(colour.GetTheme().HelpPopup.BG).
+		Foreground(colour.GetTheme().HelpPopup.FG).
 		MarginBottom(1).
 		MarginRight(1).
 		Align(lipgloss.Center).

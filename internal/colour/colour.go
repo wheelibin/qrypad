@@ -43,24 +43,25 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 }
 
 type Theme struct {
-	ThemeName        string
-	Border           TC `json:"border"`
-	BorderActive     TC `json:"border.active"`
-	CurrentStatement TC `json:"currentStatement"`
-	DatabaseSwitcher TC `json:"databaseSwitcher"`
-	Error            TC `json:"error"`
-	Help             TC `json:"help"`
-	HelpDesc         TC `json:"helpDesc"`
-	HelpKey          TC `json:"helpKey"`
-	PanelTitle       TC `json:"panelTitle"`
-	PanelTitleActive TC `json:"panelTitle.active"`
-	PopupTable       TC `json:"popupTable"`
-	Spinner          TC `json:"spinner"`
-	StatusBar        TC `json:"statusBar"`
-	TableBorder      TC `json:"tableBorder"`
-	TableHeader      TC `json:"tableHeader"`
-	Text             TC `json:"text"`
-	TitleBar         TC `json:"titleBar"`
+	ThemeName string
+
+	Border                TC `json:"border"`
+	BorderActive          TC `json:"border:active"`
+	CurrentStatement      TC `json:"currentStatement"`
+	DatabaseSwitcherPopup TC `json:"databaseSwitcherPopup"`
+	Error                 TC `json:"error"`
+	HelpPopup             TC `json:"helpPopup"`
+	HelpDesc              TC `json:"helpDesc"`
+	HelpKey               TC `json:"helpKey"`
+	PanelTitle            TC `json:"panelTitle"`
+	PanelTitleActive      TC `json:"panelTitle:active"`
+	RowDetailsPopup       TC `json:"rowDetailsPopup"`
+	Spinner               TC `json:"spinner"`
+	StatusBar             TC `json:"statusBar"`
+	TableBorder           TC `json:"tableBorder"`
+	TableHeader           TC `json:"tableHeader"`
+	Text                  TC `json:"text"`
+	TitleBar              TC `json:"titleBar"`
 }
 
 func GetTheme() Theme {
