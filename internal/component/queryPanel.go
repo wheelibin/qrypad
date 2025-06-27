@@ -52,6 +52,9 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 	)
 
 	switch msg.(type) {
+	case tea.FocusMsg:
+		cmds = append(cmds, m.queryBuffer.Focus())
+
 	case commands.EditorFinishedMsg:
 		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName))
 	}
