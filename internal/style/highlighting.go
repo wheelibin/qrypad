@@ -12,6 +12,10 @@ import (
 func HighlightText(txt string) string {
 	themeName := colour.GetTheme().ThemeName
 
+	if themeName == "kanagawa-wave" {
+		themeName = "nordic"
+	}
+
 	var sb strings.Builder
 	err := quick.Highlight(&sb, txt, "sql", "terminal256", themeName)
 	if err != nil {

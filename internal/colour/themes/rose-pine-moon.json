@@ -1,0 +1,19 @@
+{
+  "border": {"fg": "#393552"},
+  "border.active":{"fg": "#ea9a97"},
+  "currentStatement":{"bg":"#393552", "fg":"#e0def4"},
+  "databaseSwitcher": {"bg":"#ea9a97", "fg":"#1e1e2e"},
+  "error":{"bg":"#1e1e2e", "fg":"#eb6f92"},
+  "help": {"bg":"#c4a7e7", "fg":"#1e1e2e"},
+  "helpKey": {"fg":"#e0def4"},
+  "helpDesc": {"fg":"#908caa"},
+  "panelTitle": {"bg": "#6e6a86", "fg":"#e0def4"},
+  "panelTitle.active": {"bg": "#ea9a97", "fg": "#1e1e2e"},
+  "popupTable": {"bg":"#f9e2af", "fg":"#1e1e2e"},
+  "spinner":{"bg":"", "fg":"#ea9a97"},
+  "statusBar":{"bg":"#393552", "fg":"#9ccfd8"},
+  "tableBorder": { "fg":"#393552"},
+  "tableHeader": { "fg":"#908caa"},
+  "text": {"fg":"#e0def4" },
+  "titleBar":{"bg":"#393552", "fg":"#9ccfd8"}
+}

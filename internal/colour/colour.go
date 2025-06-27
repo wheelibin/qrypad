@@ -8,13 +8,13 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/viper"
 )
 
 //go:embed themes/*
 var themes embed.FS
 
-// TODO: make this configurable, add more themes
-const themeName = "catppuccin-mocha"
+const defaultThemeName = "catppuccin-mocha"
 
 var (
 	theme     Theme
@@ -44,41 +44,47 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 
 type Theme struct {
 	ThemeName        string
-	Text             TC `json:"text"`
 	Border           TC `json:"border"`
 	BorderActive     TC `json:"border.active"`
+	CurrentStatement TC `json:"currentStatement"`
+	DatabaseSwitcher TC `json:"databaseSwitcher"`
+	Error            TC `json:"error"`
+	Help             TC `json:"help"`
+	HelpDesc         TC `json:"helpDesc"`
+	HelpKey          TC `json:"helpKey"`
 	PanelTitle       TC `json:"panelTitle"`
 	PanelTitleActive TC `json:"panelTitle.active"`
-	CurrentStatement TC `json:"currentStatement"`
+	PopupTable       TC `json:"popupTable"`
 	Spinner          TC `json:"spinner"`
 	StatusBar        TC `json:"statusBar"`
-	TitleBar         TC `json:"titleBar"`
-	Error            TC `json:"error"`
-	PopupTable       TC `json:"popupTable"`
-	DatabaseSwitcher TC `json:"databaseSwitcher"`
-	Help             TC `json:"help"`
-	HelpKey          TC `json:"helpKey"`
-	HelpDesc         TC `json:"helpDesc"`
-	TableHeader      TC `json:"tableHeader"`
 	TableBorder      TC `json:"tableBorder"`
+	TableHeader      TC `json:"tableHeader"`
+	Text             TC `json:"text"`
+	TitleBar         TC `json:"titleBar"`
 }
 
 func GetTheme() Theme {
 	if err := LoadTheme(); err != nil {
 		log.Fatal(err)
 	}
-	theme.ThemeName = themeName
+
 	return theme
 }
 
 func LoadTheme() error {
+	viper.SetDefault("theme", defaultThemeName)
+	themeName := viper.GetString("theme")
+
 	themeOnce.Do(func() {
 		data, err := themes.ReadFile(fmt.Sprintf("themes/%s.json", themeName))
 		if err != nil {
-			themeErr = err
+			fallback, _ := themes.ReadFile(fmt.Sprintf("themes/%s.json", defaultThemeName))
+			themeErr = json.Unmarshal(fallback, &theme)
+			theme.ThemeName = defaultThemeName
 			return
 		}
 		themeErr = json.Unmarshal(data, &theme)
+		theme.ThemeName = themeName
 	})
 
 	if themeErr != nil {
