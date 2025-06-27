@@ -97,7 +97,7 @@ func (m *PasswordPopupModel) SetSize(w, h int) {
 }
 
 func (m PasswordPopupModel) View() string {
-	popupStyle := style.BasePanelStyle.
+	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height).
 		BorderForeground(colour.GetTheme().Error.FG)

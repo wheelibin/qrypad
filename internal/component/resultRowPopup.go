@@ -120,7 +120,7 @@ func (m *ResultRowPopupModel) SetSize(w, h int) {
 }
 
 func (m ResultRowPopupModel) View() string {
-	panelStyle := style.BasePanelStyle
+	panelStyle := style.GetBasePanelStyle()
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 

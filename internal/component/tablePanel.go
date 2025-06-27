@@ -32,7 +32,7 @@ type TablePanelModel struct {
 func NewTablePanelModel() TablePanelModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.TableHeaderStyle).
+		HeaderStyle(style.GetTableHeaderStyle()).
 		Filtered(true).
 		Focused(true)
 
@@ -143,7 +143,7 @@ func (m TablePanelModel) GetActiveTabIndex() int {
 }
 
 func (m TablePanelModel) View() string {
-	panelStyle := style.BasePanelStyle
+	panelStyle := style.GetBasePanelStyle()
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 

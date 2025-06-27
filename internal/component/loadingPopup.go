@@ -29,7 +29,7 @@ type LoadingPopupModel struct {
 func NewLoadingPopupModel() LoadingPopupModel {
 	s := spinner.New()
 	s.Spinner = spinner.Meter
-	s.Style = style.Spinner
+	s.Style = style.GetSpinnerStyle()
 	return LoadingPopupModel{
 		spinner:   s,
 		stopwatch: stopwatch.New(),
@@ -93,13 +93,13 @@ func (m LoadingPopupModel) View() string {
 		MarginRight(2).
 		MarginTop(1).
 		Render(m.spinner.View())
-	stopwatch := style.Spinner.
+	stopwatch := style.GetSpinnerStyle().
 		Render(m.stopwatch.Elapsed().String())
 	spinnerDisplay := lipgloss.JoinHorizontal(lipgloss.Center, spinner, stopwatch)
 	helpView := style.ShortHelp(loadingPopupWidth).
 		Render(m.helpView())
 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
-	loadingPopup := style.BasePanelStyle.
+	loadingPopup := style.GetBasePanelStyle().
 		BorderForeground(colour.GetTheme().Spinner.FG).
 		Width(loadingPopupWidth).
 		Height(5).Render(loadingPopupContent)

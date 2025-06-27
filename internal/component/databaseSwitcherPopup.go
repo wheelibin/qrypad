@@ -39,7 +39,7 @@ func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 
 	s := spinner.New()
 	s.Spinner = spinner.Points
-	s.Style = style.Spinner
+	s.Style = style.GetSpinnerStyle()
 	return DatabaseSwitcherPopupModel{
 		table:   t,
 		spinner: s,
@@ -140,7 +140,7 @@ func (m *DatabaseSwitcherPopupModel) SetSize(w, h int) {
 }
 
 func (m DatabaseSwitcherPopupModel) View() string {
-	panelStyle := style.BasePanelStyle
+	panelStyle := style.GetBasePanelStyle()
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 

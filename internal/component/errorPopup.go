@@ -94,7 +94,7 @@ func (m *ErrorPopupModel) SetIsConnectionError(v bool) {
 
 func (m ErrorPopupModel) View() string {
 	theme := colour.GetTheme()
-	popupStyle := style.BasePanelStyle.
+	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		BorderForeground(theme.Error.FG)
 

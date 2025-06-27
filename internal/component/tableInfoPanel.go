@@ -31,7 +31,7 @@ type TableInfoPanelModel struct {
 func NewTableInfoPanelModel() TableInfoPanelModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.TableHeaderStyle).
+		HeaderStyle(style.GetTableHeaderStyle()).
 		Filtered(true)
 
 	return TableInfoPanelModel{table: t}
@@ -127,7 +127,7 @@ func (m TableInfoPanelModel) GetSelectedRow() map[string]any {
 }
 
 func (m TableInfoPanelModel) View() string {
-	panelStyle := style.BasePanelStyle
+	panelStyle := style.GetBasePanelStyle()
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 

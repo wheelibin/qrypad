@@ -109,7 +109,7 @@ func (m *QueryPanelModel) SetActive(active bool) {
 }
 
 func (m QueryPanelModel) View() string {
-	panelStyle := style.BasePanelStyle
+	panelStyle := style.GetBasePanelStyle()
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 

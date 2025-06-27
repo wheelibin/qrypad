@@ -102,7 +102,7 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 }
 
 func (m ResultsPanelModel) View() string {
-	panelStyle := style.BasePanelStyle.
+	panelStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height)
 	if m.active {
@@ -144,7 +144,7 @@ func (m ResultsPanelModel) getColumnWidth(col string, data db.Data) int {
 func newTable(cols []table.Column) table.Model {
 	return table.New(cols).
 		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.TableHeaderStyle).
+		HeaderStyle(style.GetTableHeaderStyle()).
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
 }

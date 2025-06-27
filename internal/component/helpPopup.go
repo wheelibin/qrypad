@@ -63,7 +63,7 @@ func (m *HelpPopupModel) SetSize(w, h int) {
 }
 
 func (m HelpPopupModel) View() string {
-	popupStyle := style.BasePanelStyle.
+	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height).
 		BorderForeground(colour.GetTheme().Help.BG)
