@@ -119,7 +119,7 @@ database = "music-store"
 
 </details>
 
-## Themes
+## 🌈 Themes
 
 ### Built-in Themes
 
