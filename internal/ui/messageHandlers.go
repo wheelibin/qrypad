@@ -250,7 +250,7 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		switch m.activePanelIndex {
 		case PanelIndexTables:
 			if m.tablePanel.GetSelectedTable() != "" {
-				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable())
+				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "asc")
 			}
 		case PanelIndexResults:
 			if !m.popupIsActive(PopupKind.ResultRow) {
@@ -261,6 +261,14 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 			if !m.popupIsActive(PopupKind.ResultRow) {
 				m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
 				m.showPopup(PopupKind.ResultRow)
+			}
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.ViewDataDesc):
+		switch m.activePanelIndex {
+		case PanelIndexTables:
+			if m.tablePanel.GetSelectedTable() != "" {
+				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "desc")
 			}
 		}
 

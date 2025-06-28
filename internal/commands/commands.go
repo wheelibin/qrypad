@@ -74,7 +74,7 @@ var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 	return db.DataFetchedMsg{Data: d, Err: err}
 }
 
-func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
+func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
 	primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, tableName)
 	if err != nil {
 		return func() tea.Msg {
@@ -82,7 +82,7 @@ func GetTableRows(dbConn db.DBConn, tableName string) tea.Cmd {
 		}
 	}
 
-	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns), QueryResultBuilder)
+	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns,sortOrder), QueryResultBuilder)
 }
 
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {

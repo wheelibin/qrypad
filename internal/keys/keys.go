@@ -27,6 +27,7 @@ type keyMap struct {
 	Up              key.Binding
 	UpdatePassword  key.Binding
 	ViewData        key.Binding
+	ViewDataDesc    key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -77,6 +78,10 @@ var DefaultKeyMap = keyMap{
 	ViewData: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "view table data / view result row"),
+	),
+	ViewDataDesc: key.NewBinding(
+		key.WithKeys("shift+enter"),
+		key.WithHelp("shift+enter", "view table data (desc)"),
 	),
 	ToggleLeftPanel: key.NewBinding(
 		key.WithKeys("ctrl+t"),

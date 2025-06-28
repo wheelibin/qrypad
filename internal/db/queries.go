@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -145,16 +144,15 @@ func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) 
 }
 
 // fetches n rows from the specified table
-func GetTableRowsSQL(tableName string, primaryKeyColumns []string) string {
+func GetTableRowsSQL(tableName string, primaryKeyColumns []string, sortOrder string) string {
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
 
 	if len(primaryKeyColumns) > 0 {
-		orderClause := " ORDER BY " + strings.Join(primaryKeyColumns, ", ")
+		orderClause := " ORDER BY " + strings.Join(primaryKeyColumns, ", ") + " " + sortOrder
 		query += orderClause
 	}
 
 	query += fmt.Sprintf(" LIMIT %d", getTableDataRowLimit())
-	log.Println(query)
 	return query
 }
 
