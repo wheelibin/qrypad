@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -115,9 +117,45 @@ func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
 	return query
 }
 
+func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) ([]string, error) {
+	var query string
+	switch dbConn.DriverName {
+	case DriverNameMySQL:
+		query = fmt.Sprintf(`SELECT COLUMN_NAME name
+												FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+												WHERE TABLE_SCHEMA = DATABASE()
+													AND TABLE_NAME = '%s'
+													AND CONSTRAINT_NAME = 'PRIMARY'
+												ORDER BY ORDINAL_POSITION;`, tableName)
+	case DriverNamePostgres:
+		query = fmt.Sprintf(`SELECT a.attname name
+												FROM pg_index i
+												JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+												WHERE i.indrelid = '%s'::regclass AND i.indisprimary;`, tableName)
+	}
+	data, err := fetchRows(ctx, dbConn, query)
+	if err != nil {
+		return nil, err
+	}
+	columns := make([]string, 0)
+	for _, row := range data.Rows {
+		columns = append(columns, row["name"].(string))
+	}
+	return columns, nil
+}
+
 // fetches n rows from the specified table
-func GetTableRowsSQL(tableName string) string {
-	return fmt.Sprintf("SELECT * FROM %s limit %d;", tableName, getTableDataRowLimit())
+func GetTableRowsSQL(tableName string, primaryKeyColumns []string) string {
+	query := fmt.Sprintf("SELECT * FROM %s", tableName)
+
+	if len(primaryKeyColumns) > 0 {
+		orderClause := " ORDER BY " + strings.Join(primaryKeyColumns, ", ")
+		query += orderClause
+	}
+
+	query += fmt.Sprintf(" LIMIT %d", getTableDataRowLimit())
+	log.Println(query)
+	return query
 }
 
 // executes a user supplied sql query or statement
