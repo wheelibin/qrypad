@@ -9,10 +9,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 type dbSwitcherKeymap struct {
@@ -144,7 +144,7 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().DatabaseSwitcherPopup.BG)
+	panelStyle = panelStyle.BorderForeground(theme.GetTheme().DatabaseSwitcherPopup.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 	if m.loading {
@@ -152,8 +152,8 @@ func (m DatabaseSwitcherPopupModel) View() string {
 	}
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().DatabaseSwitcherPopup.BG).
-		Foreground(colour.GetTheme().DatabaseSwitcherPopup.FG).
+		Background(theme.GetTheme().DatabaseSwitcherPopup.BG).
+		Foreground(theme.GetTheme().DatabaseSwitcherPopup.FG).
 		Align(lipgloss.Center).
 		Render("switch database")
 

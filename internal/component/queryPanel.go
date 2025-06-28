@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/cursor"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -116,14 +116,14 @@ func (m QueryPanelModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().Border.FG)
+	panelStyle = panelStyle.BorderForeground(theme.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
+		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}
 
 	currentStatementStyle := lipgloss.NewStyle().
-		Background(colour.GetTheme().CurrentStatement.BG).
-		Foreground(colour.GetTheme().CurrentStatement.FG).
+		Background(theme.GetTheme().CurrentStatement.BG).
+		Foreground(theme.GetTheme().CurrentStatement.FG).
 		MarginLeft(1).
 		MarginTop(1)
 

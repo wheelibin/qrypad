@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/keys"
 )
 
@@ -50,12 +50,12 @@ func (m *StatusBarModel) SetCopiedTextInfo(info string) {
 
 func (m StatusBarModel) View() string {
 	containerStyle := lipgloss.NewStyle().
-		Background(colour.GetTheme().StatusBar.BG).
-		Foreground(colour.GetTheme().StatusBar.FG)
+		Background(theme.GetTheme().StatusBar.BG).
+		Foreground(theme.GetTheme().StatusBar.FG)
 
 	selectedDatabaseStyle := containerStyle
 	helpTextStyle := containerStyle
-	copiedTextInfoStyle := containerStyle.Foreground(colour.GetTheme().PanelTitleActive.BG)
+	copiedTextInfoStyle := containerStyle.Foreground(theme.GetTheme().PanelTitleActive.BG)
 
 	containerStyle = containerStyle.
 		Width(m.width).

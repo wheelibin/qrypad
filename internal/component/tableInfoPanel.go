@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
@@ -131,9 +131,9 @@ func (m TableInfoPanelModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().Border.FG)
+	panelStyle = panelStyle.BorderForeground(theme.GetTheme().Border.FG)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
+		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())

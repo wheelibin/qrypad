@@ -49,17 +49,16 @@ Config is read from `~/.config/qrypad/config.toml`
 
 ### example config file
 
-```markdown
+```toml
 # the timeout for all queries
 queryTimeout = 60 
 
 # the max number of rows to fetch when viewing table data (does not apply to ad-hoc queries)
 tableDataRowLimit = 100
 
-# colour theme (default="catppuccin-mocha")
-# theme = "catppuccin-mocha"
-# theme = "kanagawa-wave"
-# theme = "rose-pine-moon"
+# color theme 
+[theme] 
+name = "catppuccin-mocha"
 
 [connections]
 
@@ -81,6 +80,8 @@ database = "music-store"
 
 ## ⌨️ Key Bindings
 
+<details>
+    <summary>click to view</summary>
 ### 🧭 General
 
 - `Tab` / `Shift+Tab` - switch panels
@@ -115,3 +116,55 @@ database = "music-store"
   - `c` - copy selected value
 - `c` - copy selected row as JSON
 - `/` - filter results (`esc` to cancel)
+
+</details>
+
+## Themes
+
+### Built-in Themes
+
+There are currently the following built-in themes:
+
+- `catppuccin-mocha` (the default)
+- `kanagawa-wave`
+- `rose-pine-moon`
+
+You can change the theme using the following config key
+
+```toml
+[theme] 
+name = "kanagawa-wave"
+```
+
+### Customising / Creating Themes
+
+You can customise an existing theme by overriding individual colours.
+
+```toml
+[theme]
+name                  = "rose-pine-moon"
+borderActive          = { fg = "#ff00ff" }
+```
+
+To create a new theme, simply give it a new name and set the colours.
+
+```toml
+[theme]
+name                  = "my-custom-theme"
+borderActive          = { bg = "", fg = "#ff00ff" }
+currentStatement      = { bg = "", fg = "" }
+databaseSwitcherPopup = { bg = "", fg = "" }
+error                 = { bg = "", fg = "" }
+helpPopup             = { bg = "", fg = "" }
+helpKey               = { bg = "", fg = "" }
+helpDesc              = { bg = "", fg = "" }
+panelTitle            = { bg = "", fg = "" }
+panelTitleActive      = { bg = "", fg = "" }
+rowDetailsPopup       = { bg = "", fg = "" }
+spinner               = { bg = "", fg = "" }
+statusBar             = { bg = "", fg = "" }
+tableBorder           = { bg = "", fg = "" }
+tableHeader           = { bg = "", fg = "" }
+text                  = { bg = "", fg = "" }
+titleBar              = { bg = "", fg = "" }
+```

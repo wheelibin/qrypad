@@ -8,10 +8,10 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 type errorKeymap struct {
@@ -93,7 +93,7 @@ func (m *ErrorPopupModel) SetIsConnectionError(v bool) {
 }
 
 func (m ErrorPopupModel) View() string {
-	theme := colour.GetTheme()
+	theme := theme.GetTheme()
 	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		BorderForeground(theme.Error.FG)

@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 const (
@@ -16,19 +16,19 @@ const (
 func GetBasePanelStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(colour.GetTheme().Border.FG)
+		BorderForeground(theme.GetTheme().Border.FG)
 }
 
 func GetTableHeaderStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
 		Bold(true).
-		Background(colour.GetTheme().TableHeader.BG).
-		Foreground(colour.GetTheme().TableHeader.FG)
+		Background(theme.GetTheme().TableHeader.BG).
+		Foreground(theme.GetTheme().TableHeader.FG)
 }
 
 func GetSpinnerStyle() lipgloss.Style {
 	return lipgloss.NewStyle().
-		Foreground(colour.GetTheme().Spinner.FG)
+		Foreground(theme.GetTheme().Spinner.FG)
 }
 
 func ShortHelp(width int) lipgloss.Style {
@@ -38,7 +38,7 @@ func ShortHelp(width int) lipgloss.Style {
 }
 
 func Title(width int, active bool) lipgloss.Style {
-	theme := colour.GetTheme()
+	theme := theme.GetTheme()
 	title := lipgloss.NewStyle().
 		Background(theme.PanelTitle.BG).
 		Foreground(theme.PanelTitle.FG).
@@ -64,7 +64,7 @@ func GetSpan(span int, total int) int {
 
 func TableColumn() lipgloss.Style {
 	return lipgloss.NewStyle().
-		BorderForeground(colour.GetTheme().TableBorder.FG).
-		Foreground(colour.GetTheme().Text.FG).
+		BorderForeground(theme.GetTheme().TableBorder.FG).
+		Foreground(theme.GetTheme().Text.FG).
 		Align(lipgloss.Left)
 }
