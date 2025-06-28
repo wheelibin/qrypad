@@ -1,18 +1,23 @@
 package component
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/textarea"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
+
+type queryPanelKeymap struct {
+	execute key.Binding
+}
 
 type QueryPanelModel struct {
 	active           bool
@@ -23,6 +28,8 @@ type QueryPanelModel struct {
 	CurrentStatement string
 	dirty            bool
 	filename         string
+	help             help.Model
+	keymap           queryPanelKeymap
 }
 
 func NewQueryPanelModel(connectionName string) QueryPanelModel {
@@ -38,7 +45,14 @@ func NewQueryPanelModel(connectionName string) QueryPanelModel {
 	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
 
-	return QueryPanelModel{connectionName: connectionName, queryBuffer: ta}
+	return QueryPanelModel{
+		connectionName: connectionName,
+		queryBuffer:    ta,
+		help:           makeHelp(),
+		keymap: queryPanelKeymap{
+			execute: keys.DefaultKeyMap.ExecuteQuery,
+		},
+	}
 }
 
 func (m QueryPanelModel) Init() tea.Cmd {
@@ -104,11 +118,17 @@ func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	m.queryBuffer.SetWidth(m.width)
-	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 1)
+	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 2)
 }
 
 func (m *QueryPanelModel) SetActive(active bool) {
 	m.active = active
+}
+
+func (m QueryPanelModel) helpView() string {
+	return m.help.ShortHelpView([]key.Binding{
+		m.keymap.execute,
+	})
 }
 
 func (m QueryPanelModel) View() string {
@@ -137,7 +157,7 @@ func (m QueryPanelModel) View() string {
 			truncated = m.CurrentStatement
 		}
 		s := strings.ReplaceAll(strings.ReplaceAll(truncated, "\n", " "), "  ", " ")
-		currentStatement = currentStatementStyle.Render(fmt.Sprintf("(%s) execute: %s", keys.DefaultKeyMap.ExecuteQuery.Help().Key, s))
+		currentStatement = currentStatementStyle.Render(s)
 	}
 
 	text := "queries"
@@ -146,6 +166,11 @@ func (m QueryPanelModel) View() string {
 	}
 	title := style.Title(m.width-2, m.active).MarginBottom(1).Render(text)
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, m.queryBuffer.View(), currentStatement)
+	v := lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		m.queryBuffer.View(),
+		currentStatement,
+		style.ShortHelp(m.width).Render(m.helpView()),
+	)
 	return panelStyle.Render(v)
 }

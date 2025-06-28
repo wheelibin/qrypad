@@ -3,15 +3,16 @@ package component
 import (
 	"math"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 const (
@@ -20,6 +21,12 @@ const (
 	TablePanelTabIndexViews  = 1
 )
 
+type tablePanelKeymap struct {
+	viewData     key.Binding
+	viewDataDesc key.Binding
+	copy         key.Binding
+}
+
 type TablePanelModel struct {
 	active         bool
 	width          int
@@ -27,6 +34,8 @@ type TablePanelModel struct {
 	table          table.Model
 	selectedTable  string
 	activeTabIndex int
+	help           help.Model
+	keymap         tablePanelKeymap
 }
 
 func NewTablePanelModel() TablePanelModel {
@@ -36,7 +45,25 @@ func NewTablePanelModel() TablePanelModel {
 		Filtered(true).
 		Focused(true)
 
-	return TablePanelModel{table: t, active: true}
+	return TablePanelModel{
+		table:  t,
+		active: true,
+		help:   makeHelp(),
+		keymap: tablePanelKeymap{
+			viewData: key.NewBinding(
+				key.WithKeys("enter"),
+				key.WithHelp("enter", "view data"),
+			),
+			viewDataDesc: key.NewBinding(
+				key.WithKeys("ctrl+d"),
+				key.WithHelp("ctrl+d", "view data (desc)"),
+			),
+			copy: key.NewBinding(
+				key.WithKeys("c"),
+				key.WithHelp("c", "copy name"),
+			),
+		},
+	}
 }
 
 func (m TablePanelModel) Init() tea.Cmd {
@@ -132,14 +159,22 @@ func (m *TablePanelModel) SetActive(active bool) {
 func (m *TablePanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Max(float64(h-7), 1)
+	rowsInTable := math.Max(float64(h-9), 1)
 	m.table = m.table.WithPageSize(int(rowsInTable))
-	m.table = m.table.WithMinimumHeight(h - 1)
+	m.table = m.table.WithMinimumHeight(h - 2)
 	m.table = m.table.WithTargetWidth(w)
 }
 
 func (m TablePanelModel) GetActiveTabIndex() int {
 	return m.activeTabIndex
+}
+
+func (m TablePanelModel) helpView() string {
+	return m.help.ShortHelpView([]key.Binding{
+		m.keymap.viewData,
+		m.keymap.viewDataDesc,
+		m.keymap.copy,
+	})
 }
 
 func (m TablePanelModel) View() string {
@@ -173,6 +208,10 @@ func (m TablePanelModel) View() string {
 		Render(_tabText)
 
 	title := titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, titleText, tabText))
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
+	v := lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+		style.ShortHelp(m.width).Render(m.helpView()),
+	)
 	return panelStyle.Render(v)
 }

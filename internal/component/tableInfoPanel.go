@@ -3,15 +3,16 @@ package component
 import (
 	"math"
 
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 const (
@@ -20,12 +21,19 @@ const (
 	TableInfoTabIndexIndexes = 1
 )
 
+type tableInfoKeymap struct {
+	viewRow key.Binding
+	copy    key.Binding
+}
+
 type TableInfoPanelModel struct {
 	active         bool
 	width          int
 	height         int
 	table          table.Model
 	activeTabIndex int
+	help           help.Model
+	keymap         tableInfoKeymap
 }
 
 func NewTableInfoPanelModel() TableInfoPanelModel {
@@ -34,7 +42,20 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 		HeaderStyle(style.GetTableHeaderStyle()).
 		Filtered(true)
 
-	return TableInfoPanelModel{table: t}
+	return TableInfoPanelModel{
+		table: t,
+		help:  makeHelp(),
+		keymap: tableInfoKeymap{
+			viewRow: key.NewBinding(
+				key.WithKeys("enter"),
+				key.WithHelp("enter", "view row"),
+			),
+			copy: key.NewBinding(
+				key.WithKeys("c"),
+				key.WithHelp("c", "copy name"),
+			),
+		},
+	}
 }
 
 func (m TableInfoPanelModel) Init() tea.Cmd {
@@ -112,9 +133,9 @@ func (m *TableInfoPanelModel) SetActive(active bool) {
 func (m *TableInfoPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Max(float64(h-7), 1)
+	rowsInTable := math.Max(float64(h-9), 1)
 	m.table = m.table.WithPageSize(int(rowsInTable))
-	m.table = m.table.WithMinimumHeight(h - 1)
+	m.table = m.table.WithMinimumHeight(h - 2)
 	m.table = m.table.WithTargetWidth(w)
 }
 
@@ -124,6 +145,13 @@ func (m TableInfoPanelModel) GetActiveTabIndex() int {
 
 func (m TableInfoPanelModel) GetSelectedRow() map[string]any {
 	return m.table.HighlightedRow().Data
+}
+
+func (m TableInfoPanelModel) helpView() string {
+	return m.help.ShortHelpView([]key.Binding{
+		m.keymap.viewRow,
+		m.keymap.copy,
+	})
 }
 
 func (m TableInfoPanelModel) View() string {
@@ -152,6 +180,10 @@ func (m TableInfoPanelModel) View() string {
 	}
 	title = style.Title(m.width-2, m.active).Render("table info" + lipgloss.PlaceHorizontal(tw-13, lipgloss.Right, tabTextStyle.Render(tabText)))
 
-	v := lipgloss.JoinVertical(lipgloss.Left, title, content)
+	v := lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+		style.ShortHelp(m.width).Render(m.helpView()),
+	)
 	return panelStyle.Render(v)
 }

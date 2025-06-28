@@ -20,9 +20,8 @@ const (
 	StatusBarHeight         = 1
 	TitleBarHeight          = 1
 	ResultsPanelMinHeight   = 8
-	QueryPanelMinHeight     = 5
-	TableInfoPanelMinHeight = 8
-	TablePanelMinHeight     = 10
+	TableInfoPanelMinHeight = 9
+	TablePanelMinHeight     = 9
 	LeftPanelSpan           = 3
 
 	PopupError     = 1
@@ -292,25 +291,25 @@ func (m model) popupIsActive(p PopupKindType) bool {
 func (m *model) adjustSizes() {
 	m.windowTooSmall = false
 
+	if m.height < 24 {
+		m.windowTooSmall = true
+		return
+	}
+
 	availableHeight := m.height - TitleBarHeight - StatusBarHeight
 	leftWidth := style.GetSpan(LeftPanelSpan, m.width)
 	rightWidth := m.getRightWidth(m.width)
 
 	// left
 	tableInfoHeight := max(style.GetSpan(3, availableHeight), TableInfoPanelMinHeight)
-	tableHeight := availableHeight - tableInfoHeight - 4
-	if tableHeight < TablePanelMinHeight {
-		m.windowTooSmall = true
-	}
+	tableHeight := max(availableHeight-tableInfoHeight-4, TablePanelMinHeight)
+
 	m.tableInfoPanel.SetSize(leftWidth, tableInfoHeight)
 	m.tablePanel.SetSize(leftWidth, tableHeight)
 
 	// right
 	resultsHeight := max(style.GetSpan(6, availableHeight), ResultsPanelMinHeight)
 	queryHeight := availableHeight - resultsHeight - 4
-	if queryHeight < QueryPanelMinHeight {
-		m.windowTooSmall = true
-	}
 	m.resultsPanel.SetSize(rightWidth, resultsHeight)
 	m.queryPanel.SetSize(rightWidth, queryHeight)
 

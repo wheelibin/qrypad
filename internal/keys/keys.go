@@ -80,8 +80,8 @@ var DefaultKeyMap = keyMap{
 		key.WithHelp("enter", "view table data / view result row"),
 	),
 	ViewDataDesc: key.NewBinding(
-		key.WithKeys("shift+enter"),
-		key.WithHelp("shift+enter", "view table data (desc)"),
+		key.WithKeys("ctrl+d"),
+		key.WithHelp("ctrl+d", "view table data (desc)"),
 	),
 	ToggleLeftPanel: key.NewBinding(
 		key.WithKeys("ctrl+t"),

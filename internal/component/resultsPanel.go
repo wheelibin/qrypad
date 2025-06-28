@@ -8,13 +8,19 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
+
+type resultsPanelKeymap struct {
+	viewRow key.Binding
+	filter  key.Binding
+}
 
 type ResultsPanelModel struct {
 	active        bool
@@ -23,6 +29,7 @@ type ResultsPanelModel struct {
 	table         table.Model
 	lastQueryTime time.Duration
 	help          help.Model
+	keymap        resultsPanelKeymap
 }
 
 func NewResultsPanelModel() ResultsPanelModel {
@@ -30,6 +37,16 @@ func NewResultsPanelModel() ResultsPanelModel {
 	return ResultsPanelModel{
 		table: t,
 		help:  makeHelp(),
+		keymap: resultsPanelKeymap{
+			viewRow: key.NewBinding(
+				key.WithKeys("enter"),
+				key.WithHelp("enter", "view row"),
+			),
+			filter: key.NewBinding(
+				key.WithKeys("/"),
+				key.WithHelp("/", "filter data"),
+			),
+		},
 	}
 }
 
@@ -77,10 +94,10 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 func (m *ResultsPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Ceil(math.Max(float64(h-7), 1))
+	rowsInTable := math.Ceil(math.Max(float64(h-9), 1))
 	m.table = m.table.
 		WithPageSize(int(rowsInTable)).
-		WithMinimumHeight(h - 1).
+		WithMinimumHeight(h - 2).
 		WithMaxTotalWidth(w - 1)
 }
 
@@ -99,29 +116,6 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 		log.Println("error converting row to json", err)
 	}
 	return string(j)
-}
-
-func (m ResultsPanelModel) View() string {
-	panelStyle := style.GetBasePanelStyle().
-		Width(m.width).
-		Height(m.height)
-	if m.active {
-		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
-	}
-
-	title := style.Title(m.width-2, m.active).Render("results")
-	if m.lastQueryTime > 0 {
-		title = style.Title(m.width-2, m.active).Render(fmt.Sprintf("results (%s)", m.lastQueryTime.String()))
-	}
-
-	content := lipgloss.JoinVertical(lipgloss.Bottom, m.table.View())
-
-	panel := panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		title,
-		content,
-	))
-
-	return panel
 }
 
 func (m ResultsPanelModel) getColumnWidth(col string, data db.Data) int {
@@ -147,4 +141,40 @@ func newTable(cols []table.Column) table.Model {
 		HeaderStyle(style.GetTableHeaderStyle()).
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
+}
+
+func (m ResultsPanelModel) helpView() string {
+	return m.help.ShortHelpView([]key.Binding{
+		m.keymap.viewRow,
+		m.keymap.filter,
+	})
+}
+
+func (m ResultsPanelModel) View() string {
+	panelStyle := style.GetBasePanelStyle().
+		Width(m.width).
+		Height(m.height)
+	if m.active {
+		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
+	}
+
+	title := style.Title(m.width-2, m.active).Render("results")
+	if m.lastQueryTime > 0 {
+		title = style.Title(m.width-2, m.active).Render(fmt.Sprintf("results (%s)", m.lastQueryTime.String()))
+	}
+
+	content := lipgloss.JoinVertical(lipgloss.Bottom, m.table.View())
+
+	helpView := ""
+	if m.table.TotalRows() > 0 {
+		helpView = style.ShortHelp(m.width).Render(m.helpView())
+	}
+
+	panel := panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		content,
+		helpView,
+	))
+
+	return panel
 }
