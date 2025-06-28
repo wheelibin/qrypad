@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/constants"
 	"github.com/wheelibin/qrypad/internal/keys"
 )
@@ -42,8 +42,8 @@ func (m *TitlBarModel) SetText(text string) {
 
 func (m TitlBarModel) View() string {
 	baseStyle := lipgloss.NewStyle().
-		Background(colour.GetTheme().TitleBar.BG).
-		Foreground(colour.GetTheme().TitleBar.FG)
+		Background(theme.GetTheme().TitleBar.BG).
+		Foreground(theme.GetTheme().TitleBar.FG)
 
 	helpText := baseStyle.
 		Width(16).

@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -66,11 +66,11 @@ func (m HelpPopupModel) View() string {
 	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height).
-		BorderForeground(colour.GetTheme().HelpPopup.BG)
+		BorderForeground(theme.GetTheme().HelpPopup.BG)
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().HelpPopup.BG).
-		Foreground(colour.GetTheme().HelpPopup.FG).
+		Background(theme.GetTheme().HelpPopup.BG).
+		Foreground(theme.GetTheme().HelpPopup.FG).
 		MarginBottom(1).
 		MarginRight(1).
 		Align(lipgloss.Center).

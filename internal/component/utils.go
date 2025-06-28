@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 func getStatementAtCursor(text string, cursorLine int) string {
@@ -46,9 +46,9 @@ func getStatementAtCursor(text string, cursorLine int) string {
 func makeHelp() help.Model {
 	help := help.New()
 	help.ShowAll = true
-	help.Styles.ShortKey = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpKey.FG)
-	help.Styles.ShortDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
-	help.Styles.FullKey = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpKey.FG)
-	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(colour.GetTheme().HelpDesc.FG)
+	help.Styles.ShortKey = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpKey.FG)
+	help.Styles.ShortDesc = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpDesc.FG)
+	help.Styles.FullKey = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpKey.FG)
+	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpDesc.FG)
 	return help
 }

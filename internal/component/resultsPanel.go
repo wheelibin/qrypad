@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
 )
@@ -106,7 +106,7 @@ func (m ResultsPanelModel) View() string {
 		Width(m.width).
 		Height(m.height)
 	if m.active {
-		panelStyle = panelStyle.BorderForeground(colour.GetTheme().BorderActive.FG)
+		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}
 
 	title := style.Title(m.width-2, m.active).Render("results")

@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -100,7 +100,7 @@ func (m LoadingPopupModel) View() string {
 		Render(m.helpView())
 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
 	loadingPopup := style.GetBasePanelStyle().
-		BorderForeground(colour.GetTheme().Spinner.FG).
+		BorderForeground(theme.GetTheme().Spinner.FG).
 		Width(loadingPopupWidth).
 		Height(5).Render(loadingPopupContent)
 

@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/style"
 )
@@ -100,11 +100,11 @@ func (m PasswordPopupModel) View() string {
 	popupStyle := style.GetBasePanelStyle().
 		Width(m.width).
 		Height(m.height).
-		BorderForeground(colour.GetTheme().Error.FG)
+		BorderForeground(theme.GetTheme().Error.FG)
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().Error.FG).
-		Foreground(colour.GetTheme().Error.BG).
+		Background(theme.GetTheme().Error.FG).
+		Foreground(theme.GetTheme().Error.BG).
 		MarginBottom(1).
 		MarginRight(1).
 		Align(lipgloss.Center).

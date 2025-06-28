@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/wheelibin/qrypad/internal/colour"
+	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -124,13 +124,13 @@ func (m ResultRowPopupModel) View() string {
 	panelStyle = panelStyle.Width(m.width)
 	panelStyle = panelStyle.Height(m.height)
 
-	panelStyle = panelStyle.BorderForeground(colour.GetTheme().RowDetailsPopup.BG)
+	panelStyle = panelStyle.BorderForeground(theme.GetTheme().RowDetailsPopup.BG)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, m.table.View())
 
 	title := style.Title(m.width-2, false).
-		Background(colour.GetTheme().RowDetailsPopup.BG).
-		Foreground(colour.GetTheme().RowDetailsPopup.FG).
+		Background(theme.GetTheme().RowDetailsPopup.BG).
+		Foreground(theme.GetTheme().RowDetailsPopup.FG).
 		Align(lipgloss.Center).
 		Render("record details")
 
