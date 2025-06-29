@@ -8,11 +8,9 @@ type keyMap struct {
 	CancelQuery     key.Binding
 	ClosePopup      key.Binding
 	CopyValue       key.Binding
-	Down            key.Binding
 	ExecuteQuery    key.Binding
 	FilterTable     key.Binding
 	Help            key.Binding
-	Left            key.Binding
 	NextPanel       key.Binding
 	NextTab         key.Binding
 	OpenInEditor    key.Binding
@@ -20,11 +18,9 @@ type keyMap struct {
 	PrevTab         key.Binding
 	Quit            key.Binding
 	ReloadQuery     key.Binding
-	Right           key.Binding
 	SaveQuery       key.Binding
 	SwitchDatabase  key.Binding
 	ToggleLeftPanel key.Binding
-	Up              key.Binding
 	UpdatePassword  key.Binding
 	ViewData        key.Binding
 	ViewDataDesc    key.Binding
@@ -42,7 +38,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
 		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
-		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue},
+		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue, k.Quit},
 	}
 }
 
