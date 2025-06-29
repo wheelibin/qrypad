@@ -5,9 +5,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/theme"
-	"github.com/wheelibin/qrypad/internal/constants"
+	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 type TitlBarModel struct {
@@ -15,10 +15,14 @@ type TitlBarModel struct {
 	height         int
 	text           string
 	connectionName string
+	conn           db.ConnectionConfig
 }
 
-func NewTitlBarModel(connectionName string) TitlBarModel {
-	return TitlBarModel{connectionName: connectionName}
+func NewTitlBarModel(connectionName string, conn db.ConnectionConfig) TitlBarModel {
+	return TitlBarModel{
+		connectionName: connectionName,
+		conn:           conn,
+	}
 }
 
 func (m TitlBarModel) Init() tea.Cmd {
@@ -36,10 +40,6 @@ func (m *TitlBarModel) SetSize(w, h int) {
 	m.height = h
 }
 
-func (m *TitlBarModel) SetText(text string) {
-	m.text = text
-}
-
 func (m TitlBarModel) View() string {
 	baseStyle := lipgloss.NewStyle().
 		Background(theme.GetTheme().TitleBar.BG).
@@ -55,5 +55,10 @@ func (m TitlBarModel) View() string {
 		Height(m.height).
 		Bold(true)
 
-	return lipgloss.JoinHorizontal(lipgloss.Left, barStyle.Render(fmt.Sprintf("QryPad - %s (connection: %s)", constants.AppDesc, m.connectionName)), helpText)
+	altText := lipgloss.NewStyle().Foreground(theme.GetTheme().TitleBarAlt.FG)
+	connDetails := fmt.Sprintf("[%s: %s@%s:%d]", m.connectionName, m.conn.User, m.conn.Host, m.conn.Port)
+
+	return lipgloss.JoinHorizontal(lipgloss.Center,
+		barStyle.Render(fmt.Sprintf("QryPad %s", altText.Render(connDetails))),
+		helpText)
 }

@@ -192,4 +192,5 @@ tableBorder           = { bg = "", fg = "" }
 tableHeader           = { bg = "", fg = "" }
 text                  = { bg = "", fg = "" }
 titleBar              = { bg = "", fg = "" }
+titleBarAlt           = { bg = "", fg = "" }
 ```

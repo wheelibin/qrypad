@@ -15,5 +15,6 @@
   "tableBorder": { "fg":"#393552"},
   "tableHeader": { "fg":"#908caa"},
   "text": {"fg":"#e0def4" },
-  "titleBar":{"bg":"#393552", "fg":"#9ccfd8"}
+  "titleBar":{"bg":"#393552", "fg":"#9ccfd8"},
+  "titleBarAlt":{"fg":"#3e8fb0"}
 }

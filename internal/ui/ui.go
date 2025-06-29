@@ -100,7 +100,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	queryPanel := component.NewQueryPanelModel(connectionName)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(connectionName)
-	titleBar := component.NewTitlBarModel(connectionName)
+	titleBar := component.NewTitlBarModel(connectionName, dbConfig)
 	errorPopup := component.NewErrorPopupModel()
 	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()

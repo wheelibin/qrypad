@@ -64,6 +64,7 @@ type Theme struct {
 	TableHeader           *TC    `json:"tableHeader,omitempty" mapstructure:"tableHeader,omitempty"`
 	Text                  *TC    `json:"text,omitempty" mapstructure:"text,omitempty"`
 	TitleBar              *TC    `json:"titleBar,omitempty" mapstructure:"titleBar,omitempty"`
+	TitleBarAlt           *TC    `json:"titleBarAlt,omitempty" mapstructure:"titleBarAlt,omitempty"`
 }
 
 func BlankTheme() Theme {
@@ -86,6 +87,7 @@ func BlankTheme() Theme {
 		TableHeader:           &TC{},
 		Text:                  &TC{},
 		TitleBar:              &TC{},
+		TitleBarAlt:           &TC{},
 	}
 }
 
