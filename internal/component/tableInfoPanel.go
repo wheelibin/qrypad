@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	TableInfoTabCount        = 2
-	TableInfoTabIndexColumns = 0
-	TableInfoTabIndexIndexes = 1
+	TableInfoTabCount            = 3
+	TableInfoTabIndexColumns     = 0
+	TableInfoTabIndexIndexes     = 1
+	TableInfoTabIndexConstraints = 2
 )
 
 type tableInfoKeymap struct {
@@ -109,9 +110,9 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 		switch c {
 		case "unique", "primary":
 			cols = append(cols, table.NewColumn(c, c, 8).WithFiltered(true))
-		case "nullable":
+		case "nullable", "type":
 			cols = append(cols, table.NewColumn(c, c, 9).WithFiltered(true))
-		case "name":
+		case "name", "definition":
 			cols = append(cols, table.NewFlexColumn(c, c, 9).WithFiltered(true))
 		default:
 			cols = append(cols, table.NewFlexColumn(c, c, 12).WithFiltered(true))
@@ -174,9 +175,11 @@ func (m TableInfoPanelModel) View() string {
 	var tabText string
 	switch m.activeTabIndex {
 	case TableInfoTabIndexColumns:
-		tabText = "[columns]  indexes "
+		tabText = "[columns]  indexes   constraints "
 	case TableInfoTabIndexIndexes:
-		tabText = " columns  [indexes]"
+		tabText = " columns  [indexes]  constraints "
+	case TableInfoTabIndexConstraints:
+		tabText = " columns   indexes  [constraints]"
 	}
 	title = style.Title(m.width-2, m.active).Render("table info" + lipgloss.PlaceHorizontal(tw-13, lipgloss.Right, tabTextStyle.Render(tabText)))
 

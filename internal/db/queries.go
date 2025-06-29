@@ -116,6 +116,34 @@ func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
 	return query
 }
 
+// fetches the constraints information for the specified table
+func GetTableConstraintsSQL(dbConn DBConn, tableName string) string {
+	var query string
+	switch dbConn.DriverName {
+	case DriverNameMySQL:
+		query = fmt.Sprintf(`SELECT
+													CONSTRAINT_NAME 'name',
+													CONSTRAINT_TYPE 'type'
+												FROM
+													INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+												WHERE
+													TABLE_SCHEMA = DATABASE()
+													AND TABLE_NAME = '%s';`, tableName)
+	case DriverNamePostgres:
+		query = fmt.Sprintf(`SELECT
+														conname AS name,
+														contype AS type,
+														pg_get_constraintdef(c.oid) AS definition
+												FROM
+														pg_constraint c
+												JOIN
+														pg_class t ON c.conrelid = t.oid
+												WHERE
+														t.relname = '%s';`, tableName)
+	}
+	return query
+}
+
 func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) ([]string, error) {
 	var query string
 	switch dbConn.DriverName {

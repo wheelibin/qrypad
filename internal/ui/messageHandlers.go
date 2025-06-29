@@ -143,6 +143,8 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
 		case component.TableInfoTabIndexIndexes:
 			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+		case component.TableInfoTabIndexConstraints:
+			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
 		}
 
 	case commands.TablePanelTabChangedMsg:
@@ -159,6 +161,8 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
 		case component.TableInfoTabIndexIndexes:
 			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+		case component.TableInfoTabIndexConstraints:
+			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
 		}
 
 	case commands.DatabaseSelectedMsg:

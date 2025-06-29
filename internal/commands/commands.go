@@ -27,11 +27,13 @@ var TablePanelKind = struct {
 type TableInfoKindType string
 
 var TableInfoKind = struct {
-	Columns TableInfoKindType
-	Indexes TableInfoKindType
+	Columns     TableInfoKindType
+	Indexes     TableInfoKindType
+	Constraints TableInfoKindType
 }{
-	Columns: "cols",
-	Indexes: "inds",
+	Columns:     "cols",
+	Indexes:     "inds",
+	Constraints: "constr",
 }
 
 func SavePassword(connectionName, pass string) tea.Cmd {
@@ -82,7 +84,7 @@ func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
 		}
 	}
 
-	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns,sortOrder), QueryResultBuilder)
+	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns, sortOrder), QueryResultBuilder)
 }
 
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
@@ -93,6 +95,10 @@ func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) te
 		})
 	case TableInfoKind.Indexes:
 		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
+			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+		})
+	case TableInfoKind.Constraints:
+		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})
 	}
