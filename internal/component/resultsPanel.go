@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
@@ -39,8 +40,8 @@ func NewResultsPanelModel() ResultsPanelModel {
 		help:  makeHelp(),
 		keymap: resultsPanelKeymap{
 			viewRow: key.NewBinding(
-				key.WithKeys("enter"),
-				key.WithHelp("enter", "view row"),
+				key.WithKeys(keys.DefaultKeyMap.ViewData.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.ViewData.Help().Key, "view row"),
 			),
 			filter: key.NewBinding(
 				key.WithKeys("/"),

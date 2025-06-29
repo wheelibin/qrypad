@@ -51,16 +51,16 @@ func NewTablePanelModel() TablePanelModel {
 		help:   makeHelp(),
 		keymap: tablePanelKeymap{
 			viewData: key.NewBinding(
-				key.WithKeys("enter"),
-				key.WithHelp("enter", "view data"),
+				key.WithKeys(keys.DefaultKeyMap.ViewData.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.ViewData.Help().Key, "view data"),
 			),
 			viewDataDesc: key.NewBinding(
-				key.WithKeys("ctrl+d"),
-				key.WithHelp("ctrl+d", "view data (desc)"),
+				key.WithKeys(keys.DefaultKeyMap.ViewDataDesc.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.ViewDataDesc.Help().Key, "view data (desc)"),
 			),
 			copy: key.NewBinding(
-				key.WithKeys("c"),
-				key.WithHelp("c", "copy name"),
+				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy name"),
 			),
 		},
 	}

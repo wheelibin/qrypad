@@ -24,7 +24,7 @@ database         = "qrypad"
 
 [theme]
 # catppuccin-mocha (default) / kanagawa-wave / rose-pine-moon
-name = "catppuccin-mocha"
+name = "rose-pine-moon"
 # borderActive          = { bg = "", fg = "#ff00ff" }
 # currentStatement      = { bg = "", fg = "" }
 # databaseSwitcherPopup = { bg = "", fg = "" }
@@ -41,3 +41,21 @@ name = "catppuccin-mocha"
 # tableHeader           = { bg = "", fg = "" }
 # text                  = { bg = "", fg = "" }
 # titleBar              = { bg = "", fg = "" }
+
+[keys]
+# CopyValue       = ""
+# ExecuteQuery    = ""
+# Help            = ""
+# NextPanel       = ""
+# NextTab         = ""
+# OpenInEditor    = ""
+# PrevPanel       = ""
+# PrevTab         = ""
+# ReloadQuery     = ""
+# SaveQuery       = ""
+# SwitchDatabase  = ""
+# ToggleLeftPanel = ""
+# UpdatePassword  = ""
+# ViewData        = ""
+# ViewDataDesc    = ""
+

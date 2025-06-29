@@ -12,6 +12,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/constants"
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/ui"
 )
 
@@ -59,6 +60,7 @@ func main() {
 	}
 	defer f.Close()
 
+	keys.MapCustomKeys()
 	m := ui.NewModel(connectionName, conn)
 
 	p := tea.NewProgram(
