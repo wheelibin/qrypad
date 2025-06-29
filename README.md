@@ -81,7 +81,8 @@ database = "music-store"
 ## ⌨️ Key Bindings
 
 <details>
-    <summary>click to view</summary>
+    <summary>Default Key Bindings</summary>
+
 ### 🧭 General
 
 - `Tab` / `Shift+Tab` - switch panels
@@ -118,6 +119,30 @@ database = "music-store"
 - `/` - filter results (`esc` to cancel)
 
 </details>
+
+### Custom Key Bindings
+
+You can override various key bindings using the following config key.
+The keys possible to override are shown below.
+
+```toml
+[keys]
+CopyValue       = "y"
+# ExecuteQuery    = ""
+# Help            = ""
+# NextPanel       = ""
+# NextTab         = ""
+# OpenInEditor    = ""
+# PrevPanel       = ""
+# PrevTab         = ""
+# ReloadQuery     = ""
+# SaveQuery       = ""
+# SwitchDatabase  = ""
+# ToggleLeftPanel = ""
+# UpdatePassword  = ""
+# ViewData        = ""
+# ViewDataDesc    = ""
+```
 
 ## 🌈 Themes
 

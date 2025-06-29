@@ -47,12 +47,12 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 		help:  makeHelp(),
 		keymap: tableInfoKeymap{
 			viewRow: key.NewBinding(
-				key.WithKeys("enter"),
-				key.WithHelp("enter", "view row"),
+				key.WithKeys(keys.DefaultKeyMap.ViewData.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.ViewData.Help().Key, "view row"),
 			),
 			copy: key.NewBinding(
-				key.WithKeys("c"),
-				key.WithHelp("c", "copy name"),
+				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy name"),
 			),
 		},
 	}
