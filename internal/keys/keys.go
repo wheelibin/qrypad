@@ -69,7 +69,7 @@ var DefaultKeyMap = keyMap{
 	),
 	ExecuteQuery: key.NewBinding(
 		key.WithKeys("f5"),
-		key.WithHelp("F5", "execute query under cursor"),
+		key.WithHelp("F5", "execute statement at cursor"),
 	),
 	ViewData: key.NewBinding(
 		key.WithKeys("enter"),

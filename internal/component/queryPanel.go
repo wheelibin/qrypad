@@ -1,8 +1,6 @@
 package component
 
 import (
-	"strings"
-
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -25,7 +23,7 @@ type QueryPanelModel struct {
 	height           int
 	queryBuffer      textarea.Model
 	connectionName   string
-	CurrentStatement string
+	CurrentStatement *Statement
 	dirty            bool
 	filename         string
 	help             help.Model
@@ -35,10 +33,10 @@ type QueryPanelModel struct {
 func NewQueryPanelModel(connectionName string) QueryPanelModel {
 	ta := textarea.New()
 	ta.Placeholder = "sql statement(s)..."
-	ta.Prompt = "┃ "
 	ta.Cursor.SetMode(cursor.CursorBlink)
 	ta.Cursor.Style = lipgloss.NewStyle().Foreground(theme.GetTheme().Text.FG)
 	ta.CharLimit = 0
+	ta.FocusedStyle.Prompt = ta.FocusedStyle.Prompt.Foreground(theme.GetTheme().Text.FG)
 
 	// Remove cursor line styling
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
@@ -66,6 +64,17 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
+	// set the prompt to highlight the current statement
+	m.queryBuffer.SetPromptFunc(2, func(lineIdx int) string {
+		if m.CurrentStatement == nil {
+			return ""
+		}
+		if lineIdx >= m.CurrentStatement.StartLine && lineIdx <= m.CurrentStatement.EndLine {
+			return "┃ "
+		}
+		return ""
+	})
+
 	switch msg.(type) {
 	case tea.FocusMsg:
 		cmds = append(cmds, m.queryBuffer.Focus())
@@ -92,7 +101,8 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 }
 
 func (m QueryPanelModel) GetCurrentStatement() string {
-	return getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
+	statementAtCursor := getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
+	return statementAtCursor.Text
 }
 
 func (m QueryPanelModel) GetValue() string {
@@ -119,7 +129,7 @@ func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 	m.queryBuffer.SetWidth(m.width)
-	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin - 2)
+	m.queryBuffer.SetHeight(m.height - style.CurrentStatementHeight - style.TitleHeight - style.Margin)
 }
 
 func (m *QueryPanelModel) SetActive(active bool) {
@@ -142,25 +152,6 @@ func (m QueryPanelModel) View() string {
 		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}
 
-	currentStatementStyle := lipgloss.NewStyle().
-		Background(theme.GetTheme().CurrentStatement.BG).
-		Foreground(theme.GetTheme().CurrentStatement.FG).
-		MarginLeft(1).
-		MarginTop(1)
-
-	currentStatement := currentStatementStyle.Render("")
-
-	if len(m.CurrentStatement) > 0 && m.active {
-		var truncated string
-		if len(m.CurrentStatement) > m.width-14 {
-			truncated = m.CurrentStatement[:m.width-17] + "..."
-		} else {
-			truncated = m.CurrentStatement
-		}
-		s := strings.ReplaceAll(strings.ReplaceAll(truncated, "\n", " "), "  ", " ")
-		currentStatement = currentStatementStyle.Render(s)
-	}
-
 	text := "queries"
 	if m.dirty {
 		text = text + " [+]"
@@ -170,7 +161,6 @@ func (m QueryPanelModel) View() string {
 	v := lipgloss.JoinVertical(lipgloss.Left,
 		title,
 		m.queryBuffer.View(),
-		currentStatement,
 		style.ShortHelp(m.width).Render(m.helpView()),
 	)
 	return panelStyle.Render(v)
