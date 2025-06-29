@@ -37,6 +37,7 @@ func NewQueryPanelModel(connectionName string) QueryPanelModel {
 	ta.Placeholder = "sql statement(s)..."
 	ta.Prompt = "┃ "
 	ta.Cursor.SetMode(cursor.CursorBlink)
+	ta.Cursor.Style = lipgloss.NewStyle().Foreground(theme.GetTheme().Text.FG)
 	ta.CharLimit = 0
 
 	// Remove cursor line styling
