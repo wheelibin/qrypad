@@ -9,6 +9,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 const (
@@ -297,7 +298,7 @@ func (m *model) adjustSizes() {
 	}
 
 	availableHeight := m.height - TitleBarHeight - StatusBarHeight
-	leftWidth := style.GetSpan(LeftPanelSpan, m.width)
+	leftWidth := style.GetSpan(LeftPanelSpan, m.width) + 1
 	rightWidth := m.getRightWidth(m.width)
 
 	// left
@@ -331,7 +332,7 @@ func (m *model) adjustSizes() {
 
 func (m model) getRightWidth(totalWidth int) int {
 	if m.leftPanelHidden {
-		return style.GetSpan(12, totalWidth) - 6
+		return style.GetSpan(12, totalWidth) - 8
 	} else {
 		return style.GetSpan(12-LeftPanelSpan, totalWidth) - 8
 	}
@@ -347,7 +348,13 @@ func (m model) View() string {
 		m.tableInfoPanel.View(),
 	)
 	if m.leftPanelHidden {
-		left = ""
+		left = lipgloss.NewStyle().
+			Height(m.height-StatusBarHeight-TitleBarHeight).
+			Width(3).
+			Background(theme.GetTheme().TitleBar.BG).
+			Foreground(theme.GetTheme().TitleBar.FG).
+			Align(lipgloss.Center, lipgloss.Center).
+			Render("▶")
 	}
 
 	right := lipgloss.JoinVertical(lipgloss.Center,
