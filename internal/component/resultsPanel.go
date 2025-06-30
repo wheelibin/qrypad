@@ -21,6 +21,7 @@ import (
 type resultsPanelKeymap struct {
 	viewRow key.Binding
 	filter  key.Binding
+	copyRow key.Binding
 }
 
 type ResultsPanelModel struct {
@@ -46,6 +47,10 @@ func NewResultsPanelModel() ResultsPanelModel {
 			filter: key.NewBinding(
 				key.WithKeys("/"),
 				key.WithHelp("/", "filter data"),
+			),
+			copyRow: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy row as json"),
 			),
 		},
 	}
@@ -148,6 +153,7 @@ func (m ResultsPanelModel) helpView() string {
 	return m.help.ShortHelpView([]key.Binding{
 		m.keymap.viewRow,
 		m.keymap.filter,
+		m.keymap.copyRow,
 	})
 }
 
