@@ -29,6 +29,9 @@ const (
 	PopupHelp      = 2
 	PopupPassword  = 3
 	PopupResultRow = 4
+
+	MinHeight = 24
+	MinWidth  = 121
 )
 
 type PopupKindType int
@@ -292,7 +295,7 @@ func (m model) popupIsActive(p PopupKindType) bool {
 func (m *model) adjustSizes() {
 	m.windowTooSmall = false
 
-	if m.height < 24 {
+	if m.height < MinHeight || m.width < MinWidth {
 		m.windowTooSmall = true
 		return
 	}
@@ -340,7 +343,8 @@ func (m model) getRightWidth(totalWidth int) int {
 
 func (m model) View() string {
 	if m.windowTooSmall {
-		return appStyle.Render("window too small")
+		return style.WindowTooSmall(m.width, m.height).
+			Render("window too small")
 	}
 
 	left := lipgloss.JoinVertical(lipgloss.Center,

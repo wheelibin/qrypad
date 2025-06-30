@@ -184,11 +184,11 @@ func (m TableInfoPanelModel) View() string {
 	var tabText string
 	switch m.activeTabIndex {
 	case TableInfoTabIndexColumns:
-		tabText = "[columns]  indexes   constraints "
+		tabText = "[cols]  inds   cons "
 	case TableInfoTabIndexIndexes:
-		tabText = " columns  [indexes]  constraints "
+		tabText = " cols  [inds]  cons "
 	case TableInfoTabIndexConstraints:
-		tabText = " columns   indexes  [constraints]"
+		tabText = " cols   inds  [cons]"
 	}
 	title = style.Title(m.width-2, m.active).Render("table info" + lipgloss.PlaceHorizontal(tw-13, lipgloss.Right, tabTextStyle.Render(tabText)))
 

@@ -19,6 +19,7 @@ const (
 	TablePanelTabCount       = 2
 	TablePanelTabIndexTables = 0
 	TablePanelTabIndexViews  = 1
+	HelpShownMinWidth        = 55
 )
 
 type tablePanelKeymap struct {
@@ -36,6 +37,7 @@ type TablePanelModel struct {
 	activeTabIndex int
 	help           help.Model
 	keymap         tablePanelKeymap
+	showHelp       bool
 }
 
 func NewTablePanelModel() TablePanelModel {
@@ -163,6 +165,7 @@ func (m *TablePanelModel) SetSize(w, h int) {
 	m.table = m.table.WithPageSize(int(rowsInTable))
 	m.table = m.table.WithMinimumHeight(h - 2)
 	m.table = m.table.WithTargetWidth(w)
+	m.showHelp = m.width >= HelpShownMinWidth
 }
 
 func (m TablePanelModel) GetActiveTabIndex() int {
@@ -208,10 +211,14 @@ func (m TablePanelModel) View() string {
 		Render(_tabText)
 
 	title := titleStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, titleText, tabText))
+	help := ""
+	if m.showHelp {
+		help = style.ShortHelp(m.width).Render(m.helpView())
+	}
 	v := lipgloss.JoinVertical(lipgloss.Left,
 		title,
 		content,
-		style.ShortHelp(m.width).Render(m.helpView()),
+		help,
 	)
 	return panelStyle.Render(v)
 }

@@ -68,3 +68,11 @@ func TableColumn() lipgloss.Style {
 		Foreground(theme.GetTheme().Text.FG).
 		Align(lipgloss.Left)
 }
+
+func WindowTooSmall(w, h int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Width(w).
+		Height(h).
+		Align(lipgloss.Center, lipgloss.Center).
+		Foreground(theme.GetTheme().Error.FG)
+}
