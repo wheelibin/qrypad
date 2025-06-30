@@ -84,7 +84,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 
 	// get cols
 	for _, c := range data.Columns {
-		w := m.getColumnWidth(c, *data)
+		w := getColumnWidth(c, *data, m.width/2)
 		cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
@@ -122,23 +122,6 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 		log.Println("error converting row to json", err)
 	}
 	return string(j)
-}
-
-func (m ResultsPanelModel) getColumnWidth(col string, data db.Data) int {
-	maxAllowedLen := m.width / 2
-	maxNeededLen := 0
-	for _, c := range data.Columns {
-		if len(c) > maxNeededLen {
-			maxNeededLen = len(c)
-		}
-	}
-	for _, r := range data.Rows {
-		if len(fmt.Sprintf("%v", r[col])) > maxNeededLen {
-			maxNeededLen = len(r[col].(string))
-		}
-	}
-	padding := 1
-	return int(math.Min(float64(maxNeededLen), float64(maxAllowedLen))) + padding
 }
 
 func newTable(cols []table.Column) table.Model {

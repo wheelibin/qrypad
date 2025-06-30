@@ -1,10 +1,13 @@
 package component
 
 import (
+	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
@@ -63,4 +66,20 @@ func makeHelp() help.Model {
 	help.Styles.FullKey = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpKey.FG)
 	help.Styles.FullDesc = lipgloss.NewStyle().Foreground(theme.GetTheme().HelpDesc.FG)
 	return help
+}
+
+func getColumnWidth(col string, data db.Data, maxWidth int) int {
+	maxNeededLen := 0
+	for _, c := range data.Columns {
+		if len(c) > maxNeededLen {
+			maxNeededLen = len(c)
+		}
+	}
+	for _, r := range data.Rows {
+		if len(fmt.Sprintf("%v", r[col])) > maxNeededLen {
+			maxNeededLen = len(r[col].(string))
+		}
+	}
+	padding := 1
+	return int(math.Min(float64(maxNeededLen), float64(maxWidth))) + padding
 }

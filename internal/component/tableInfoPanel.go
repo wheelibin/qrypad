@@ -2,6 +2,7 @@ package component
 
 import (
 	"math"
+	"slices"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -105,18 +106,25 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 	cols := []table.Column{}
 	rows := []table.Row{}
 
+	autoWidthCols := []string{"type"}
+	fixedWidthCols := map[string]int{
+		"unique":   8,
+		"primary":  8,
+		"nullable": 9,
+	}
+
 	// get cols
 	for _, c := range data.Columns {
-		switch c {
-		case "unique", "primary":
-			cols = append(cols, table.NewColumn(c, c, 8).WithFiltered(true))
-		case "nullable", "type":
-			cols = append(cols, table.NewColumn(c, c, 9).WithFiltered(true))
-		case "name", "definition":
-			cols = append(cols, table.NewFlexColumn(c, c, 9).WithFiltered(true))
-		default:
-			cols = append(cols, table.NewFlexColumn(c, c, 12).WithFiltered(true))
+		if slices.Contains(autoWidthCols, c) {
+			w := getColumnWidth(c, *data, m.width/2)
+			cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
+			continue
 		}
+		if w, ok := fixedWidthCols[c]; ok {
+			cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
+			continue
+		}
+		cols = append(cols, table.NewFlexColumn(c, c, 12).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
@@ -137,6 +145,7 @@ func (m *TableInfoPanelModel) SetSize(w, h int) {
 	rowsInTable := math.Max(float64(h-9), 1)
 	m.table = m.table.WithPageSize(int(rowsInTable))
 	m.table = m.table.WithMinimumHeight(h - 2)
+	m.table = m.table.WithMaxTotalWidth(w)
 	m.table = m.table.WithTargetWidth(w)
 }
 
