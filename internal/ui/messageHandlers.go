@@ -326,7 +326,9 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
-		return commands.OpenEditor(m.queryPanel.GetFilename())
+		if m.activePanelIndex == PanelIndexQuery {
+			return commands.OpenEditor(m.queryPanel.GetFilename())
+		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.CopyValue):
 		var valueToCopy, copiedTextInfo string
