@@ -302,6 +302,9 @@ func (m *model) adjustSizes() {
 
 	availableHeight := m.height - TitleBarHeight - StatusBarHeight
 	leftWidth := style.GetSpan(LeftPanelSpan, m.width) + 1
+	if m.leftPanelHidden {
+		leftWidth = 3
+	}
 	rightWidth := m.getRightWidth(m.width)
 
 	// left
