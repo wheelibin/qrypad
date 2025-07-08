@@ -9,17 +9,25 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # required to publish releases
+      contents: write
+
     steps:
-      - name: Install X11 headers
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev
+      - name: Install build tools and X11 headers (for CGO + sqlite)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libx11-dev
+
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-      - uses: goreleaser/goreleaser-action@v5
+
+      - name: Run GoReleaser with CGO enabled
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CGO_ENABLED: 1
