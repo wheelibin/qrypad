@@ -1,8 +1,16 @@
 package db
 
 const (
-	DriverNameMySQL            = "mysql"
-	DriverNamePostgres         = "postgres"
 	TimeoutConfigKey           = "queryTimeout"
 	TableDataRowLimitConfigKey = "tableDataRowLimit"
 )
+
+type DriverNameType string
+
+var DriverName = struct {
+	Postgres DriverNameType
+	MySQL    DriverNameType
+}{
+	Postgres: "postgres",
+	MySQL:    "mysql",
+}
