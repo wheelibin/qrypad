@@ -9,6 +9,8 @@ builds:
     ignore:
       - goos: linux
         goarch: arm64
+      - goos: linux
+        goarch: 386
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
