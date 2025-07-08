@@ -2,7 +2,6 @@ project_name: qrypad
 builds:
   - id: default
   - main: ./
-    cgo: true
     env:
       - CGO_ENABLED=1
     goos: [linux, darwin, windows]
