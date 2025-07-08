@@ -1,8 +1,15 @@
 project_name: qrypad
 builds:
+  - id: default
   - main: ./
+    cgo: true
+    env:
+      - CGO_ENABLED=1
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
+    ignore:
+      - goos: linux
+        goarch: arm64
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
