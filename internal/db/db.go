@@ -32,6 +32,9 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 	case DriverName.Postgres:
 		connString = fmt.Sprintf("postgres://%s:%s@%s:%d/%s", conn.User, password, conn.Host, conn.Port, conn.Database)
 		driver = "pgx"
+	case DriverName.SQLite:
+		connString = conn.Database
+		driver = "sqlite3"
 	}
 	dbConn, err := sql.Open(driver, connString)
 	if err != nil {

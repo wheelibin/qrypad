@@ -48,7 +48,10 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 	case DriverName.Postgres:
 		query = `SELECT relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows 
           FROM pg_stat_user_tables 
-        ORDER BY name;`
+					ORDER BY name;`
+	case DriverName.SQLite:
+		query = `SELECT name FROM sqlite_master
+					WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
 	}
 
 	return query
@@ -56,18 +59,35 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 
 // fetches the user views in the database
 func GetSchemaViewsSQL(dbConn DBConn) string {
-	query := `SELECT table_name name
-						FROM information_schema.views
-						WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys', 'pg_catalog')
-						ORDER BY table_name;`
+	var query string
+	switch dbConn.DriverName {
+	case DriverName.MySQL, DriverName.Postgres:
+		query = `SELECT table_name name
+							FROM information_schema.views
+							WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys', 'pg_catalog')
+							ORDER BY table_name;`
+	case DriverName.SQLite:
+		query = `SELECT name
+							FROM sqlite_master
+							WHERE type = 'view'
+								AND name NOT LIKE 'sqlite_%'
+							ORDER BY name;`
+	}
 	return query
 }
 
 // fetches the column information for the specified table
-func GetTableColumnsSQL(tableName string) string {
-	return fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
-                                        FROM INFORMATION_SCHEMA.COLUMNS
-                                        WHERE  TABLE_NAME = '%s';`, tableName)
+func GetTableColumnsSQL(dbConn DBConn, tableName string) string {
+	var query string
+	switch dbConn.DriverName {
+	case DriverName.MySQL, DriverName.Postgres:
+		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
+												FROM INFORMATION_SCHEMA.COLUMNS
+												WHERE  TABLE_NAME = '%s';`, tableName)
+	case DriverName.SQLite:
+		query = fmt.Sprintf(`SELECT * FROM pragma_table_info('%s');`, tableName)
+	}
+	return query
 }
 
 // fetches the index information for the specified table
@@ -112,8 +132,38 @@ func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
                       order by
                           t.relname,
                           i.relname;`, tableName)
+	case DriverName.SQLite:
+		query = fmt.Sprintf(`select * from pragma_index_list('%s');`, tableName)
 	}
 	return query
+}
+
+func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, tableName string) (*Data, error) {
+	inds, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_list('%s')", tableName))
+	if err != nil {
+		return nil, err
+	}
+	cols := []string{"name", "cols"}
+	rows := make([]map[string]any, 0)
+	for _, row := range inds.Rows {
+		info, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_info('%s')", row["name"]))
+		if err != nil {
+			return nil, err
+		}
+		indexCols := make([]string, 0)
+		for _, infoRow := range info.Rows {
+			indexCols = append(indexCols, infoRow["name"].(string))
+		}
+		rows = append(rows, map[string]any{
+			"name": row["name"],
+			"cols": indexCols,
+		})
+	}
+
+	return &Data{
+		Columns: cols,
+		Rows:    rows,
+	}, nil
 }
 
 // fetches the constraints information for the specified table
@@ -140,6 +190,8 @@ func GetTableConstraintsSQL(dbConn DBConn, tableName string) string {
 														pg_class t ON c.conrelid = t.oid
 												WHERE
 														t.relname = '%s';`, tableName)
+	case DriverName.SQLite:
+		query = fmt.Sprintf(`PRAGMA foreign_key_list('%s');`, tableName)
 	}
 	return query
 }
@@ -159,6 +211,11 @@ func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) 
 												FROM pg_index i
 												JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
 												WHERE i.indrelid = '%s'::regclass AND i.indisprimary;`, tableName)
+	case DriverName.SQLite:
+		query = fmt.Sprintf(`SELECT name
+												FROM pragma_table_info('%s')
+												WHERE pk > 0
+												ORDER BY pk;`, tableName)
 	}
 	data, err := fetchRows(ctx, dbConn, query)
 	if err != nil {

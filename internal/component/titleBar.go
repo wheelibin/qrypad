@@ -56,7 +56,13 @@ func (m TitlBarModel) View() string {
 		Bold(true)
 
 	altText := lipgloss.NewStyle().Foreground(theme.GetTheme().TitleBarAlt.FG)
-	connDetails := fmt.Sprintf("[%s: %s@%s:%d]", m.connectionName, m.conn.User, m.conn.Host, m.conn.Port)
+
+	var connDetails string
+	if m.conn.Driver == db.DriverName.SQLite {
+		connDetails = fmt.Sprintf("[%s]", m.connectionName)
+	} else {
+		connDetails = fmt.Sprintf("[%s: %s@%s:%d]", m.connectionName, m.conn.User, m.conn.Host, m.conn.Port)
+	}
 
 	return lipgloss.JoinHorizontal(lipgloss.Center,
 		barStyle.Render(fmt.Sprintf("QryPad %s", altText.Render(connDetails))),

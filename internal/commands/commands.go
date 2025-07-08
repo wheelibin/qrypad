@@ -49,16 +49,18 @@ func SavePassword(connectionName, pass string) tea.Cmd {
 func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
 	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		var pass string
-		if len(dbConfig.InsecurePassword) == 0 {
-			keyringPass, err := password.GetPassword(connectionName)
-			if err != nil {
-				if errors.Is(err, password.ErrPasswordNotSaved) {
-					return PasswordInputNeededMsg{}
+		if dbConfig.Driver != db.DriverName.SQLite {
+			if len(dbConfig.InsecurePassword) == 0 {
+				keyringPass, err := password.GetPassword(connectionName)
+				if err != nil {
+					if errors.Is(err, password.ErrPasswordNotSaved) {
+						return PasswordInputNeededMsg{}
+					}
 				}
+				pass = keyringPass
+			} else {
+				pass = dbConfig.InsecurePassword
 			}
-			pass = keyringPass
-		} else {
-			pass = dbConfig.InsecurePassword
 		}
 
 		dbConn, err := db.Connect(dbConfig, pass)
@@ -90,10 +92,16 @@ func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
 	switch kind {
 	case TableInfoKind.Columns:
-		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(tableName), func(d *db.Data, err error) tea.Msg {
+		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})
 	case TableInfoKind.Indexes:
+		if dbConn.DriverName == db.DriverName.SQLite {
+			d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, tableName)
+			return func() tea.Msg {
+				return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+			}
+		}
 		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})

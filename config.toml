@@ -22,6 +22,10 @@ user             = "qrypad"
 insecurePassword = "qrypad"
 database         = "qrypad"
 
+[connections.animals_sqlite]
+driver           = "sqlite"
+database         = "test-db/sqlite/sqlite.db"
+
 [theme]
 # catppuccin-mocha (default) / kanagawa-wave / rose-pine-moon
 name = "rose-pine-moon"

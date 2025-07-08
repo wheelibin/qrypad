@@ -6,6 +6,7 @@
 
 ### 🚀 Quick Exploration
 
+- Supports Postgres / MySQL / SQLite
 - View a snapshot of the selected table with one keypress
 - Automatically display columns and indexes for the current table
 - Filter result sets interactively to refine your queries
@@ -17,7 +18,7 @@
 - Save queries per connection for easy reuse
 - Syntax-highlighted query pad for better readability
 
-### 🔄 Connection Management
+### 🔄 Connection Management (Postgres / MySQL only)
 
 - Switch databases on the current connection
 - Securely store passwords in the OS keychain
@@ -76,6 +77,9 @@ port = 5432
 user = "postgres"
 database = "music-store"
 
+[connections.orders]
+driver = "sqlite"
+database = "db/orders.db"
 ```
 
 ## ⌨️ Key Bindings

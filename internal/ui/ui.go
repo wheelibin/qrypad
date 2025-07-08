@@ -8,6 +8,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
@@ -131,7 +132,16 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	}
 }
 
+func (m model) initKeyMap() {
+	if m.dbConfig.Driver == db.DriverName.SQLite {
+		keys.DefaultKeyMap.SwitchDatabase.SetEnabled(false)
+		keys.DefaultKeyMap.UpdatePassword.SetEnabled(false)
+	}
+}
+
 func (m model) Init() tea.Cmd {
+	m.initKeyMap()
+
 	// Initialize sub-models
 	return tea.Batch(
 		commands.ConnectToDB(m.connectionName, m.dbConfig),
