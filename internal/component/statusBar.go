@@ -67,7 +67,10 @@ func (m StatusBarModel) View() string {
 		Bold(true).
 		Render(" " + m.selectedDatabase + " ")
 
-	helpText := helpTextStyle.Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
+	var helpText string
+	if keys.DefaultKeyMap.SwitchDatabase.Enabled() {
+		helpText = helpTextStyle.Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
+	}
 
 	var copiedTextInfo string
 	if m.copiedTextInfo != "" {

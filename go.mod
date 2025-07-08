@@ -12,11 +12,13 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/mattn/go-runewidth v0.0.16
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.16.0
 	github.com/rivo/uniseg v0.4.7
 	github.com/spf13/viper v1.19.0
+	github.com/zalando/go-keyring v0.2.6
 	golang.design/x/clipboard v0.7.1
 )
 
@@ -52,7 +54,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	github.com/zalando/go-keyring v0.2.6 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect

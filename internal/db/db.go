@@ -7,17 +7,17 @@ import (
 
 type DBConn struct {
 	DB                *sql.DB
-	DriverName        string
+	DriverName        DriverNameType
 	ConnectedDatabase string
 }
 
 type ConnectionConfig struct {
-	Driver           string `mapstructure:"driver"`
-	Host             string `mapstructure:"host"`
-	Port             int    `mapstructure:"port"`
-	User             string `mapstructure:"user"`
-	InsecurePassword string `mapstructure:"insecurePassword"`
-	Database         string `mapstructure:"database"`
+	Driver           DriverNameType `mapstructure:"driver"`
+	Host             string         `mapstructure:"host"`
+	Port             int            `mapstructure:"port"`
+	User             string         `mapstructure:"user"`
+	InsecurePassword string         `mapstructure:"insecurePassword"`
+	Database         string         `mapstructure:"database"`
 }
 
 func Connect(conn ConnectionConfig, password string) (DBConn, error) {
@@ -26,12 +26,15 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 		driver     string
 	)
 	switch conn.Driver {
-	case DriverNameMySQL:
+	case DriverName.MySQL:
 		connString = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conn.User, password, conn.Host, conn.Port, conn.Database)
-		driver = conn.Driver
-	case DriverNamePostgres:
+		driver = string(conn.Driver)
+	case DriverName.Postgres:
 		connString = fmt.Sprintf("postgres://%s:%s@%s:%d/%s", conn.User, password, conn.Host, conn.Port, conn.Database)
 		driver = "pgx"
+	case DriverName.SQLite:
+		connString = conn.Database
+		driver = "sqlite3"
 	}
 	dbConn, err := sql.Open(driver, connString)
 	if err != nil {
@@ -46,9 +49,9 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 		// no database specified in the connection, so read it
 		var sql, dbName string
 		switch conn.Driver {
-		case DriverNameMySQL:
+		case DriverName.MySQL:
 			sql = "SELECT DATABASE()"
-		case DriverNamePostgres:
+		case DriverName.Postgres:
 			sql = "SELECT current_database()"
 		}
 		row := dbConn.QueryRow(sql)
