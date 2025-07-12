@@ -41,7 +41,10 @@ func main() {
 	}
 
 	if len(os.Args[1:]) == 0 {
-		fmt.Printf("\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n", constants.AppDesc)
+		fmt.Printf(
+			"\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n",
+			constants.AppDesc,
+		)
 		os.Exit(1)
 	}
 

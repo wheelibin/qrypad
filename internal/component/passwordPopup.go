@@ -7,9 +7,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/wheelibin/qrypad/internal/theme"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/style"
+	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 type passwordKeymap struct {

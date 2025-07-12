@@ -1,4 +1,4 @@
-.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down
+.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format
 
 testdb-pg-up:
 	cd test-db/postgres && docker compose up -d
@@ -14,4 +14,8 @@ testdb-mysql-down:
 
 test-sqlite-up:
 	sqlite3 test-db/sqlite/sqlite.db < test-db/sqlite/init.sql
+
+format:
+	go install github.com/segmentio/golines@latest
+	find . -name '*.go' | xargs golines --max-len=150 -w
 

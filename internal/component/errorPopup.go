@@ -116,7 +116,12 @@ func (m ErrorPopupModel) View() string {
 	var extraText string
 	if m.isConnectionError {
 		s := errStyle.MarginBottom(1).Align(lipgloss.Center).Foreground(theme.Text.FG)
-		extraText = s.Render(fmt.Sprintf("There was a problem connecting to the database server, check the connection details in your config, or press %s to update the saved password", keys.DefaultKeyMap.UpdatePassword.Help().Key))
+		extraText = s.Render(
+			fmt.Sprintf(
+				"There was a problem connecting to the database server, check the connection details in your config, or press %s to update the saved password",
+				keys.DefaultKeyMap.UpdatePassword.Help().Key,
+			),
+		)
 	}
 
 	title := style.Title(m.width-2, false).

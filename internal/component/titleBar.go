@@ -13,7 +13,6 @@ import (
 type TitlBarModel struct {
 	width          int
 	height         int
-	text           string
 	connectionName string
 	conn           db.ConnectionConfig
 }

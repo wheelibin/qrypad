@@ -316,7 +316,10 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 
 	if err = rows.Err(); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", GetTimeoutSecs())
+			return nil, fmt.Errorf(
+				"query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option",
+				GetTimeoutSecs(),
+			)
 		}
 		return nil, err
 	}
@@ -331,7 +334,10 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 	res, err := dbConn.DB.ExecContext(ctx, query)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option", GetTimeoutSecs())
+			return nil, fmt.Errorf(
+				"query timeout exceeded (%d secs)\n\n to change the timeout add or modify the 'queryTimeout` config option",
+				GetTimeoutSecs(),
+			)
 		}
 		return nil, err
 	}

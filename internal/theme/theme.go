@@ -46,25 +46,25 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 }
 
 type Theme struct {
-	ThemeName             string `json:"themeName,omitempty" mapstructure:"themeName,omitempty"`
-	Border                *TC    `json:"border,omitempty" mapstructure:"border,omitempty"`
-	BorderActive          *TC    `json:"border:active,omitempty" mapstructure:"borderActive,omitempty"`
-	CurrentStatement      *TC    `json:"currentStatement,omitempty" mapstructure:"currentStatement,omitempty"`
+	ThemeName             string `json:"themeName,omitempty"             mapstructure:"themeName,omitempty"`
+	Border                *TC    `json:"border,omitempty"                mapstructure:"border,omitempty"`
+	BorderActive          *TC    `json:"border:active,omitempty"         mapstructure:"borderActive,omitempty"`
+	CurrentStatement      *TC    `json:"currentStatement,omitempty"      mapstructure:"currentStatement,omitempty"`
 	DatabaseSwitcherPopup *TC    `json:"databaseSwitcherPopup,omitempty" mapstructure:"databaseSwitcherPopup,omitempty"`
-	Error                 *TC    `json:"error,omitempty" mapstructure:"error,omitempty"`
-	HelpPopup             *TC    `json:"helpPopup,omitempty" mapstructure:"helpPopup,omitempty"`
-	HelpDesc              *TC    `json:"helpDesc,omitempty" mapstructure:"helpDesc,omitempty"`
-	HelpKey               *TC    `json:"helpKey,omitempty" mapstructure:"helpKey,omitempty"`
-	PanelTitle            *TC    `json:"panelTitle,omitempty" mapstructure:"panelTitle,omitempty"`
-	PanelTitleActive      *TC    `json:"panelTitle:active,omitempty" mapstructure:"panelTitleActive,omitempty"`
-	RowDetailsPopup       *TC    `json:"rowDetailsPopup,omitempty" mapstructure:"rowDetailsPopup,omitempty"`
-	Spinner               *TC    `json:"spinner,omitempty" mapstructure:"spinner,omitempty"`
-	StatusBar             *TC    `json:"statusBar,omitempty" mapstructure:"statusBar,omitempty"`
-	TableBorder           *TC    `json:"tableBorder,omitempty" mapstructure:"tableBorder,omitempty"`
-	TableHeader           *TC    `json:"tableHeader,omitempty" mapstructure:"tableHeader,omitempty"`
-	Text                  *TC    `json:"text,omitempty" mapstructure:"text,omitempty"`
-	TitleBar              *TC    `json:"titleBar,omitempty" mapstructure:"titleBar,omitempty"`
-	TitleBarAlt           *TC    `json:"titleBarAlt,omitempty" mapstructure:"titleBarAlt,omitempty"`
+	Error                 *TC    `json:"error,omitempty"                 mapstructure:"error,omitempty"`
+	HelpPopup             *TC    `json:"helpPopup,omitempty"             mapstructure:"helpPopup,omitempty"`
+	HelpDesc              *TC    `json:"helpDesc,omitempty"              mapstructure:"helpDesc,omitempty"`
+	HelpKey               *TC    `json:"helpKey,omitempty"               mapstructure:"helpKey,omitempty"`
+	PanelTitle            *TC    `json:"panelTitle,omitempty"            mapstructure:"panelTitle,omitempty"`
+	PanelTitleActive      *TC    `json:"panelTitle:active,omitempty"     mapstructure:"panelTitleActive,omitempty"`
+	RowDetailsPopup       *TC    `json:"rowDetailsPopup,omitempty"       mapstructure:"rowDetailsPopup,omitempty"`
+	Spinner               *TC    `json:"spinner,omitempty"               mapstructure:"spinner,omitempty"`
+	StatusBar             *TC    `json:"statusBar,omitempty"             mapstructure:"statusBar,omitempty"`
+	TableBorder           *TC    `json:"tableBorder,omitempty"           mapstructure:"tableBorder,omitempty"`
+	TableHeader           *TC    `json:"tableHeader,omitempty"           mapstructure:"tableHeader,omitempty"`
+	Text                  *TC    `json:"text,omitempty"                  mapstructure:"text,omitempty"`
+	TitleBar              *TC    `json:"titleBar,omitempty"              mapstructure:"titleBar,omitempty"`
+	TitleBarAlt           *TC    `json:"titleBarAlt,omitempty"           mapstructure:"titleBarAlt,omitempty"`
 }
 
 func BlankTheme() Theme {
