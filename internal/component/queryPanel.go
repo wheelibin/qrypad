@@ -102,7 +102,10 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 
 func (m QueryPanelModel) GetCurrentStatement() string {
 	statementAtCursor := getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
-	return statementAtCursor.Text
+	if statementAtCursor != nil {
+		return statementAtCursor.Text
+	}
+	return ""
 }
 
 func (m QueryPanelModel) GetValue() string {
