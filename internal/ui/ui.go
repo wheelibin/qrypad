@@ -102,9 +102,11 @@ type model struct {
 }
 
 func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
+	autoSave := viper.GetBool("autoSave")
+
 	tablePanel := component.NewTablePanelModel()
 	tableInfoPanel := component.NewTableInfoPanelModel()
-	queryPanel := component.NewQueryPanelModel(connectionName)
+	queryPanel := component.NewQueryPanelModel(connectionName, autoSave)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(connectionName)
 	titleBar := component.NewTitlBarModel(connectionName, dbConfig)
@@ -114,8 +116,6 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 	helpPopup := component.NewHelpPopupModel()
 	loadingPopup := component.NewLoadingPopupModel()
-
-	autoSave := viper.GetBool("autoSave")
 
 	return model{
 		connectionName:        connectionName,

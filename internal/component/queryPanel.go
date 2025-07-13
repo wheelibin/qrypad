@@ -1,6 +1,8 @@
 package component
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -14,7 +16,9 @@ import (
 )
 
 type queryPanelKeymap struct {
-	execute key.Binding
+	execute         key.Binding
+	openInEditor    key.Binding
+	saveReloadQuery key.Binding
 }
 
 type QueryPanelModel struct {
@@ -28,9 +32,10 @@ type QueryPanelModel struct {
 	filename         string
 	help             help.Model
 	keymap           queryPanelKeymap
+	autoSaveEnabled  bool
 }
 
-func NewQueryPanelModel(connectionName string) QueryPanelModel {
+func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelModel {
 	ta := textarea.New()
 	ta.Placeholder = "sql statement(s)..."
 	ta.Cursor.SetMode(cursor.CursorBlink)
@@ -49,8 +54,14 @@ func NewQueryPanelModel(connectionName string) QueryPanelModel {
 		queryBuffer:    ta,
 		help:           makeHelp(),
 		keymap: queryPanelKeymap{
-			execute: keys.DefaultKeyMap.ExecuteQuery,
+			execute:      keys.DefaultKeyMap.ExecuteQuery,
+			openInEditor: keys.DefaultKeyMap.OpenInEditor,
+			saveReloadQuery: key.NewBinding(
+				key.WithKeys(fmt.Sprintf("%s/%s", keys.DefaultKeyMap.SaveQuery.Help().Key, keys.DefaultKeyMap.ReloadQuery.Help().Key), "save/reload query"),
+				key.WithHelp(fmt.Sprintf("%s/%s", keys.DefaultKeyMap.SaveQuery.Help().Key, keys.DefaultKeyMap.ReloadQuery.Help().Key), "save/reload query"),
+			),
 		},
+		autoSaveEnabled: autoSaveEnabled,
 	}
 }
 
@@ -140,9 +151,14 @@ func (m *QueryPanelModel) SetActive(active bool) {
 }
 
 func (m QueryPanelModel) helpView() string {
-	return m.help.ShortHelpView([]key.Binding{
+	km := []key.Binding{
 		m.keymap.execute,
-	})
+		m.keymap.openInEditor,
+	}
+	if !m.autoSaveEnabled {
+		km = append(km, m.keymap.saveReloadQuery)
+	}
+	return m.help.ShortHelpView(km)
 }
 
 func (m QueryPanelModel) View() string {
