@@ -36,26 +36,31 @@ func getStatementAtCursor(text string, cursorLine int) *Statement {
 		}
 		currentStatement.WriteString(line + "\n")
 		if strings.Contains(line, ";") {
-			statements = append(statements, Statement{startLine, l, currentStatement.String()})
+			statements = append(statements, Statement{
+				StartLine: startLine,
+				EndLine:   l,
+				Text:      currentStatement.String(),
+			})
 			currentStatement.Reset()
 		}
 	}
 
-	// If there's a remaining statement without a semicolon, add it
+	// If there's a remaining statement without a semicolon, treat it as trailing
 	if currentStatement.Len() > 0 {
-		statements = append(statements, Statement{startLine, len(lines), currentStatement.String()})
+		statements = append(statements, Statement{
+			StartLine: startLine,
+			EndLine:   len(lines) - 1,
+			Text:      currentStatement.String(),
+		})
 	}
 
-	lineCounter := 0
 	for _, stmt := range statements {
-		stmtLines := strings.Split(stmt.Text, "\n")
-		if cursorLine >= lineCounter && cursorLine < lineCounter+len(stmtLines) {
+		if cursorLine >= stmt.StartLine && cursorLine <= stmt.EndLine {
 			return &stmt
 		}
-		lineCounter += len(stmtLines)
 	}
 
-	return nil // statement not found
+	return nil // no statement under cursor
 }
 
 func makeHelp() help.Model {
