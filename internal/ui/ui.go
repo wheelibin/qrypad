@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/viper"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -97,6 +98,7 @@ type model struct {
 	tableInfoPanelBounds   bounds
 	queryPanelBounds       bounds
 	resultsPanelBounds     bounds
+	autoSave               bool
 }
 
 func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
@@ -112,6 +114,8 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 	helpPopup := component.NewHelpPopupModel()
 	loadingPopup := component.NewLoadingPopupModel()
+
+	autoSave := viper.GetBool("autoSave")
 
 	return model{
 		connectionName:        connectionName,
@@ -129,6 +133,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 		helpPopup:             helpPopup,
 		loadingPopup:          loadingPopup,
 		selectablePanelCount:  4,
+		autoSave:              autoSave,
 	}
 }
 

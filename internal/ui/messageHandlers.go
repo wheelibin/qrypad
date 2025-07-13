@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +12,11 @@ import (
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"golang.design/x/clipboard"
+)
+
+var (
+	debouncedMsgs = make(chan tea.Msg, 10)
+	debouncer     = commands.NewDebouncer(500*time.Millisecond, debouncedMsgs)
 )
 
 func waitForResult(ch <-chan tea.Msg) tea.Cmd {
@@ -302,9 +308,14 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.SaveQuery):
 		if m.activePanelIndex == PanelIndexQuery {
+			if m.lastSavedQueryContents == m.queryPanel.GetValue() {
+				return nil
+			}
+
 			m.queryPanel.SetDirty(false)
 			m.lastSavedQueryContents = m.queryPanel.GetValue()
-			return commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue())
+			debouncer.Trigger("save-query", commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue()))
+			return waitForResult(debouncedMsgs)
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ReloadQuery):
@@ -356,7 +367,15 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		// any other key
 		if m.activePanelIndex == PanelIndexQuery {
 			if m.lastSavedQueryContents != m.queryPanel.GetValue() {
-				m.queryPanel.SetDirty(true)
+				// buffer has changed
+				if m.autoSave {
+					m.queryPanel.SetDirty(false)
+					m.lastSavedQueryContents = m.queryPanel.GetValue()
+					debouncer.Trigger("save-query", commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue()))
+					return waitForResult(debouncedMsgs)
+				} else {
+					m.queryPanel.SetDirty(true)
+				}
 			}
 		}
 	}
