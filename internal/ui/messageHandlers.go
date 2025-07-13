@@ -254,11 +254,11 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		return commands.SetActivePanel(nextPanelIndex)
 
 	case key.Matches(msg, keys.DefaultKeyMap.PrevPanel):
-		nextPanelIndex := (m.activePanelIndex - 1) % m.selectablePanelCount
+		prevPanelIndex := (m.activePanelIndex - 1 + m.selectablePanelCount) % m.selectablePanelCount
 		if m.leftPanelHidden {
-			return commands.SetActivePanel(nextPanelIndex + 2)
+			return commands.SetActivePanel(prevPanelIndex + 2)
 		}
-		return commands.SetActivePanel(nextPanelIndex)
+		return commands.SetActivePanel(prevPanelIndex)
 
 	case key.Matches(msg, keys.DefaultKeyMap.ViewData):
 		switch m.activePanelIndex {
