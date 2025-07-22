@@ -5,6 +5,7 @@ import (
 )
 
 type keyMap struct {
+	AutoComplete    key.Binding
 	CancelQuery     key.Binding
 	ClosePopup      key.Binding
 	CopyValue       key.Binding
@@ -43,6 +44,10 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 var DefaultKeyMap = keyMap{
+	AutoComplete: key.NewBinding(
+		key.WithKeys("ctrl+@"),
+		key.WithHelp("ctrl+space", "autocomplete"),
+	),
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
 		key.WithHelp("ctrl+c", "quit"),

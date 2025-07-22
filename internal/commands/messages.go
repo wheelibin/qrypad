@@ -45,5 +45,7 @@ type (
 		Value     string
 		ValueDesc string
 	}
-	CancelQueryMsg struct{}
+	CancelQueryMsg               struct{}
+	AutoCompleteEntrySelectedMsg string
+	AutoCompleteCloseMsg         struct{}
 )

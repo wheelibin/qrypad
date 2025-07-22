@@ -228,6 +228,19 @@ func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) 
 	return columns, nil
 }
 
+func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, tableName string) ([]string, error) {
+	query := GetTableColumnsSQL(dbConn, tableName)
+	data, err := fetchRows(ctx, dbConn, query)
+	if err != nil {
+		return nil, err
+	}
+	columns := make([]string, 0)
+	for _, row := range data.Rows {
+		columns = append(columns, row["name"].(string))
+	}
+	return columns, nil
+}
+
 // fetches n rows from the specified table
 func GetTableRowsSQL(tableName string, primaryKeyColumns []string, sortOrder string) string {
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)

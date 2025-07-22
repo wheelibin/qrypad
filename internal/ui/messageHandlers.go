@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/wheelibin/qrypad/internal/autocomplete"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -94,6 +97,11 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		}
 		return commands.SetLoading(false)
 
+	case db.AutoCompleteDataFetchedMsg:
+		if len(msg) > 0 {
+			m.queryPanel.SetAutoCompleteActive(true)
+			return m.queryPanel.SetAutoCompleteOptions(msg)
+		}
 	}
 
 	return nil
@@ -124,7 +132,7 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			return nil
 		}
 		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
-			m.showPopup(PopupKind.LoadingPopup)
+			m.showPopup(PopupKind.Loading)
 		} else {
 			// loading finished
 			if !m.popupIsActive(PopupKind.Error) {
@@ -369,9 +377,54 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.UpdatePassword):
 		m.showPopup(PopupKind.Password)
 
+	case key.Matches(msg, key.NewBinding(key.WithKeys("."))):
+		if m.activePanelIndex == PanelIndexQuery {
+			result := autocomplete.GetCompletions(
+				m.queryPanel.GetCurrentStatement(),
+				m.queryPanel.GetWordAtCursor(),
+				m.tablePanel.GetAllTableNames(),
+			)
+			return m.handleCompletionResult(result)
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.AutoComplete):
+		if m.activePanelIndex == PanelIndexQuery {
+			result := autocomplete.GetCompletionsForced(
+				m.queryPanel.GetCurrentStatement(),
+				m.queryPanel.GetWordAtCursor(),
+				m.tablePanel.GetAllTableNames(),
+			)
+			return m.handleCompletionResult(result)
+		}
+
 	default:
 		// any other key
 		if m.activePanelIndex == PanelIndexQuery {
+
+			if m.queryPanel.GetAutoCompleteActive() {
+				key := msg.String()
+				if !isAutoCompleteKey(key) {
+					if isPrintableKey(key) {
+						m.queryPanel.AutoCompleteFilterAppend(key)
+					} else if key == "backspace" {
+						m.queryPanel.AutoCompleteFilterPop()
+					}
+				}
+			}
+
+			// Check for table name completion after space (e.g. "FROM ", "JOIN ")
+			if msg.String() == " " && !m.queryPanel.GetAutoCompleteActive() {
+				result := autocomplete.GetCompletions(
+					m.queryPanel.GetCurrentStatement(),
+					m.queryPanel.GetWordAtCursor(),
+					m.tablePanel.GetAllTableNames(),
+				)
+				if result.Kind == autocomplete.CompletionTable {
+					return m.handleCompletionResult(result)
+				}
+			}
+
+			// buffer file operations
 			if m.lastSavedQueryContents != m.queryPanel.GetValue() {
 				// buffer has changed
 				if m.autoSave {
@@ -387,4 +440,24 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	return nil
+}
+
+func (m *model) handleCompletionResult(result autocomplete.CompletionResult) tea.Cmd {
+	switch result.Kind {
+	case autocomplete.CompletionColumn:
+		return commands.GetAutocompleteData(m.db, result.TableName)
+	case autocomplete.CompletionTable:
+		m.queryPanel.SetAutoCompleteActive(true)
+		return m.queryPanel.SetAutoCompleteOptions(result.Items)
+	}
+	return nil
+}
+
+func isAutoCompleteKey(key string) bool {
+	acKeys := []string{"up", "down", "esc", "enter"}
+	return slices.Contains(acKeys, key)
+}
+
+func isPrintableKey(key string) bool {
+	return len(key) == 1 && strconv.IsPrint(rune(key[0]))
 }

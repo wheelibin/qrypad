@@ -99,6 +99,16 @@ func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
 	}
 }
 
+func GetAutocompleteData(dbConn db.DBConn, tableName string) tea.Cmd {
+	return func() tea.Msg {
+		cols, err := db.GetAutoCompleteColumns(context.Background(), dbConn, tableName)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return db.AutoCompleteDataFetchedMsg(cols)
+	}
+}
+
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
 	switch kind {
 	case TableInfoKind.Columns:
@@ -305,4 +315,16 @@ func OpenEditor(file string) tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return EditorFinishedMsg{Err: err}
 	})
+}
+
+func AutoCompleteEntrySelect(entry string) tea.Cmd {
+	return func() tea.Msg {
+		return AutoCompleteEntrySelectedMsg(entry)
+	}
+}
+
+func AutoCompleteClose() tea.Cmd {
+	return func() tea.Msg {
+		return AutoCompleteCloseMsg{}
+	}
 }

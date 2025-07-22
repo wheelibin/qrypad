@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -34,6 +35,7 @@ type TablePanelModel struct {
 	height         int
 	table          table.Model
 	selectedTable  string
+	allNames       []string
 	activeTabIndex int
 	help           help.Model
 	keymap         tablePanelKeymap
@@ -131,6 +133,7 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 
 	cols := []table.Column{}
 	rows := []table.Row{}
+	names := make([]string, 0, len(data.Rows))
 
 	// get cols
 	// name
@@ -143,14 +146,23 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
+		if name, ok := row["name"]; ok {
+			names = append(names, fmt.Sprintf("%v", name))
+		}
 	}
 
+	m.allNames = names
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
 }
 
 func (m TablePanelModel) GetSelectedTable() string {
 	return m.selectedTable
+}
+
+// GetAllTableNames returns all table/view names currently loaded in the panel.
+func (m TablePanelModel) GetAllTableNames() []string {
+	return m.allNames
 }
 
 func (m *TablePanelModel) SetActive(active bool) {

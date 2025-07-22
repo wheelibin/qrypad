@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/help"
@@ -22,17 +23,19 @@ type queryPanelKeymap struct {
 }
 
 type QueryPanelModel struct {
-	active           bool
-	width            int
-	height           int
-	queryBuffer      textarea.Model
-	connectionName   string
-	CurrentStatement *Statement
-	dirty            bool
-	filename         string
-	help             help.Model
-	keymap           queryPanelKeymap
-	autoSaveEnabled  bool
+	active              bool
+	width               int
+	height              int
+	queryBuffer         textarea.Model
+	connectionName      string
+	CurrentStatement    *Statement
+	dirty               bool
+	filename            string
+	help                help.Model
+	keymap              queryPanelKeymap
+	autoSaveEnabled     bool
+	autoCompleteOptions []string
+	autoCompletePopup   AutoCompletePopupModel
 }
 
 func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelModel {
@@ -49,10 +52,13 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
 
+	ac := NewAutoCompletePopupModel()
+
 	return QueryPanelModel{
-		connectionName: connectionName,
-		queryBuffer:    ta,
-		help:           makeHelp(),
+		connectionName:    connectionName,
+		queryBuffer:       ta,
+		help:              makeHelp(),
+		autoCompletePopup: ac,
 		keymap: queryPanelKeymap{
 			execute:      keys.DefaultKeyMap.ExecuteQuery,
 			openInEditor: keys.DefaultKeyMap.OpenInEditor,
@@ -86,12 +92,27 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		return ""
 	})
 
-	switch msg.(type) {
+	updateQueryBuffer := true
+
+	switch msg := msg.(type) {
 	case tea.FocusMsg:
 		cmds = append(cmds, m.queryBuffer.Focus())
 
 	case commands.EditorFinishedMsg:
 		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName))
+
+	case commands.AutoCompleteEntrySelectedMsg:
+		m.queryBuffer = replaceFuzzyPrefixInTextarea(m.queryBuffer, string(msg))
+
+	case commands.AutoCompleteCloseMsg:
+		m.autoCompletePopup.SetActive(false)
+		m.autoCompletePopup.SetFilter("")
+
+	case tea.KeyMsg:
+		acKeys := []string{"up", "down", "esc", "enter"}
+		if slices.Contains(acKeys, msg.String()) {
+			updateQueryBuffer = !m.autoCompletePopup.active
+		}
 	}
 
 	// update components
@@ -99,8 +120,16 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		if !m.queryBuffer.Focused() {
 			cmds = append(cmds, m.queryBuffer.Focus())
 		}
-		m.queryBuffer, cmd = m.queryBuffer.Update(msg)
-		cmds = append(cmds, cmd)
+
+		if m.autoCompletePopup.active {
+			m.autoCompletePopup, cmd = m.autoCompletePopup.Update(msg)
+			cmds = append(cmds, cmd)
+		}
+		if updateQueryBuffer {
+			m.queryBuffer, cmd = m.queryBuffer.Update(msg)
+			cmds = append(cmds, cmd)
+
+		}
 
 		m.CurrentStatement = getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
 
@@ -150,6 +179,38 @@ func (m *QueryPanelModel) SetActive(active bool) {
 	m.active = active
 }
 
+func (m *QueryPanelModel) SetAutoCompleteActive(active bool) {
+	m.autoCompletePopup.SetActive(active)
+}
+
+func (m QueryPanelModel) GetAutoCompleteActive() bool {
+	return m.autoCompletePopup.active
+}
+
+func (m *QueryPanelModel) SetAutoCompleteFilter(filter string) {
+	m.autoCompletePopup.SetFilter(filter)
+}
+
+func (m *QueryPanelModel) AutoCompleteFilterAppend(value string) {
+	m.autoCompletePopup.SetFilter(m.autoCompletePopup.filter + value)
+}
+
+func (m *QueryPanelModel) AutoCompleteFilterPop() {
+	f := m.autoCompletePopup.filter
+	if len(f) > 0 {
+		m.autoCompletePopup.SetFilter(f[:len(f)-1])
+	}
+}
+
+func (m QueryPanelModel) GetWordAtCursor() string {
+	return getWordAtCursor(m.queryBuffer.Value(), m.queryBuffer.Row, m.queryBuffer.Col)
+}
+
+func (m *QueryPanelModel) SetAutoCompleteOptions(opts []string) tea.Cmd {
+	m.autoCompleteOptions = opts
+	return m.autoCompletePopup.SetItems(opts)
+}
+
 func (m QueryPanelModel) helpView() string {
 	km := []key.Binding{
 		m.keymap.execute,
@@ -176,10 +237,18 @@ func (m QueryPanelModel) View() string {
 		text = text + " [+]"
 	}
 	title := style.Title(m.width-2, m.active).MarginBottom(1).Render(text)
+	qb := m.queryBuffer.View()
+
+	if m.autoCompletePopup.active {
+		autoComplete := m.autoCompletePopup.View()
+		// Use viewport-relative row so the popup follows the cursor when scrolled
+		viewRow := m.queryBuffer.CursorViewRow()
+		qb = style.PlaceOverlay(m.queryBuffer.Col+5, viewRow, autoComplete, qb)
+	}
 
 	v := lipgloss.JoinVertical(lipgloss.Left,
 		title,
-		m.queryBuffer.View(),
+		qb,
 		style.ShortHelp(m.width).Render(m.helpView()),
 	)
 	return panelStyle.Render(v)

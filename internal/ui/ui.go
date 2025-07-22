@@ -39,14 +39,14 @@ var PopupKind = struct {
 	Password         PopupKindType
 	ResultRow        PopupKindType
 	DatabaseSwitcher PopupKindType
-	LoadingPopup     PopupKindType
+	Loading          PopupKindType
 }{
 	Error:            1,
 	Help:             2,
 	Password:         3,
 	ResultRow:        4,
 	DatabaseSwitcher: 5,
-	LoadingPopup:     6,
+	Loading:          6,
 }
 
 type bounds struct {
@@ -197,7 +197,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.BlurMsg:
 		m.setPanelsActiveState(-1)
 
-	case db.DataFetchedMsg,
+	case db.AutoCompleteDataFetchedMsg,
+		db.DataFetchedMsg,
 		db.DatabaseConnectedMsg,
 		db.DatabaseListFetchedMsg,
 		db.SchemaEntitiesFetchedMsg,
@@ -304,7 +305,7 @@ func (m *model) updateActivePopup(msg tea.Msg) tea.Cmd {
 		m.errorPopup, cmd = m.errorPopup.Update(msg)
 	case PopupKind.DatabaseSwitcher:
 		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
-	case PopupKind.LoadingPopup:
+	case PopupKind.Loading:
 		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
 	}
 	return cmd
@@ -322,7 +323,7 @@ func (m model) activePopupView() string {
 		return m.passwordPopup.View()
 	case PopupKind.DatabaseSwitcher:
 		return m.databaseSwitcherPopup.View()
-	case PopupKind.LoadingPopup:
+	case PopupKind.Loading:
 		return m.loadingPopup.View()
 	}
 	return ""

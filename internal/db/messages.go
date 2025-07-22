@@ -23,8 +23,9 @@ type (
 		Cancel     context.CancelFunc
 		ResultChan <-chan tea.Msg
 	}
-	DataFetchedMsg           QueryResultMsg
-	TableInfoDataFetchedMsg  QueryResultMsg
-	SchemaEntitiesFetchedMsg QueryResultMsg
-	DatabaseListFetchedMsg   QueryResultMsg
+	DataFetchedMsg             QueryResultMsg
+	TableInfoDataFetchedMsg    QueryResultMsg
+	SchemaEntitiesFetchedMsg   QueryResultMsg
+	DatabaseListFetchedMsg     QueryResultMsg
+	AutoCompleteDataFetchedMsg []string
 )
