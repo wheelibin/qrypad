@@ -1,4 +1,10 @@
-.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint
+.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover
+
+test:
+	go test ./...
+
+test-cover:
+	go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 
 testdb-pg-up:
 	cd test-db/postgres && docker compose up -d
