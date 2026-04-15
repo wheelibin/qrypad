@@ -27,11 +27,6 @@ const (
 	TablePanelMinHeight     = 9
 	LeftPanelSpan           = 3
 
-	PopupError     = 1
-	PopupHelp      = 2
-	PopupPassword  = 3
-	PopupResultRow = 4
-
 	MinHeight = 24
 	MinWidth  = 121
 )
@@ -267,35 +262,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	// update popup components — popups handle their own key events
-	switch m.activePopup {
-	case PopupKind.ResultRow:
-		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
-	case PopupKind.Help:
-		m.helpPopup, cmd = m.helpPopup.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
-	case PopupKind.Password:
-		m.passwordPopup, cmd = m.passwordPopup.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
-	case PopupKind.Error:
-		m.errorPopup, cmd = m.errorPopup.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
-	case PopupKind.DatabaseSwitcher:
-		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
-		cmds = append(cmds, cmd)
-		return m, tea.Batch(cmds...)
-
-	case PopupKind.LoadingPopup:
-		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
-		cmds = append(cmds, cmd)
+	if m.hasActivePopup() {
+		cmds = append(cmds, m.updateActivePopup(msg))
 		return m, tea.Batch(cmds...)
 	}
 
@@ -321,6 +289,43 @@ func (m *model) showPopup(p PopupKindType) {
 
 func (m model) popupIsActive(p PopupKindType) bool {
 	return m.activePopup == p
+}
+
+func (m *model) updateActivePopup(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	switch m.activePopup {
+	case PopupKind.ResultRow:
+		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
+	case PopupKind.Help:
+		m.helpPopup, cmd = m.helpPopup.Update(msg)
+	case PopupKind.Password:
+		m.passwordPopup, cmd = m.passwordPopup.Update(msg)
+	case PopupKind.Error:
+		m.errorPopup, cmd = m.errorPopup.Update(msg)
+	case PopupKind.DatabaseSwitcher:
+		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
+	case PopupKind.LoadingPopup:
+		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
+	}
+	return cmd
+}
+
+func (m model) activePopupView() string {
+	switch m.activePopup {
+	case PopupKind.Error:
+		return m.errorPopup.View()
+	case PopupKind.ResultRow:
+		return m.resultRowPopup.View()
+	case PopupKind.Help:
+		return m.helpPopup.View()
+	case PopupKind.Password:
+		return m.passwordPopup.View()
+	case PopupKind.DatabaseSwitcher:
+		return m.databaseSwitcherPopup.View()
+	case PopupKind.LoadingPopup:
+		return m.loadingPopup.View()
+	}
+	return ""
 }
 
 func (m *model) adjustSizes() {
@@ -407,35 +412,7 @@ func (m model) View() string {
 
 	contentView := mainContent
 
-	switch m.activePopup {
-	case PopupKind.Error:
-		p := m.errorPopup.View()
-		x := m.width/2 - lipgloss.Width(p)/2
-		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		contentView = style.PlaceOverlay(x, y, p, mainContent)
-
-	case PopupKind.ResultRow:
-		p := m.resultRowPopup.View()
-		x := m.width/2 - lipgloss.Width(p)/2
-		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	case PopupKind.Help:
-		p := m.helpPopup.View()
-		x := m.width/2 - lipgloss.Width(p)/2
-		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	case PopupKind.Password:
-		p := m.passwordPopup.View()
-		x := m.width/2 - lipgloss.Width(p)/2
-		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	case PopupKind.DatabaseSwitcher:
-		p := m.databaseSwitcherPopup.View()
-		x := m.width/2 - lipgloss.Width(p)/2
-		y := m.height/2 - 2 - lipgloss.Height(p)/2
-		contentView = style.PlaceOverlay(x, y, p, mainContent)
-	case PopupKind.LoadingPopup:
-		p := m.loadingPopup.View()
+	if p := m.activePopupView(); p != "" {
 		x := m.width/2 - lipgloss.Width(p)/2
 		y := m.height/2 - 2 - lipgloss.Height(p)/2
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
