@@ -20,6 +20,7 @@ type dbSwitcherKeymap struct {
 	cancel  key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type DatabaseSwitcherPopupModel struct {
 	width   int
 	height  int
@@ -77,8 +78,7 @@ func (m DatabaseSwitcherPopupModel) Update(msg tea.Msg) (DatabaseSwitcherPopupMo
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.connect):
 			cmd = commands.DatabaseSelectionChanged(m.GetSelectedDatabase())
@@ -103,7 +103,8 @@ func (m *DatabaseSwitcherPopupModel) SetLoading(loading bool) {
 }
 
 func (m DatabaseSwitcherPopupModel) GetSelectedDatabase() string {
-	return m.table.HighlightedRow().Data["name"].(string)
+	name, _ := m.table.HighlightedRow().Data["name"].(string)
+	return name
 }
 
 func (m *DatabaseSwitcherPopupModel) SetData(data *db.Data) {

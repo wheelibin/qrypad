@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"log/slog"
 	"reflect"
 	"strings"
 
@@ -12,7 +13,9 @@ func MapCustomKeys() {
 	var overrides map[string]string
 	sub := viper.Sub("keys")
 	if sub != nil {
-		sub.Unmarshal(&overrides)
+		if err := sub.Unmarshal(&overrides); err != nil {
+			slog.Error("error unmarshalling key overrides", "error", err)
+		}
 	}
 	applyKeyOverrides(&DefaultKeyMap, overrides)
 }
@@ -21,7 +24,7 @@ func applyKeyOverrides(km *keyMap, overrides map[string]string) {
 	val := reflect.ValueOf(km).Elem()
 	typ := val.Type()
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := typ.Field(i)
 		name := strings.ToLower(field.Name)
 
@@ -31,7 +34,10 @@ func applyKeyOverrides(km *keyMap, overrides map[string]string) {
 				continue
 			}
 
-			currentBinding := fieldVal.Interface().(key.Binding)
+			currentBinding, ok := fieldVal.Interface().(key.Binding)
+			if !ok {
+				continue
+			}
 			newBinding := key.NewBinding(
 				key.WithKeys(overrideKey),
 				key.WithHelp(overrideKey, currentBinding.Help().Desc),

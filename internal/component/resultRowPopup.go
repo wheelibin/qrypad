@@ -20,6 +20,7 @@ type resultRowPopupKeymap struct {
 	close key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ResultRowPopupModel struct {
 	width  int
 	height int
@@ -64,8 +65,7 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.copy):
 			var valDesc string

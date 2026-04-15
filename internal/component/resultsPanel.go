@@ -3,7 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"math"
 	"time"
 
@@ -24,6 +24,7 @@ type resultsPanelKeymap struct {
 	copyRow key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ResultsPanelModel struct {
 	active        bool
 	width         int
@@ -119,7 +120,7 @@ func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	j, err := json.Marshal(m.table.HighlightedRow().Data)
 	if err != nil {
-		log.Println("error converting row to json", err)
+		slog.Error("error converting row to json", "error", err)
 	}
 	return string(j)
 }

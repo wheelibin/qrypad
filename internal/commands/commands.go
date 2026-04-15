@@ -16,6 +16,7 @@ import (
 
 type TablePanelKindType string
 
+//nolint:gochecknoglobals // singleton-like enum structs used as namespaced constants
 var TablePanelKind = struct {
 	Tables TablePanelKindType
 	Views  TablePanelKindType
@@ -26,6 +27,7 @@ var TablePanelKind = struct {
 
 type TableInfoKindType string
 
+//nolint:gochecknoglobals // singleton-like enum struct used as namespaced constants
 var TableInfoKind = struct {
 	Columns     TableInfoKindType
 	Indexes     TableInfoKindType
@@ -68,12 +70,13 @@ func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
 			if errors.Is(err, password.ErrPasswordNotSaved) {
 				return PasswordInputNeededMsg{}
 			}
-			return DatabaseConnectErrMsg{err}
+			return DatabaseConnectError{err}
 		}
 		return db.DatabaseConnectedMsg(dbConn)
 	})
 }
 
+//nolint:gochecknoglobals // function variable for dependency injection in tests
 var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 	return db.DataFetchedMsg{Data: d, Err: err}
 }
@@ -270,7 +273,7 @@ func SaveQueryFile(connectionName string, contents string) tea.Cmd {
 		}
 		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
 
-		err = os.WriteFile(filename, []byte(contents), 0644)
+		err = os.WriteFile(filename, []byte(contents), 0o600)
 		if err != nil {
 			return ErrMsg{err}
 		}
@@ -288,16 +291,16 @@ func GetOutputDir() (string, error) {
 	case "darwin", "linux":
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("error getting home directory: %w", err)
 		}
 		outputDir = filepath.Join(homeDir, ".local", "share", "qrypad")
 	default:
-		return "", fmt.Errorf("error determining folder to hold query files, unsupported OS")
+		return "", errors.New("error determining folder to hold query files, unsupported OS")
 	}
 
 	// Ensure the directory exists
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err = os.MkdirAll(outputDir, 0755)
+		err = os.MkdirAll(outputDir, 0o750)
 		if err != nil {
 			return "", fmt.Errorf("error creating folder to hold query files: %w", err)
 		}
@@ -311,7 +314,7 @@ func OpenEditor(file string) tea.Cmd {
 	if editor == "" {
 		editor = "vim"
 	}
-	c := exec.Command(editor, file) //nolint:gosec
+	c := exec.CommandContext(context.Background(), editor, file)
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return EditorFinishedMsg{Err: err}
 	})

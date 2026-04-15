@@ -2,7 +2,7 @@ package style
 
 import (
 	"bytes"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2/quick"
@@ -13,6 +13,8 @@ import (
 // highlightCache caches Chroma output keyed by raw line text.
 // Since the same text always produces the same highlighting,
 // this avoids re-running Chroma on unchanged lines.
+//
+//nolint:gochecknoglobals // performance cache - global by design
 var highlightCache = make(map[string]string)
 
 // HighlightText returns syntax-highlighted ANSI text for the given input.
@@ -30,7 +32,7 @@ func HighlightText(txt string) string {
 	var sb strings.Builder
 	err := quick.Highlight(&sb, txt, "sql", "terminal256", themeName)
 	if err != nil {
-		log.Println("error highlighting text", err)
+		slog.Error("error highlighting text", "error", err)
 		return txt
 	}
 
@@ -51,15 +53,15 @@ func ClearHighlightCache() {
 //
 // The character at the offset itself is excluded from both halves.
 // This is used to split a highlighted line around the cursor position.
-func SplitStyledLine(styled string, offset int) (before, after string) {
+func SplitStyledLine(styled string, offset int) (string, string) {
 	if offset <= 0 {
 		// cursor is at the start: before is empty, after skips char 0
-		after = cutStyledLeft(styled, 1)
+		after := cutStyledLeft(styled, 1)
 		return "", after
 	}
 
-	before = truncateStyled(styled, offset)
-	after = cutStyledLeft(styled, offset+1)
+	before := truncateStyled(styled, offset)
+	after := cutStyledLeft(styled, offset+1)
 	return before, after
 }
 

@@ -1,5 +1,4 @@
-// Package runeutil provides a utility function for use in Bubbles
-// that can process Key messages containing runes.
+// Package textarea provides a utility function for processing Key messages containing runes.
 package textarea
 
 import (
@@ -60,13 +59,12 @@ func (s *sanitizer) Sanitize(runes []rune) []rune {
 	// is smaller or equal to the input.
 	copied := false
 
-	for src := 0; src < len(runes); src++ {
-		r := runes[src]
-		switch {
-		case r == utf8.RuneError:
+	for src, r := range runes {
+		switch r {
+		case utf8.RuneError:
 			// skip
 
-		case r == '\r' || r == '\n':
+		case '\r', '\n':
 			if len(dstrunes)+len(s.replaceNewLine) > src && !copied {
 				dst := len(dstrunes)
 				dstrunes = make([]rune, dst, len(runes)+len(s.replaceNewLine))
@@ -75,7 +73,7 @@ func (s *sanitizer) Sanitize(runes []rune) []rune {
 			}
 			dstrunes = append(dstrunes, s.replaceNewLine...)
 
-		case r == '\t':
+		case '\t':
 			if len(dstrunes)+len(s.replaceTab) > src && !copied {
 				dst := len(dstrunes)
 				dstrunes = make([]rune, dst, len(runes)+len(s.replaceTab))

@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	debouncedMsgs = make(chan tea.Msg, 10)
-	debouncer     = commands.NewDebouncer(500*time.Millisecond, debouncedMsgs)
+	debouncedMsgs = make(chan tea.Msg, 10)                                     //nolint:gochecknoglobals // debouncer requires global channel
+	debouncer     = commands.NewDebouncer(500*time.Millisecond, debouncedMsgs) //nolint:gochecknoglobals // debouncer is a package-level singleton
 )
 
 func waitForResult(ch <-chan tea.Msg) tea.Cmd {
@@ -40,10 +40,9 @@ func (m *model) handleError(err error) {
 
 func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case db.DatabaseConnectedMsg:
 		if m.db.DB != nil {
-			m.db.DB.Close()
+			_ = m.db.DB.Close()
 		}
 		m.db = db.DBConn(msg)
 		m.closePopup()
@@ -109,16 +108,14 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 
 func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case commands.ErrMsg:
 		m.handleError(msg.Err)
 		return commands.SetLoading(false)
 
-	case commands.DatabaseConnectErrMsg:
+	case commands.DatabaseConnectError:
 		m.errorPopup.SetIsConnectionError(true)
 		m.handleError(msg.Err)
 		return commands.SetLoading(false)
-
 	}
 
 	return nil
@@ -126,18 +123,15 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 
 func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case commands.LoadingMsg:
 		if m.popupIsActive(PopupKind.DatabaseSwitcher) {
 			return nil
 		}
 		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
 			m.showPopup(PopupKind.Loading)
-		} else {
+		} else if !m.popupIsActive(PopupKind.Error) {
 			// loading finished
-			if !m.popupIsActive(PopupKind.Error) {
-				m.closePopup()
-			}
+			m.closePopup()
 		}
 
 	case commands.CancelQueryMsg:
@@ -220,19 +214,20 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 
 func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
 	if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
-		if isInBounds(msg.X, msg.Y, m.tablePanelBounds) {
+		switch {
+		case isInBounds(msg.X, msg.Y, m.tablePanelBounds):
 			if m.activePanelIndex != PanelIndexTables {
 				return commands.SetActivePanel(PanelIndexTables)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds) {
+		case isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds):
 			if m.activePanelIndex != PanelIndexTableInfo {
 				return commands.SetActivePanel(PanelIndexTableInfo)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.queryPanelBounds) {
+		case isInBounds(msg.X, msg.Y, m.queryPanelBounds):
 			if m.activePanelIndex != PanelIndexQuery {
 				return commands.SetActivePanel(PanelIndexQuery)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.resultsPanelBounds) {
+		case isInBounds(msg.X, msg.Y, m.resultsPanelBounds):
 			if m.activePanelIndex != PanelIndexResults {
 				return commands.SetActivePanel(PanelIndexResults)
 			}
@@ -242,10 +237,11 @@ func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
 	return nil
 }
 
+//nolint:gocyclo,cyclop // Bubble Tea key handler inherently requires complex switch statements
 func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	if key.Matches(msg, keys.DefaultKeyMap.Quit) {
 		if m.db.DB != nil {
-			m.db.DB.Close()
+			_ = m.db.DB.Close()
 		}
 		return tea.Quit
 	}
@@ -256,7 +252,6 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	switch {
-
 	case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 		nextPanelIndex := (m.activePanelIndex + 1) % m.selectablePanelCount
 		if m.leftPanelHidden {
@@ -290,8 +285,7 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ViewDataDesc):
-		switch m.activePanelIndex {
-		case PanelIndexTables:
+		if m.activePanelIndex == PanelIndexTables {
 			if m.tablePanel.GetSelectedTable() != "" {
 				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "desc")
 			}
@@ -400,7 +394,6 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	default:
 		// any other key
 		if m.activePanelIndex == PanelIndexQuery {
-
 			if m.queryPanel.GetAutoCompleteActive() {
 				key := msg.String()
 				if !isAutoCompleteKey(key) {
@@ -432,9 +425,8 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 					m.lastSavedQueryContents = m.queryPanel.GetValue()
 					debouncer.Trigger("save-query", commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue()))
 					return waitForResult(debouncedMsgs)
-				} else {
-					m.queryPanel.SetDirty(true)
 				}
+				m.queryPanel.SetDirty(true)
 			}
 		}
 	}
@@ -449,6 +441,8 @@ func (m *model) handleCompletionResult(result autocomplete.CompletionResult) tea
 	case autocomplete.CompletionTable:
 		m.queryPanel.SetAutoCompleteActive(true)
 		return m.queryPanel.SetAutoCompleteOptions(result.Items)
+	case autocomplete.CompletionNone:
+		// nothing to complete
 	}
 	return nil
 }

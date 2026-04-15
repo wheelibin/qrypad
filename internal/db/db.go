@@ -1,10 +1,14 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"net"
+	"strconv"
 )
 
+//nolint:revive // DBConn is intentionally named with DB prefix for clarity
 type DBConn struct {
 	DB                *sql.DB
 	DriverName        DriverNameType
@@ -30,7 +34,8 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 		connString = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conn.User, password, conn.Host, conn.Port, conn.Database)
 		driver = string(conn.Driver)
 	case DriverName.Postgres:
-		connString = fmt.Sprintf("postgres://%s:%s@%s:%d/%s", conn.User, password, conn.Host, conn.Port, conn.Database)
+		host := net.JoinHostPort(conn.Host, strconv.Itoa(conn.Port))
+		connString = fmt.Sprintf("postgres://%s:%s@%s/%s", conn.User, password, host, conn.Database)
 		driver = "pgx"
 	case DriverName.SQLite:
 		connString = conn.Database
@@ -40,21 +45,21 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 	if err != nil {
 		return DBConn{}, fmt.Errorf("error opening connection to database: %w", err)
 	}
-	if err := dbConn.Ping(); err != nil {
+	if err := dbConn.PingContext(context.Background()); err != nil {
 		return DBConn{}, fmt.Errorf("error connecting to database: %w", err)
 	}
 
 	connectedDB := conn.Database
 	if connectedDB == "" {
 		// no database specified in the connection, so read it
-		var sql, dbName string
+		var sqlQuery, dbName string
 		switch conn.Driver {
 		case DriverName.MySQL:
-			sql = "SELECT DATABASE()"
+			sqlQuery = "SELECT DATABASE()"
 		case DriverName.Postgres:
-			sql = "SELECT current_database()"
+			sqlQuery = "SELECT current_database()"
 		}
-		row := dbConn.QueryRow(sql)
+		row := dbConn.QueryRowContext(context.Background(), sqlQuery)
 		if err := row.Scan(&dbName); err != nil {
 			return DBConn{}, fmt.Errorf("error connecting to database: %w", err)
 		}

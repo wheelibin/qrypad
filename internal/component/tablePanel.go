@@ -29,6 +29,7 @@ type tablePanelKeymap struct {
 	copy         key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type TablePanelModel struct {
 	active         bool
 	width          int
@@ -83,7 +84,9 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case db.SchemaEntitiesFetchedMsg:
 		if len(m.table.HighlightedRow().Data) > 0 {
-			m.selectedTable = m.table.HighlightedRow().Data["name"].(string)
+			if name, ok := m.table.HighlightedRow().Data["name"].(string); ok {
+				m.selectedTable = name
+			}
 		} else {
 			m.selectedTable = ""
 		}
@@ -111,10 +114,11 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 		m.table, cmd = m.table.Update(msg)
 		cmds = append(cmds, cmd)
 		for _, e := range m.table.GetLastUpdateUserEvents() {
-			switch e.(type) {
-			case table.UserEventHighlightedIndexChanged:
+			if _, ok := e.(table.UserEventHighlightedIndexChanged); ok {
 				if len(m.table.HighlightedRow().Data) > 0 {
-					m.selectedTable = m.table.HighlightedRow().Data["name"].(string)
+					if name, ok := m.table.HighlightedRow().Data["name"].(string); ok {
+						m.selectedTable = name
+					}
 				} else {
 					m.selectedTable = ""
 				}

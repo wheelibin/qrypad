@@ -31,7 +31,7 @@ const (
 // Internal messages for clipboard operations.
 type (
 	pasteMsg    string
-	pasteErrMsg struct{ error }
+	pasteErrMsg struct{ error } //nolint:errname // Bubble Tea message type, not a standard Go error
 )
 
 // KeyMap is the key bindings for different actions within the textarea.
@@ -64,6 +64,8 @@ type KeyMap struct {
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
 // upon the textarea.
+//
+//nolint:gochecknoglobals // default keymap is required for Bubble Tea component
 var DefaultKeyMap = KeyMap{
 	CharacterForward:        key.NewBinding(key.WithKeys("right", "ctrl+f")),
 	CharacterBackward:       key.NewBinding(key.WithKeys("left", "ctrl+b")),
@@ -148,6 +150,8 @@ func (w line) Hash() string {
 }
 
 // Model is the Bubble Tea model for this text area element.
+//
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type Model struct {
 	Err error
 
@@ -349,7 +353,7 @@ func (m *Model) insertRunesFromUserInput(runes []rune) {
 	// Split the input into lines.
 	var lines [][]rune
 	lstart := 0
-	for i := 0; i < len(runes); i++ {
+	for i := range runes {
 		if runes[i] == '\n' {
 			// Queue a line to become a new row in the text area below.
 			// Beware to clamp the max capacity of the slice, to ensure no
@@ -687,11 +691,9 @@ func (m *Model) deleteWordRight() {
 func (m *Model) characterRight() {
 	if m.Col < len(m.value[m.Row]) {
 		m.SetCursor(m.Col + 1)
-	} else {
-		if m.Row < len(m.value)-1 {
-			m.Row++
-			m.CursorStart()
-		}
+	} else if m.Row < len(m.value)-1 {
+		m.Row++
+		m.CursorStart()
 	}
 }
 
@@ -739,10 +741,7 @@ func (m *Model) wordRight() {
 
 func (m *Model) doWordRight(fn func(charIdx int, pos int)) {
 	// Skip spaces forward.
-	for {
-		if m.Col < len(m.value[m.Row]) && !unicode.IsSpace(m.value[m.Row][m.Col]) {
-			break
-		}
+	for m.Col >= len(m.value[m.Row]) || unicode.IsSpace(m.value[m.Row][m.Col]) {
 		if m.Row == len(m.value)-1 && m.Col == len(m.value[m.Row]) {
 			// End of text.
 			break
@@ -828,13 +827,13 @@ func (m Model) LineInfo() LineInfo {
 // repositionView repositions the view of the viewport based on the defined
 // scrolling behavior.
 func (m *Model) repositionView() {
-	min := m.viewport.YOffset
-	max := min + m.viewport.Height - 1
+	minRow := m.viewport.YOffset
+	maxRow := minRow + m.viewport.Height - 1
 
-	if row := m.cursorLineNumber(); row < min {
-		m.viewport.LineUp(min - row)
-	} else if row > max {
-		m.viewport.LineDown(row - max)
+	if row := m.cursorLineNumber(); row < minRow {
+		m.viewport.ScrollUp(minRow - row)
+	} else if row > maxRow {
+		m.viewport.ScrollDown(row - maxRow)
 	}
 }
 
@@ -926,6 +925,8 @@ func (m *Model) SetHeight(h int) {
 }
 
 // Update is the Bubble Tea update loop.
+//
+//nolint:gocyclo,cyclop // Bubble Tea message handling inherently requires complex switch statements
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if !m.focus {
 		m.Cursor.Blur()
@@ -935,7 +936,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	// Used to determine if the cursor should blink.
 	oldRow, oldCol := m.cursorLineNumber(), m.Col
 
-	var cmds []tea.Cmd
+	cmds := make([]tea.Cmd, 0, 2)
 
 	if m.value[m.Row] == nil {
 		m.value[m.Row] = make([]rune, 0)
@@ -1148,7 +1149,7 @@ func (m Model) View() string {
 
 	// Always show at least `m.Height` lines at all times.
 	// To do this we can simply pad out a few extra new lines in the view.
-	for i := 0; i < m.height; i++ {
+	for range m.height {
 		prompt := m.getPromptString(displayLine)
 		prompt = m.style.Prompt.Render(prompt)
 		s.WriteString(prompt)
@@ -1165,8 +1166,8 @@ func (m Model) View() string {
 	return m.style.Base.Render(m.viewport.View())
 }
 
-func (m Model) getPromptString(displayLine int) (prompt string) {
-	prompt = m.Prompt
+func (m Model) getPromptString(displayLine int) string {
+	prompt := m.Prompt
 	if m.promptFunc == nil {
 		return prompt
 	}
@@ -1237,7 +1238,7 @@ func (m Model) memoizedWrap(runes []rune, width int) [][]rune {
 // This accounts for soft wrapped lines.
 func (m Model) cursorLineNumber() int {
 	line := 0
-	for i := 0; i < m.Row; i++ {
+	for i := range m.Row {
 		// Calculate the number of lines that the current line will be split
 		// into.
 		line += len(m.memoizedWrap(m.value[i], m.width))
@@ -1273,7 +1274,7 @@ func (m *Model) mergeLineAbove(row int) {
 	}
 
 	m.Col = len(m.value[row-1])
-	m.Row = m.Row - 1
+	m.Row--
 
 	// To perform a merge, we will need to combine the two lines and then
 	m.value[row-1] = append(m.value[row-1], m.value[row]...)
@@ -1389,18 +1390,4 @@ func clamp(v, low, high int) int {
 		low, high = high, low
 	}
 	return min(high, max(low, v))
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

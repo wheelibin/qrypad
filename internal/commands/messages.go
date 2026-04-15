@@ -1,39 +1,50 @@
 package commands
 
-// all command errors are passed back using this
+// ErrMsg wraps an error for use as a Bubble Tea message.
+// All command errors are passed back using this.
+//
+//nolint:errname // ErrMsg is a Bubble Tea message type, not a standard Go error
 type ErrMsg struct{ Err error }
 
 func (e ErrMsg) Error() string { return e.Err.Error() }
 
-type DatabaseConnectErrMsg struct{ Err error }
+// DatabaseConnectError wraps a database connection error as a Bubble Tea message.
+type DatabaseConnectError struct{ Err error }
 
-func (e DatabaseConnectErrMsg) Error() string { return e.Err.Error() }
+func (e DatabaseConnectError) Error() string { return e.Err.Error() }
 
-// sent when the user navigates to another panel
+// DatabaseConnectErrMsg is an alias for backward compatibility.
+//
+// Deprecated: Use DatabaseConnectError instead.
+//
+//nolint:errname // Alias for backward compatibility
+type DatabaseConnectErrMsg = DatabaseConnectError
+
+// ActivePanelChangedMsg is sent when the user navigates to another panel.
 type ActivePanelChangedMsg int
 
-// sent when loading has started
+// LoadingMsg is sent when loading has started.
 type LoadingMsg struct{ Loading bool }
 
-// contains the selected database/table name
-type (
-	DatabaseSelectedMsg string
-	TableSelectedMsg    string
-)
+// DatabaseSelectedMsg contains the selected database name.
+type DatabaseSelectedMsg string
 
-// the details of the query file
+// TableSelectedMsg contains the selected table name.
+type TableSelectedMsg string
+
+// QueryFileReadMsg contains the details of the query file.
 type QueryFileReadMsg struct{ FileName, Contents string }
 
-// sent when the query file has been saved
+// QueryFileSavedMsg is sent when the query file has been saved.
 type QueryFileSavedMsg struct{}
 
-// sent when the user navigates to another tab in the table info panels
-type (
-	TablePanelTabChangedMsg int
-	TableInfoTabChangedMsg  int
-)
+// TablePanelTabChangedMsg is sent when the user navigates to another tab in the table panel.
+type TablePanelTabChangedMsg int
 
-// fired when external editor is closed
+// TableInfoTabChangedMsg is sent when the user navigates to another tab in the table info panel.
+type TableInfoTabChangedMsg int
+
+// EditorFinishedMsg is fired when external editor is closed.
 type EditorFinishedMsg struct{ Err error }
 
 type (

@@ -23,9 +23,8 @@ func GetPassword(connectionName string) (string, error) {
 }
 
 func SetPassword(connectionName string, pass string) error {
-	err := keyring.Set(keyringService, connectionName, pass)
-	if err != nil {
-		return err
+	if err := keyring.Set(keyringService, connectionName, pass); err != nil {
+		return fmt.Errorf("failed to save password to keyring: %w", err)
 	}
 	return nil
 }

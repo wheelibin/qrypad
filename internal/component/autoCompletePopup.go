@@ -44,6 +44,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fmt.Fprint(w, fn(str))
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type AutoCompletePopupModel struct {
 	list     list.Model
 	active   bool
@@ -99,8 +100,7 @@ func (m AutoCompletePopupModel) Update(msg tea.Msg) (AutoCompletePopupModel, tea
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(msg, key.NewBinding(key.WithKeys("esc"))):
 			return m, commands.AutoCompleteClose()

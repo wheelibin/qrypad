@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,7 +28,8 @@ func main() {
 	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
 	viper.AddConfigPath(".")                    // optionally look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var notFound viper.ConfigFileNotFoundError
+		if errors.As(err, &notFound) {
 			exitWithError("no config found\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		} else {
 			exitWithError("error reading config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
@@ -40,7 +42,8 @@ func main() {
 	}
 
 	if len(os.Args[1:]) == 0 {
-		fmt.Printf(
+		_, _ = fmt.Fprintf(
+			os.Stderr,
 			"\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n",
 			constants.AppDesc,
 		)
@@ -80,9 +83,9 @@ func main() {
 
 func exitWithError(msg string, err error) {
 	if err != nil {
-		fmt.Printf("%s: %v", msg, err)
+		_, _ = fmt.Fprintf(os.Stderr, "%s: %v", msg, err)
 	} else {
-		fmt.Printf("%s", msg)
+		_, _ = fmt.Fprint(os.Stderr, msg)
 	}
 	os.Exit(1)
 }

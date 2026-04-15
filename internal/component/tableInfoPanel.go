@@ -28,6 +28,7 @@ type tableInfoKeymap struct {
 	copy    key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type TableInfoPanelModel struct {
 	active         bool
 	width          int
@@ -75,9 +76,7 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 		cmds = append(cmds, cmd)
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(msg, keys.DefaultKeyMap.NextTab):
 			m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount

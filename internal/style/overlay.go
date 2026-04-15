@@ -1,3 +1,4 @@
+// Package style provides styling utilities for terminal UI rendering.
 // copied from here: https://github.com/charmbracelet/lipgloss/pull/102/files
 // see discussion: https://github.com/charmbracelet/lipgloss/pull/102
 package style
@@ -117,8 +118,9 @@ func clamp(v, lower, upper int) int {
 
 // Split a string into lines, additionally returning the size of the widest
 // line.
-func getLines(s string) (lines []string, widest int) {
-	lines = strings.Split(s, "\n")
+func getLines(s string) ([]string, int) {
+	lines := strings.Split(s, "\n")
+	var widest int
 
 	for _, l := range lines {
 		w := ansi.PrintableRuneWidth(l)

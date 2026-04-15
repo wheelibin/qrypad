@@ -4,7 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"maps"
 	"sync"
 
@@ -20,9 +20,9 @@ var themes embed.FS
 const defaultThemeName = "catppuccin-mocha"
 
 var (
-	theme     Theme
-	themeOnce sync.Once
-	themeErr  error
+	theme     Theme     //nolint:gochecknoglobals // singleton theme loaded once via sync.Once
+	themeOnce sync.Once //nolint:gochecknoglobals // sync.Once for thread-safe single init
+	errTheme  error     //nolint:gochecknoglobals // error from singleton theme init
 )
 
 type TC struct {
@@ -34,7 +34,7 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 	// Expecting: {"fg": "#fff", "bg": "#000"}
 	var raw map[string]string
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
+		return fmt.Errorf("error unmarshalling theme color: %w", err)
 	}
 	if fg, ok := raw["fg"]; ok {
 		tc.FG = lipgloss.Color(fg)
@@ -93,7 +93,8 @@ func BlankTheme() Theme {
 
 func GetTheme() Theme {
 	if err := LoadTheme(); err != nil {
-		log.Fatal(err)
+		slog.Error("fatal error loading theme", "error", err)
+		panic(err)
 	}
 	return theme
 }
@@ -106,20 +107,20 @@ func LoadTheme() error {
 		data, err := themes.ReadFile(fmt.Sprintf("themes/%s.json", themeName))
 		if err != nil {
 			fallback, _ := themes.ReadFile(fmt.Sprintf("themes/%s.json", defaultThemeName))
-			themeErr = json.Unmarshal(fallback, &theme)
+			errTheme = json.Unmarshal(fallback, &theme)
 			theme.ThemeName = defaultThemeName
 			applyConfigOverrides()
 			registerChromaStyle()
 			return
 		}
-		themeErr = json.Unmarshal(data, &theme)
+		errTheme = json.Unmarshal(data, &theme)
 		theme.ThemeName = themeName
 		applyConfigOverrides()
 		registerChromaStyle()
 	})
 
-	if themeErr != nil {
-		return themeErr
+	if errTheme != nil {
+		return fmt.Errorf("error loading theme: %w", errTheme)
 	}
 	return nil
 }
@@ -128,7 +129,8 @@ func applyConfigOverrides() {
 	var overrides Theme
 	if sub := viper.Sub("theme"); sub != nil {
 		if err := sub.Unmarshal(&overrides); err != nil {
-			log.Fatal(err)
+			slog.Error("fatal error applying theme overrides", "error", err)
+			panic(err)
 		}
 		if overrides.ThemeName != "" {
 			theme = BlankTheme()
@@ -137,7 +139,8 @@ func applyConfigOverrides() {
 		}
 		ot, err := mergeStructs(theme, overrides)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("fatal error merging theme structs", "error", err)
+			panic(err)
 		}
 		theme = ot
 	}
@@ -164,30 +167,33 @@ func mergeStructs[T any](base, override T) (T, error) {
 	var result T
 	baseJSON, err := json.Marshal(base)
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("error marshalling base struct: %w", err)
 	}
 	overrideJSON, err := json.Marshal(override)
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("error marshalling override struct: %w", err)
 	}
 
 	var merged map[string]any
 	if err := json.Unmarshal(baseJSON, &merged); err != nil {
-		return result, err
+		return result, fmt.Errorf("error unmarshalling base JSON: %w", err)
 	}
 
 	var overrideMap map[string]any
 	if err := json.Unmarshal(overrideJSON, &overrideMap); err != nil {
-		return result, err
+		return result, fmt.Errorf("error unmarshalling override JSON: %w", err)
 	}
 
 	maps.Copy(merged, overrideMap)
 
 	finalJSON, err := json.Marshal(merged)
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("error marshalling merged struct: %w", err)
 	}
 
 	err = json.Unmarshal(finalJSON, &result)
-	return result, err
+	if err != nil {
+		return result, fmt.Errorf("error unmarshalling final struct: %w", err)
+	}
+	return result, nil
 }

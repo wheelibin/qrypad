@@ -35,7 +35,7 @@ func GetDatabasesSQL(dbConn DBConn) string {
 	return query
 }
 
-// fetches the user tables in the database
+// GetSchemaTablesSQL fetches the user tables in the database.
 func GetSchemaTablesSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
@@ -57,7 +57,7 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 	return query
 }
 
-// fetches the user views in the database
+// GetSchemaViewsSQL fetches the user views in the database.
 func GetSchemaViewsSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
@@ -76,7 +76,7 @@ func GetSchemaViewsSQL(dbConn DBConn) string {
 	return query
 }
 
-// fetches the column information for the specified table
+// GetTableColumnsSQL fetches the column information for the specified table.
 func GetTableColumnsSQL(dbConn DBConn, tableName string) string {
 	var query string
 	switch dbConn.DriverName {
@@ -90,7 +90,7 @@ func GetTableColumnsSQL(dbConn DBConn, tableName string) string {
 	return query
 }
 
-// fetches the index information for the specified table
+// GetTableIndexesSQL fetches the index information for the specified table.
 func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
 	var query string
 	switch dbConn.DriverName {
@@ -152,7 +152,9 @@ func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, tableName string)
 		}
 		indexCols := make([]string, 0)
 		for _, infoRow := range info.Rows {
-			indexCols = append(indexCols, infoRow["name"].(string))
+			if name, ok := infoRow["name"].(string); ok {
+				indexCols = append(indexCols, name)
+			}
 		}
 		rows = append(rows, map[string]any{
 			"name": row["name"],
@@ -166,7 +168,7 @@ func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, tableName string)
 	}, nil
 }
 
-// fetches the constraints information for the specified table
+// GetTableConstraintsSQL fetches the constraints information for the specified table.
 func GetTableConstraintsSQL(dbConn DBConn, tableName string) string {
 	var query string
 	switch dbConn.DriverName {
@@ -223,7 +225,9 @@ func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) 
 	}
 	columns := make([]string, 0)
 	for _, row := range data.Rows {
-		columns = append(columns, row["name"].(string))
+		if name, ok := row["name"].(string); ok {
+			columns = append(columns, name)
+		}
 	}
 	return columns, nil
 }
@@ -236,12 +240,14 @@ func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, tableName string
 	}
 	columns := make([]string, 0)
 	for _, row := range data.Rows {
-		columns = append(columns, row["name"].(string))
+		if name, ok := row["name"].(string); ok {
+			columns = append(columns, name)
+		}
 	}
 	return columns, nil
 }
 
-// fetches n rows from the specified table
+// GetTableRowsSQL fetches n rows from the specified table.
 func GetTableRowsSQL(tableName string, primaryKeyColumns []string, sortOrder string) string {
 	query := fmt.Sprintf("SELECT * FROM %s", tableName)
 
@@ -254,32 +260,31 @@ func GetTableRowsSQL(tableName string, primaryKeyColumns []string, sortOrder str
 	return query
 }
 
-// executes a user supplied sql query or statement
+// ExecuteQuery executes a user supplied sql query or statement.
 func ExecuteQuery(ctx context.Context, dbConn DBConn, query string) (*Data, error) {
 	// crude way to decide whether the query should returns rows or use execute
 	isStatement, err := regexp.MatchString(`(?i)^\s*(UPDATE|INSERT|DELETE|DROP|TRUNCATE|CREATE|ALTER)\s+`, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error matching statement pattern: %w", err)
 	}
 
 	isReturning, err := regexp.MatchString(`(?i)\s*(RETURNING)\s+`, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error matching returning pattern: %w", err)
 	}
 
 	if isStatement && !isReturning {
 		return execStatement(ctx, dbConn, query)
-	} else {
-		return fetchRows(ctx, dbConn, query)
 	}
+	return fetchRows(ctx, dbConn, query)
 }
 
 func GetTimeoutSecs() time.Duration {
 	timeoutSecs := viper.GetInt(TimeoutConfigKey)
 	if timeoutSecs == 0 {
-		return time.Duration(30 * time.Second)
+		return 30 * time.Second
 	}
-	return time.Duration(timeoutSecs * int(time.Second))
+	return time.Duration(timeoutSecs) * time.Second
 }
 
 func getTableDataRowLimit() int {
@@ -294,13 +299,13 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 	start := time.Now()
 	rows, err := dbConn.DB.QueryContext(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying database: %w", err)
 	}
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting columns: %w", err)
 	}
 
 	values := make([]sql.RawBytes, len(columns))
@@ -313,7 +318,7 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 	for rows.Next() {
 		err = rows.Scan(scanArgs...)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning row: %w", err)
 		}
 
 		row := make(map[string]any)
@@ -334,7 +339,7 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 				GetTimeoutSecs(),
 			)
 		}
-		return nil, err
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 	end := time.Now()
 	data.QueryTime = end.Sub(start)
@@ -352,27 +357,26 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 				GetTimeoutSecs(),
 			)
 		}
-		return nil, err
+		return nil, fmt.Errorf("error executing statement: %w", err)
 	}
 	end := time.Now()
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting rows affected: %w", err)
 	}
 
 	switch dbConn.DriverName {
-
 	case DriverName.MySQL:
-		lastInsertId, err := res.LastInsertId()
+		lastInsertID, err := res.LastInsertId()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting last insert ID: %w", err)
 		}
 		return &Data{
 			Columns: []string{"Rows Affected", "Last Inserted ID"},
 			Rows: []map[string]any{{
 				"Rows Affected":    rowsAffected,
-				"Last Inserted ID": lastInsertId,
+				"Last Inserted ID": lastInsertID,
 			}},
 			QueryTime: end.Sub(start),
 		}, nil

@@ -10,6 +10,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type TitleBarModel struct {
 	width          int
 	height         int
@@ -28,7 +29,7 @@ func (m TitleBarModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m TitleBarModel) Update(msg tea.Msg) (TitleBarModel, tea.Cmd) {
+func (m TitleBarModel) Update(_ tea.Msg) (TitleBarModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)

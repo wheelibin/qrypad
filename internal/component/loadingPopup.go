@@ -17,6 +17,7 @@ type loadingPopupKeymap struct {
 	cancel key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type LoadingPopupModel struct {
 	width     int
 	height    int
@@ -54,7 +55,6 @@ func (m LoadingPopupModel) Update(msg tea.Msg) (LoadingPopupModel, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -64,8 +64,7 @@ func (m LoadingPopupModel) Update(msg tea.Msg) (LoadingPopupModel, tea.Cmd) {
 		cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
 
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keymap.cancel):
+		if key.Matches(msg, m.keymap.cancel) {
 			cmds = append(cmds, commands.CancelQuery())
 		}
 	}

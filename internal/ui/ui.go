@@ -33,6 +33,7 @@ const (
 
 type PopupKindType int
 
+//nolint:gochecknoglobals // singleton enum struct used as namespaced constants
 var PopupKind = struct {
 	Error            PopupKindType
 	Help             PopupKindType
@@ -56,8 +57,10 @@ type bounds struct {
 	y2 int
 }
 
+//nolint:gochecknoglobals // package-level lipgloss style is intentional for performance
 var appStyle = lipgloss.NewStyle()
 
+//nolint:recvcheck // Bubble Tea model: Init/View/Update use value receiver per interface, mutating methods use pointer receiver
 type model struct {
 	// components
 	tablePanel            component.TablePanelModel
@@ -96,7 +99,10 @@ type model struct {
 	autoSave               bool
 }
 
-func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
+// Model is the root Bubble Tea model for the application UI.
+type Model = model
+
+func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 	autoSave := viper.GetBool("autoSave")
 
 	tablePanel := component.NewTablePanelModel()
@@ -186,7 +192,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -206,7 +211,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		db.QueryControlMsg:
 		cmds = append(cmds, m.handleDBMessages(msg))
 
-	case commands.DatabaseConnectErrMsg,
+	case commands.DatabaseConnectError,
 		commands.ErrMsg:
 		cmds = append(cmds, m.handleErrorMessages(msg))
 
@@ -230,7 +235,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		cmds = append(cmds, m.handleKeyMessages(msg))
-
 	}
 
 	// always update the table panel for data messages (e.g. SchemaEntitiesFetchedMsg)
@@ -376,9 +380,8 @@ func (m *model) adjustSizes() {
 func (m model) getRightWidth(totalWidth int) int {
 	if m.leftPanelHidden {
 		return style.GetSpan(12, totalWidth) - 8
-	} else {
-		return style.GetSpan(12-LeftPanelSpan, totalWidth) - 8
 	}
+	return style.GetSpan(12-LeftPanelSpan, totalWidth) - 8
 }
 
 func (m model) View() string {

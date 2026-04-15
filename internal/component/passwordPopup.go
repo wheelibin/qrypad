@@ -17,6 +17,7 @@ type passwordKeymap struct {
 	cancel key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type PasswordPopupModel struct {
 	width  int
 	height int
@@ -67,8 +68,7 @@ func (m PasswordPopupModel) Update(msg tea.Msg) (PasswordPopupModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.accept):
 			cmd = commands.PasswordEntered(m.input.Value())

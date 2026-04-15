@@ -22,6 +22,7 @@ type queryPanelKeymap struct {
 	saveReloadQuery key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type QueryPanelModel struct {
 	active              bool
 	width               int
@@ -63,8 +64,22 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 			execute:      keys.DefaultKeyMap.ExecuteQuery,
 			openInEditor: keys.DefaultKeyMap.OpenInEditor,
 			saveReloadQuery: key.NewBinding(
-				key.WithKeys(fmt.Sprintf("%s/%s", keys.DefaultKeyMap.SaveQuery.Help().Key, keys.DefaultKeyMap.ReloadQuery.Help().Key), "save/reload query"),
-				key.WithHelp(fmt.Sprintf("%s/%s", keys.DefaultKeyMap.SaveQuery.Help().Key, keys.DefaultKeyMap.ReloadQuery.Help().Key), "save/reload query"),
+				key.WithKeys(
+					fmt.Sprintf(
+						"%s/%s",
+						keys.DefaultKeyMap.SaveQuery.Help().Key,
+						keys.DefaultKeyMap.ReloadQuery.Help().Key,
+					),
+					"save/reload query",
+				),
+				key.WithHelp(
+					fmt.Sprintf(
+						"%s/%s",
+						keys.DefaultKeyMap.SaveQuery.Help().Key,
+						keys.DefaultKeyMap.ReloadQuery.Help().Key,
+					),
+					"save/reload query",
+				),
 			),
 		},
 		autoSaveEnabled: autoSaveEnabled,
@@ -128,11 +143,9 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		if updateQueryBuffer {
 			m.queryBuffer, cmd = m.queryBuffer.Update(msg)
 			cmds = append(cmds, cmd)
-
 		}
 
 		m.CurrentStatement = getStatementAtCursor(m.queryBuffer.Value(), m.queryBuffer.Line())
-
 	} else {
 		m.queryBuffer.Blur()
 	}
@@ -234,7 +247,7 @@ func (m QueryPanelModel) View() string {
 
 	text := "queries"
 	if m.dirty {
-		text = text + " [+]"
+		text += " [+]"
 	}
 	title := style.Title(m.width-2, m.active).MarginBottom(1).Render(text)
 	qb := m.queryBuffer.View()
