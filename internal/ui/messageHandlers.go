@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wheelibin/qrypad/internal/autocomplete"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
@@ -212,22 +212,23 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
-	if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
+func (m *model) handleMouseMessages(msg tea.MouseClickMsg) tea.Cmd {
+	if msg.Button == tea.MouseLeft {
+		mouse := msg.Mouse()
 		switch {
-		case isInBounds(msg.X, msg.Y, m.tablePanelBounds):
+		case isInBounds(mouse.X, mouse.Y, m.tablePanelBounds):
 			if m.activePanelIndex != PanelIndexTables {
 				return commands.SetActivePanel(PanelIndexTables)
 			}
-		case isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds):
+		case isInBounds(mouse.X, mouse.Y, m.tableInfoPanelBounds):
 			if m.activePanelIndex != PanelIndexTableInfo {
 				return commands.SetActivePanel(PanelIndexTableInfo)
 			}
-		case isInBounds(msg.X, msg.Y, m.queryPanelBounds):
+		case isInBounds(mouse.X, mouse.Y, m.queryPanelBounds):
 			if m.activePanelIndex != PanelIndexQuery {
 				return commands.SetActivePanel(PanelIndexQuery)
 			}
-		case isInBounds(msg.X, msg.Y, m.resultsPanelBounds):
+		case isInBounds(mouse.X, mouse.Y, m.resultsPanelBounds):
 			if m.activePanelIndex != PanelIndexResults {
 				return commands.SetActivePanel(PanelIndexResults)
 			}
@@ -238,7 +239,7 @@ func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
 }
 
 //nolint:gocyclo,cyclop // Bubble Tea key handler inherently requires complex switch statements
-func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
+func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	if key.Matches(msg, keys.DefaultKeyMap.Quit) {
 		if m.db.DB != nil {
 			_ = m.db.DB.Close()
@@ -406,7 +407,9 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 			}
 
 			// Check for table name completion after space (e.g. "FROM ", "JOIN ")
-			if msg.String() == " " && !m.queryPanel.GetAutoCompleteActive() {
+			// queryPanel.Update is called before handleKeyMessages in ui.Update,
+			// so the textarea has already processed the space — read current state directly.
+			if msg.String() == "space" && !m.queryPanel.GetAutoCompleteActive() {
 				result := autocomplete.GetCompletions(
 					m.queryPanel.GetCurrentStatement(),
 					m.queryPanel.GetWordAtCursor(),

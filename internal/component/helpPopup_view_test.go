@@ -11,7 +11,7 @@ func TestHelpPopupView(t *testing.T) {
 
 	t.Run("basic", func(t *testing.T) {
 		m := component.NewHelpPopupModel()
-		m.SetSize(60, 20)
+		m.SetSize(120, 20)
 		assertGolden(t, "HelpPopup_basic", m.View())
 	})
 }

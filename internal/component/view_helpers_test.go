@@ -3,37 +3,35 @@ package component_test
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
 var update = flag.Bool("update", false, "update golden files")
 
-// setupViewTest resets the theme singleton and pins the lipgloss renderer to
-// TrueColor so View() output is identical across all machines and CI.
+// setupViewTest resets the theme singleton and clears caches so View() output
+// is reproducible. In lipgloss v2, Style.Render() always emits full ANSI codes
+// and does not depend on a renderer, so no renderer pinning is needed.
 func setupViewTest(t *testing.T) {
 	t.Helper()
 	theme.ResetThemeOnce()
 	style.ClearHighlightCache()
-	r := lipgloss.NewRenderer(io.Discard, termenv.WithProfile(termenv.TrueColor))
-	lipgloss.SetDefaultRenderer(r)
-	t.Cleanup(func() {
-		lipgloss.SetDefaultRenderer(lipgloss.NewRenderer(os.Stdout))
-	})
 }
 
-// assertGolden compares got against the contents of testdata/<name>.golden.
-// If the file does not exist or -update is set, it writes got to the file.
+// assertGolden strips ANSI escape codes from got and compares against the
+// contents of testdata/<name>.golden.  Golden files contain only the visible
+// characters (box-drawing chars, text, spaces) so they are human-readable and
+// stable across environments.
+// If the file does not exist or -update is set, it writes the stripped output.
 func assertGolden(t *testing.T, name, got string) {
 	t.Helper()
+	got = ansi.Strip(got)
 	path := filepath.Join("testdata", name+".golden")
 
 	if *update {

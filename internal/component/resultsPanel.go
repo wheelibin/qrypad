@@ -7,10 +7,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
@@ -129,6 +129,9 @@ func newTable(cols []table.Column) table.Model {
 	return table.New(cols).
 		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.GetTableHeaderStyle()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
 }
@@ -143,8 +146,8 @@ func (m ResultsPanelModel) helpView() string {
 
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.GetBasePanelStyle().
-		Width(m.width).
-		Height(m.height)
+		Width(m.width + 2).
+		Height(m.height + 2)
 	if m.active {
 		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}

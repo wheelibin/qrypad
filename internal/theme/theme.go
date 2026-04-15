@@ -4,13 +4,14 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"maps"
 	"sync"
 
+	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/viper"
 )
 
@@ -26,8 +27,8 @@ var (
 )
 
 type TC struct {
-	FG lipgloss.Color `json:"fg,omitempty" mapstructure:"fg,omitempty"`
-	BG lipgloss.Color `json:"bg,omitempty" mapstructure:"bg,omitempty"`
+	FG color.Color `json:"fg,omitempty" mapstructure:"fg,omitempty"`
+	BG color.Color `json:"bg,omitempty" mapstructure:"bg,omitempty"`
 }
 
 func (tc *TC) UnmarshalJSON(data []byte) error {
@@ -43,6 +44,17 @@ func (tc *TC) UnmarshalJSON(data []byte) error {
 		tc.BG = lipgloss.Color(bg)
 	}
 	return nil
+}
+
+func (tc TC) MarshalJSON() ([]byte, error) {
+	raw := map[string]string{}
+	if tc.FG != nil {
+		raw["fg"] = colorStr(tc.FG)
+	}
+	if tc.BG != nil {
+		raw["bg"] = colorStr(tc.BG)
+	}
+	return json.Marshal(raw)
 }
 
 type Theme struct {
@@ -146,19 +158,29 @@ func applyConfigOverrides() {
 	}
 }
 
+// colorStr converts a color.Color to a hex string suitable for Chroma style entries.
+// In lipgloss v2, Color() returns color.Color (interface) instead of a string type.
+func colorStr(c color.Color) string {
+	if c == nil {
+		return ""
+	}
+	r, g, b, _ := c.RGBA()
+	return fmt.Sprintf("#%02X%02X%02X", r>>8, g>>8, b>>8)
+}
+
 // registerChromaStyle builds and registers a chroma style using the
 // theme colors, if the theme doesn't already exist
 func registerChromaStyle() {
 	if _, found := styles.Registry[theme.ThemeName]; !found {
 		styles.Register(chroma.MustNewStyle(theme.ThemeName, chroma.StyleEntries{
-			chroma.Literal:     string(theme.Text.FG),
-			chroma.Name:        string(theme.Text.FG),
-			chroma.Comment:     fmt.Sprintf("italic %s bg:%s", theme.PanelTitle.FG, theme.PanelTitle.BG),
-			chroma.Keyword:     fmt.Sprintf("bold %s", theme.BorderActive.FG),
-			chroma.Operator:    string(theme.Text.FG),
-			chroma.String:      string(theme.DatabaseSwitcherPopup.BG),
-			chroma.Number:      string(theme.HelpPopup.BG),
-			chroma.Punctuation: string(theme.Text.FG),
+			chroma.Literal:     colorStr(theme.Text.FG),
+			chroma.Name:        colorStr(theme.Text.FG),
+			chroma.Comment:     fmt.Sprintf("italic %s bg:%s", colorStr(theme.PanelTitle.FG), colorStr(theme.PanelTitle.BG)),
+			chroma.Keyword:     fmt.Sprintf("bold %s", colorStr(theme.BorderActive.FG)),
+			chroma.Operator:    colorStr(theme.Text.FG),
+			chroma.String:      colorStr(theme.DatabaseSwitcherPopup.BG),
+			chroma.Number:      colorStr(theme.HelpPopup.BG),
+			chroma.Punctuation: colorStr(theme.Text.FG),
 		}))
 	}
 }

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
@@ -32,6 +32,9 @@ type ResultRowPopupModel struct {
 func NewResultRowPopupModel() ResultRowPopupModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		WithHeaderVisibility(false).
 		Filtered(true).
 		Focused(true)
@@ -65,7 +68,7 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 		cmds []tea.Cmd
 	)
 
-	if msg, ok := msg.(tea.KeyMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.copy):
 			var valDesc string
@@ -133,8 +136,8 @@ func (m *ResultRowPopupModel) SetSize(w, h int) {
 
 func (m ResultRowPopupModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().RowDetailsPopup.BG)
 

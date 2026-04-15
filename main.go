@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/ncruces/go-sqlite3/driver"
@@ -70,12 +70,7 @@ func main() {
 	keys.MapCustomKeys()
 	m := ui.NewModel(connectionName, conn)
 
-	p := tea.NewProgram(
-		m,
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-		tea.WithReportFocus(),
-	)
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		exitWithError("unexpected error\n\n", err)
 	}

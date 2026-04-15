@@ -3,8 +3,8 @@ package ui
 import (
 	"context"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/viper"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
@@ -230,10 +230,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.CancelQueryMsg:
 		cmds = append(cmds, m.handleCommandMessages(msg))
 
-	case tea.MouseMsg:
+	case tea.MouseClickMsg:
 		cmds = append(cmds, m.handleMouseMessages(msg))
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		cmds = append(cmds, m.handleKeyMessages(msg))
 	}
 
@@ -241,7 +241,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// even when a popup is active, but skip key/mouse events to avoid
 	// background panels reacting to input meant for the popup
 	switch msg.(type) {
-	case tea.KeyMsg, tea.MouseMsg:
+	case tea.KeyPressMsg, tea.MouseMsg:
 		if !m.hasActivePopup() {
 			m.tablePanel, cmd = m.tablePanel.Update(msg)
 			cmds = append(cmds, cmd)
@@ -253,7 +253,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// same treatment for results panel
 	switch msg.(type) {
-	case tea.KeyMsg, tea.MouseMsg:
+	case tea.KeyPressMsg, tea.MouseMsg:
 		if !m.hasActivePopup() {
 			m.resultsPanel, cmd = m.resultsPanel.Update(msg)
 			cmds = append(cmds, cmd)
@@ -384,10 +384,15 @@ func (m model) getRightWidth(totalWidth int) int {
 	return style.GetSpan(12-LeftPanelSpan, totalWidth) - 8
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	if m.windowTooSmall {
-		return style.WindowTooSmall(m.width, m.height).
+		content := style.WindowTooSmall(m.width, m.height).
 			Render("window too small")
+		v := tea.NewView(content)
+		v.AltScreen = true
+		v.MouseMode = tea.MouseModeCellMotion
+		v.ReportFocus = true
+		return v
 	}
 
 	left := lipgloss.JoinVertical(lipgloss.Center,
@@ -422,9 +427,14 @@ func (m model) View() string {
 		contentView = style.PlaceOverlay(x, y, p, mainContent)
 	}
 
-	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+	content := appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
 		m.titleBar.View(),
 		contentView,
 		m.statusBar.View(),
 	))
+	v := tea.NewView(content)
+	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
+	v.ReportFocus = true
+	return v
 }

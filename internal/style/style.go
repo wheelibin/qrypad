@@ -1,9 +1,10 @@
 package style
 
 import (
+	"image/color"
 	"math"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
@@ -60,6 +61,16 @@ func GetSpan(span int, total int) int {
 	oneCell := float64(total) / float64(12)
 	result := math.Ceil(oneCell * float64(span))
 	return int(result)
+}
+
+func GetTableHighlightStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Background(theme.GetTheme().CurrentStatement.BG).
+		Foreground(theme.GetTheme().CurrentStatement.FG)
+}
+
+func GetTableBorderForeground() color.Color {
+	return theme.GetTheme().TableBorder.FG
 }
 
 func TableColumn() lipgloss.Style {

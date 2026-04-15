@@ -1,7 +1,7 @@
 package keys
 
 import (
-	"github.com/charmbracelet/bubbles/key"
+	"charm.land/bubbles/v2/key"
 )
 
 type keyMap struct {
@@ -46,7 +46,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 //nolint:gochecknoglobals // global keymap is required for Bubble Tea key handling and is modified at startup
 var DefaultKeyMap = keyMap{
 	AutoComplete: key.NewBinding(
-		key.WithKeys("ctrl+@"),
+		key.WithKeys("ctrl+space"),
 		key.WithHelp("ctrl+space", "autocomplete"),
 	),
 	Quit: key.NewBinding(

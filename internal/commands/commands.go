@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/password"
 )

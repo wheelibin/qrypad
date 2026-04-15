@@ -1,12 +1,12 @@
 package component
 
 import (
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/stopwatch"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/stopwatch"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -63,7 +63,7 @@ func (m LoadingPopupModel) Update(msg tea.Msg) (LoadingPopupModel, tea.Cmd) {
 		cmds = append(cmds, m.spinner.Tick)
 		cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if key.Matches(msg, m.keymap.cancel) {
 			cmds = append(cmds, commands.CancelQuery())
 		}
@@ -100,8 +100,8 @@ func (m LoadingPopupModel) View() string {
 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
 	loadingPopup := style.GetBasePanelStyle().
 		BorderForeground(theme.GetTheme().Spinner.FG).
-		Width(loadingPopupWidth).
-		Height(5).Render(loadingPopupContent)
+		Width(loadingPopupWidth + 2).
+		Height(7).Render(loadingPopupContent)
 
 	return loadingPopup
 }

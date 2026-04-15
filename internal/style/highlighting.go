@@ -3,13 +3,14 @@ package style
 import (
 	"bytes"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2/quick"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/ansi"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
@@ -191,16 +192,16 @@ func cutStyledLeft(s string, cutWidth int) string {
 var fgColorPattern = regexp.MustCompile(`\x1b\[38;(?:5;(\d+)|2;(\d+);(\d+);(\d+))m`)
 
 // ParseFgColor extracts the foreground color from an ANSI-styled string
-// (such as the output of ExtractStyledChar) and returns it as a lipgloss.Color.
-// Returns an empty Color if no foreground color escape is found.
+// (such as the output of ExtractStyledChar) and returns it as a color.Color.
+// Returns nil if no foreground color escape is found.
 //
 // Supports Chroma's terminal256 output (\x1b[38;5;Nm) and truecolor
 // (\x1b[38;2;R;G;Bm). This is used to read the syntax-highlight colour for a
 // character so it can be applied to the cursor block rendering.
-func ParseFgColor(styled string) lipgloss.Color {
+func ParseFgColor(styled string) color.Color {
 	m := fgColorPattern.FindStringSubmatch(styled)
 	if m == nil {
-		return lipgloss.Color("")
+		return nil
 	}
 	if m[1] != "" {
 		// 256-color: return the numeric index as a lipgloss color string

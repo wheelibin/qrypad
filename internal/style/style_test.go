@@ -1,9 +1,11 @@
 package style_test
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/style"
 )
 
@@ -161,7 +163,7 @@ func TestParseFgColor(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  string // expected lipgloss.Color value as string; "" means no color
+		want  string // expected lipgloss color string ("196", "#FF6400", or "" for none)
 	}{
 		{
 			name:  "256-color fg escape",
@@ -192,8 +194,12 @@ func TestParseFgColor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := style.ParseFgColor(tt.input)
-			if string(got) != tt.want {
-				t.Errorf("ParseFgColor(%q) = %q, want %q", tt.input, got, tt.want)
+			var wantColor color.Color
+			if tt.want != "" {
+				wantColor = lipgloss.Color(tt.want)
+			}
+			if got != wantColor {
+				t.Errorf("ParseFgColor(%q) = %v, want %v", tt.input, got, wantColor)
 			}
 		})
 	}

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/cursor"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -123,7 +123,7 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		m.autoCompletePopup.SetActive(false)
 		m.autoCompletePopup.SetFilter("")
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		acKeys := []string{"up", "down", "esc", "enter"}
 		if slices.Contains(acKeys, msg.String()) {
 			updateQueryBuffer = !m.autoCompletePopup.active
@@ -237,8 +237,8 @@ func (m QueryPanelModel) helpView() string {
 
 func (m QueryPanelModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().Border.FG)
 	if m.active {
