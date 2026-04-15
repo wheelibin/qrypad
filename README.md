@@ -198,3 +198,27 @@ text                  = { bg = "", fg = "" }
 titleBar              = { bg = "", fg = "" }
 titleBarAlt           = { bg = "", fg = "" }
 ```
+
+## Contributing
+
+### Running the tests
+
+```bash
+go test ./...
+```
+
+### View tests and golden files
+
+The component view tests in `internal/component/` use golden files to snapshot each component's rendered output. This catches visual regressions when upgrading rendering libraries (bubbletea, lipgloss, bubbles).
+
+Golden files are stored in `internal/component/testdata/` and must be committed alongside any change that affects component rendering.
+
+**If you make a change that intentionally affects how a component looks**, regenerate the golden files:
+
+```bash
+go test ./internal/component/ -run "Test.*View" -update
+```
+
+Review the diff (`git diff internal/component/testdata/`) to confirm only the expected components changed, then commit the updated golden files with your change.
+
+**When adding a new component**, create a `<componentName>_view_test.go` file alongside it, following the pattern in the existing view test files, then run the above command to generate its golden file.

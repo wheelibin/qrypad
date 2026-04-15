@@ -8,3 +8,11 @@ var (
 	GetWordAtCursor      = getWordAtCursor      //nolint:gochecknoglobals
 	GetColumnWidth       = getColumnWidth       //nolint:gochecknoglobals
 )
+
+func (m *TablePanelModel) SetActiveTabIndex(i int) {
+	m.activeTabIndex = i
+}
+
+func (m *TableInfoPanelModel) SetActiveTabIndex(i int) {
+	m.activeTabIndex = i
+}
