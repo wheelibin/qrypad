@@ -76,21 +76,23 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 		cmds = append(cmds, cmd)
 	}
 
-	if msg, ok := msg.(tea.KeyMsg); ok {
-		switch {
-		case key.Matches(msg, keys.DefaultKeyMap.NextTab):
-			m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount
-			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
+	if m.active {
+		if msg, ok := msg.(tea.KeyMsg); ok {
+			switch {
+			case key.Matches(msg, keys.DefaultKeyMap.NextTab):
+				m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount
+				cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 
-		case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
-			i := m.activeTabIndex - 1
-			if i < 0 {
-				i = TableInfoTabCount - 1
+			case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
+				i := m.activeTabIndex - 1
+				if i < 0 {
+					i = TableInfoTabCount - 1
+				}
+				m.activeTabIndex = i
+				cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 			}
-			m.activeTabIndex = i
-			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
 		}
 	}
 
