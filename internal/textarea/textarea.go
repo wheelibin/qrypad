@@ -1114,25 +1114,24 @@ func (m Model) View() string {
 			}
 
 			if m.row == l && lineInfo.RowOffset == wl {
-				// txt := style.Render(string(wrappedLine[:lineInfo.ColumnOffset]))
-				txt := string(wrappedLine[:lineInfo.ColumnOffset])
-				s.WriteString(qpStyle.HighlightText(txt))
+				// Highlight the full wrapped line first, then split the styled
+				// output around the cursor position. This ensures tokens that
+				// span the cursor (e.g. SELECT with cursor in the middle) are
+				// highlighted correctly.
+				fullStyled := qpStyle.HighlightText(string(wrappedLine))
+				before, after := qpStyle.SplitStyledLine(fullStyled, lineInfo.ColumnOffset)
+
+				s.WriteString(before)
 				if m.col >= len(line) && lineInfo.CharOffset >= m.width {
 					m.Cursor.SetChar(" ")
 					s.WriteString(m.Cursor.View())
 				} else {
 					m.Cursor.SetChar(string(wrappedLine[lineInfo.ColumnOffset]))
-					// s.WriteString(style.Render(m.Cursor.View()))
 					s.WriteString(m.Cursor.View())
-					// txt := style.Render(string(wrappedLine[lineInfo.ColumnOffset+1:]))
-					txt := string(wrappedLine[lineInfo.ColumnOffset+1:])
-
-					s.WriteString(qpStyle.HighlightText(txt))
+					s.WriteString(after)
 				}
 			} else {
-				// txt := style.Render(string(wrappedLine))
-				txt := string(wrappedLine)
-				s.WriteString(qpStyle.HighlightText(txt))
+				s.WriteString(qpStyle.HighlightText(string(wrappedLine)))
 			}
 			// s.WriteString(style.Render(strings.Repeat(" ", max(0, padding))))
 			s.WriteString(strings.Repeat(" ", max(0, padding)))
