@@ -1133,8 +1133,29 @@ func (m Model) View() string {
 					m.Cursor.SetChar(" ")
 					s.WriteString(m.Cursor.View())
 				} else {
-					m.Cursor.SetChar(string(wrappedLine[lineInfo.ColumnOffset]))
-					s.WriteString(m.Cursor.View())
+					cursorChar := string(wrappedLine[lineInfo.ColumnOffset])
+					m.Cursor.SetChar(cursorChar)
+
+					// Extract the full Chroma styling (bold, colour, etc.) for
+					// the character under the cursor.
+					styledChar := qpStyle.ExtractStyledChar(fullStyled, lineInfo.ColumnOffset)
+
+					if m.Cursor.Blink {
+						// Blink-out (no block): write the Chroma-styled character
+						// directly so that all attributes (bold, colour) are
+						// preserved. Falling through to Cursor.View() would only
+						// apply CursorLine's style, dropping Chroma attributes.
+						if styledChar != "" {
+							s.WriteString(styledChar)
+						} else {
+							s.WriteString(m.Cursor.View())
+						}
+					} else {
+						// Blink-in (block visible): cursor.View() renders
+						// Style.Reverse(true) which was always correct.
+						s.WriteString(m.Cursor.View())
+					}
+
 					s.WriteString(after)
 				}
 			} else {

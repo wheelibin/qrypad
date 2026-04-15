@@ -1,9 +1,9 @@
 package db_test
 
 import (
-	"slices"
 	"context"
 	"database/sql"
+	"slices"
 	"testing"
 
 	_ "github.com/ncruces/go-sqlite3/driver"
