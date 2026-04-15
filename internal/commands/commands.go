@@ -79,14 +79,24 @@ var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 }
 
 func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
-	primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, tableName)
-	if err != nil {
-		return func() tea.Msg {
+	return func() tea.Msg {
+		primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, tableName)
+		if err != nil {
 			return ErrMsg{Err: err}
 		}
-	}
 
-	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns, sortOrder), QueryResultBuilder)
+		query := db.GetTableRowsSQL(tableName, primaryKeyColumns, sortOrder)
+		timeout := db.GetTimeoutSecs()
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+		resultCh := make(chan tea.Msg, 1)
+		go func() {
+			data, err := db.ExecuteQuery(ctx, dbConn, query)
+			resultCh <- QueryResultBuilder(data, err)
+		}()
+
+		return db.QueryControlMsg{Cancel: cancel, ResultChan: resultCh}
+	}
 }
 
 func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
@@ -250,19 +260,7 @@ func SaveQueryFile(connectionName string, contents string) tea.Cmd {
 		}
 		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
 
-		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-			_, err := os.Create(filename)
-			if err != nil {
-				return ErrMsg{err}
-			}
-		}
-
-		f, err := os.Create(filename)
-		if err != nil {
-			return ErrMsg{err}
-		}
-
-		_, err = f.WriteString(contents)
+		err = os.WriteFile(filename, []byte(contents), 0644)
 		if err != nil {
 			return ErrMsg{err}
 		}

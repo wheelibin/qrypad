@@ -81,8 +81,9 @@ func getColumnWidth(col string, data db.Data, maxWidth int) int {
 		}
 	}
 	for _, r := range data.Rows {
-		if len(fmt.Sprintf("%v", r[col])) > maxNeededLen {
-			maxNeededLen = len(r[col].(string))
+		l := len(fmt.Sprintf("%v", r[col]))
+		if l > maxNeededLen {
+			maxNeededLen = l
 		}
 	}
 	padding := 1

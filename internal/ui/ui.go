@@ -237,7 +237,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	// update components
+	// always update the table panel for data messages (e.g. SchemaEntitiesFetchedMsg)
+	// even when a popup is active, but skip key/mouse events to avoid
+	// background panels reacting to input meant for the popup
+	switch msg.(type) {
+	case tea.KeyMsg, tea.MouseMsg:
+		if !m.hasActivePopup() {
+			m.tablePanel, cmd = m.tablePanel.Update(msg)
+			cmds = append(cmds, cmd)
+		}
+	default:
+		m.tablePanel, cmd = m.tablePanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	// same treatment for results panel
+	switch msg.(type) {
+	case tea.KeyMsg, tea.MouseMsg:
+		if !m.hasActivePopup() {
+			m.resultsPanel, cmd = m.resultsPanel.Update(msg)
+			cmds = append(cmds, cmd)
+		}
+	default:
+		m.resultsPanel, cmd = m.resultsPanel.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	m.statusBar, cmd = m.statusBar.Update(msg)
+	cmds = append(cmds, cmd)
+
+	// update popup components — popups handle their own key events
 	switch m.activePopup {
 	case PopupKind.ResultRow:
 		m.resultRowPopup, cmd = m.resultRowPopup.Update(msg)
@@ -270,23 +299,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 	}
 
-	if m.activePanelIndex == PanelIndexTables {
-		m.tablePanel, cmd = m.tablePanel.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
 	if m.activePanelIndex == PanelIndexTableInfo {
 		m.tableInfoPanel, cmd = m.tableInfoPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
-	// always update the results panel so it can listen for loading messages
-	m.resultsPanel, cmd = m.resultsPanel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	// always update the status bar
-	m.statusBar, cmd = m.statusBar.Update(msg)
-	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }

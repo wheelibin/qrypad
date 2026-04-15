@@ -2,6 +2,7 @@ package password
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/zalando/go-keyring"
 )
@@ -16,6 +17,7 @@ func GetPassword(connectionName string) (string, error) {
 		if errors.Is(err, keyring.ErrNotFound) {
 			return "", ErrPasswordNotSaved
 		}
+		return "", fmt.Errorf("failed to read password from keyring: %w", err)
 	}
 	return password, nil
 }

@@ -3,15 +3,16 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
-	"golang.design/x/clipboard"
 )
 
 var (
@@ -132,7 +133,9 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		}
 
 	case commands.CancelQueryMsg:
-		m.cancelQuery()
+		if m.cancelQuery != nil {
+			m.cancelQuery()
+		}
 
 	case commands.ActivePanelChangedMsg:
 		m.activePanelIndex = int(msg)
@@ -196,7 +199,7 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			m.statusBar.SetCopiedTextInfo(msg.Value)
 		}
 
-		clipboard.Write(clipboard.FmtText, []byte(msg.Value))
+		_ = clipboard.WriteAll(msg.Value)
 
 	case commands.QueryFileReadMsg:
 		m.queryPanel.SetValue(msg.Contents)
@@ -351,7 +354,10 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		case PanelIndexTables:
 			valueToCopy = m.tablePanel.GetSelectedTable()
 		case PanelIndexTableInfo:
-			valueToCopy = m.tableInfoPanel.GetSelectedRow()["name"].(string)
+			row := m.tableInfoPanel.GetSelectedRow()
+			if name, ok := row["name"]; ok {
+				valueToCopy = fmt.Sprintf("%v", name)
+			}
 		case PanelIndexResults:
 			valueToCopy = m.resultsPanel.GetSelectedRowJSON()
 			copiedTextInfo = "<row as json>"

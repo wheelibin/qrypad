@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -87,7 +88,18 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 }
 
 func (m ResultRowPopupModel) GetSelectedValue() string {
-	return m.table.HighlightedRow().Data["value"].(string)
+	row := m.table.HighlightedRow()
+	if row.Data == nil {
+		return ""
+	}
+	val, ok := row.Data["value"]
+	if !ok {
+		return ""
+	}
+	if s, ok := val.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", val)
 }
 
 func (m *ResultRowPopupModel) SetData(data map[string]any) {
