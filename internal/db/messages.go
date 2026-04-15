@@ -11,7 +11,6 @@ type Data struct {
 	Columns   []string
 	Rows      []map[string]any
 	QueryTime time.Duration
-	Cancel    context.CancelFunc
 }
 
 type (

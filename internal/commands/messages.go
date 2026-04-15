@@ -34,7 +34,7 @@ type (
 )
 
 // fired when external editor is closed
-type EditorFinishedMsg struct{ err error }
+type EditorFinishedMsg struct{ Err error }
 
 type (
 	PasswordEnteredMsg     string

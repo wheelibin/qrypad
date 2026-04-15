@@ -19,7 +19,6 @@ import (
 )
 
 type config struct {
-	Debug       bool                           `mapstructure:"debug"`
 	Connections map[string]db.ConnectionConfig `mapstructure:"connections"`
 }
 

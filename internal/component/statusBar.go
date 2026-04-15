@@ -12,7 +12,6 @@ import (
 type StatusBarModel struct {
 	width            int
 	height           int
-	text             string
 	selectedDatabase string
 	copiedTextInfo   string
 }
@@ -38,10 +37,6 @@ func (m *StatusBarModel) SetSelectedDatabase(dbName string) {
 func (m *StatusBarModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-}
-
-func (m *StatusBarModel) SetText(text string) {
-	m.text = text
 }
 
 func (m *StatusBarModel) SetCopiedTextInfo(info string) {

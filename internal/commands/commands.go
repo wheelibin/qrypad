@@ -303,6 +303,6 @@ func OpenEditor(file string) tea.Cmd {
 	}
 	c := exec.Command(editor, file) //nolint:gosec
 	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return EditorFinishedMsg{err}
+		return EditorFinishedMsg{Err: err}
 	})
 }

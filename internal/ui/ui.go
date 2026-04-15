@@ -65,7 +65,7 @@ type model struct {
 	queryPanel            component.QueryPanelModel
 	resultsPanel          component.ResultsPanelModel
 	statusBar             component.StatusBarModel
-	titleBar              component.TitlBarModel
+	titleBar              component.TitleBarModel
 	errorPopup            component.ErrorPopupModel
 	passwordPopup         component.PasswordPopupModel
 	resultRowPopup        component.ResultRowPopupModel
@@ -104,7 +104,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) model {
 	queryPanel := component.NewQueryPanelModel(connectionName, autoSave)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(connectionName)
-	titleBar := component.NewTitlBarModel(connectionName, dbConfig)
+	titleBar := component.NewTitleBarModel(connectionName, dbConfig)
 	errorPopup := component.NewErrorPopupModel()
 	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()

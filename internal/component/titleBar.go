@@ -10,36 +10,36 @@ import (
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
-type TitlBarModel struct {
+type TitleBarModel struct {
 	width          int
 	height         int
 	connectionName string
 	conn           db.ConnectionConfig
 }
 
-func NewTitlBarModel(connectionName string, conn db.ConnectionConfig) TitlBarModel {
-	return TitlBarModel{
+func NewTitleBarModel(connectionName string, conn db.ConnectionConfig) TitleBarModel {
+	return TitleBarModel{
 		connectionName: connectionName,
 		conn:           conn,
 	}
 }
 
-func (m TitlBarModel) Init() tea.Cmd {
+func (m TitleBarModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m TitlBarModel) Update(msg tea.Msg) (TitlBarModel, tea.Cmd) {
+func (m TitleBarModel) Update(msg tea.Msg) (TitleBarModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m *TitlBarModel) SetSize(w, h int) {
+func (m *TitleBarModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 }
 
-func (m TitlBarModel) View() string {
+func (m TitleBarModel) View() string {
 	baseStyle := lipgloss.NewStyle().
 		Background(theme.GetTheme().TitleBar.BG).
 		Foreground(theme.GetTheme().TitleBar.FG)
