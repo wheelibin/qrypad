@@ -236,6 +236,30 @@ func TestGetCompletions(t *testing.T) {
 			tableNames:   tableNames,
 			wantKind:     autocomplete.CompletionNone,
 		},
+		{
+			name:         "after FROM in middle of buffer triggers table completion",
+			sql:          "SELECT * FROM \nSELECT 1;",
+			wordAtCursor: "",
+			tableNames:   tableNames,
+			wantKind:     autocomplete.CompletionTable,
+			wantItems:    tableNames,
+		},
+		{
+			name:         "after FROM with partial name in middle of buffer filters results",
+			sql:          "SELECT * FROM us\nSELECT 1;",
+			wordAtCursor: "us",
+			tableNames:   tableNames,
+			wantKind:     autocomplete.CompletionTable,
+			wantItems:    []string{"users"},
+		},
+		{
+			name:         "after JOIN in middle of buffer triggers table completion",
+			sql:          "SELECT * FROM users JOIN \nSELECT 1;",
+			wordAtCursor: "",
+			tableNames:   tableNames,
+			wantKind:     autocomplete.CompletionTable,
+			wantItems:    tableNames,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -28,8 +28,11 @@ var tableRefPattern = regexp.MustCompile(
 
 // tableKeywordPattern matches keywords after which a table name is expected.
 // It checks if the text immediately before the cursor ends with one of these.
+// The (?m) flag makes $ match end-of-line, not just end-of-string, so the
+// pattern matches when the cursor is on a line in the middle of a multi-statement
+// buffer (e.g. "select * from \nselect 1;").
 var tableKeywordPattern = regexp.MustCompile(
-	`(?i)\b(?:FROM|JOIN|INTO|UPDATE)\s+$`,
+	`(?im)\b(?:FROM|JOIN|INTO|UPDATE)\s+$`,
 )
 
 // GetCompletions determines what kind of autocomplete to offer based on
