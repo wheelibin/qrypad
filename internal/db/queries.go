@@ -83,7 +83,7 @@ func GetTableColumnsSQL(dbConn DBConn, tableName string) string {
 	case DriverName.MySQL, DriverName.Postgres:
 		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
 												FROM INFORMATION_SCHEMA.COLUMNS
-												WHERE  TABLE_NAME = '%s';`, tableName)
+												WHERE TABLE_NAME = '%s' ORDER BY column_name;`, tableName)
 	case DriverName.SQLite:
 		query = fmt.Sprintf(`SELECT * FROM pragma_table_info('%s');`, tableName)
 	}
