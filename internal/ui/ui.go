@@ -346,7 +346,7 @@ func (m *model) adjustSizes() {
 	if m.leftPanelHidden {
 		leftWidth = 3
 	}
-	rightWidth := m.getRightWidth(m.width)
+	rightWidth := m.getRightWidth(m.width) + 1
 
 	// left
 	tableInfoHeight := max(style.GetSpan(3, availableHeight), TableInfoPanelMinHeight)
