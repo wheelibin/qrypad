@@ -11,6 +11,10 @@ func makeConn(driver db.DriverNameType) db.DBConn {
 	return db.DBConn{DriverName: driver}
 }
 
+func makeRef(schema, name string) db.TableReference {
+	return db.TableReference{Schema: schema, Name: name}
+}
+
 func TestGetDatabasesSQL(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -40,10 +44,11 @@ func TestGetSchemaTablesSQL(t *testing.T) {
 		name        string
 		driver      db.DriverNameType
 		wantContain string
+		wantSchema  bool
 	}{
-		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "information_schema"},
-		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "pg_stat_user_tables"},
-		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "sqlite_master"},
+		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "information_schema", wantSchema: true},
+		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "pg_stat_user_tables", wantSchema: true},
+		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "sqlite_master", wantSchema: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -54,6 +59,13 @@ func TestGetSchemaTablesSQL(t *testing.T) {
 			if !strings.Contains(got, tt.wantContain) {
 				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
 			}
+			hasSchema := strings.Contains(strings.ToLower(got), "schema")
+			if tt.wantSchema && !hasSchema {
+				t.Errorf("expected SQL to select a schema column, got %q", got)
+			}
+			if !tt.wantSchema && hasSchema {
+				t.Errorf("expected SQL to NOT select a schema column for SQLite, got %q", got)
+			}
 		})
 	}
 }
@@ -63,10 +75,11 @@ func TestGetSchemaViewsSQL(t *testing.T) {
 		name        string
 		driver      db.DriverNameType
 		wantContain string
+		wantSchema  bool
 	}{
-		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "information_schema.views"},
-		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "information_schema.views"},
-		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "sqlite_master"},
+		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "information_schema.views", wantSchema: true},
+		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "information_schema.views", wantSchema: true},
+		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "sqlite_master", wantSchema: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,29 +90,38 @@ func TestGetSchemaViewsSQL(t *testing.T) {
 			if !strings.Contains(got, tt.wantContain) {
 				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
 			}
+			hasSchema := strings.Contains(strings.ToLower(got), "schema")
+			if tt.wantSchema && !hasSchema {
+				t.Errorf("expected SQL to select a schema column, got %q", got)
+			}
+			if !tt.wantSchema && hasSchema {
+				t.Errorf("expected SQL to NOT select a schema column for SQLite, got %q", got)
+			}
 		})
 	}
 }
 
 func TestGetTableColumnsSQL(t *testing.T) {
-	tableName := "my_table"
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
+		ref         db.TableReference
 		wantContain string
 	}{
-		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "INFORMATION_SCHEMA.COLUMNS"},
-		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "INFORMATION_SCHEMA.COLUMNS"},
-		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "pragma_table_info"},
+		{name: "MySQL no schema", driver: db.DriverName.MySQL, ref: makeRef("", "my_table"), wantContain: "INFORMATION_SCHEMA.COLUMNS"},
+		{name: "MySQL with schema", driver: db.DriverName.MySQL, ref: makeRef("myschema", "my_table"), wantContain: "myschema"},
+		{name: "Postgres no schema", driver: db.DriverName.Postgres, ref: makeRef("", "my_table"), wantContain: "INFORMATION_SCHEMA.COLUMNS"},
+		{name: "Postgres with schema", driver: db.DriverName.Postgres, ref: makeRef("public", "my_table"), wantContain: "public"},
+		{name: "SQLite", driver: db.DriverName.SQLite, ref: makeRef("", "my_table"), wantContain: "pragma_table_info"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableColumnsSQL(makeConn(tt.driver), tableName)
+			got := db.GetTableColumnsSQL(makeConn(tt.driver), tt.ref)
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
-			if !strings.Contains(got, tableName) {
-				t.Errorf("expected SQL to contain table name %q, got %q", tableName, got)
+			if !strings.Contains(got, tt.ref.Name) {
+				t.Errorf("expected SQL to contain table name %q, got %q", tt.ref.Name, got)
 			}
 			if !strings.Contains(got, tt.wantContain) {
 				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
@@ -109,48 +131,58 @@ func TestGetTableColumnsSQL(t *testing.T) {
 }
 
 func TestGetTableIndexesSQL(t *testing.T) {
-	tableName := "my_table"
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
+		ref         db.TableReference
 		wantContain string
 	}{
-		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "INFORMATION_SCHEMA.statistics"},
-		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "pg_index"},
-		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "pragma_index_list"},
+		{name: "MySQL no schema", driver: db.DriverName.MySQL, ref: makeRef("", "my_table"), wantContain: "INFORMATION_SCHEMA.statistics"},
+		{name: "MySQL with schema", driver: db.DriverName.MySQL, ref: makeRef("myschema", "my_table"), wantContain: "myschema"},
+		{name: "Postgres no schema", driver: db.DriverName.Postgres, ref: makeRef("", "my_table"), wantContain: "pg_index"},
+		{name: "Postgres with schema", driver: db.DriverName.Postgres, ref: makeRef("public", "my_table"), wantContain: "public"},
+		{name: "SQLite", driver: db.DriverName.SQLite, ref: makeRef("", "my_table"), wantContain: "pragma_index_list"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableIndexesSQL(makeConn(tt.driver), tableName)
+			got := db.GetTableIndexesSQL(makeConn(tt.driver), tt.ref)
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
-			if !strings.Contains(got, tableName) {
-				t.Errorf("expected SQL to contain table name %q, got %q", tableName, got)
+			if !strings.Contains(got, tt.ref.Name) {
+				t.Errorf("expected SQL to contain table name %q, got %q", tt.ref.Name, got)
+			}
+			if !strings.Contains(got, tt.wantContain) {
+				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
 			}
 		})
 	}
 }
 
 func TestGetTableConstraintsSQL(t *testing.T) {
-	tableName := "my_table"
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
+		ref         db.TableReference
 		wantContain string
 	}{
-		{name: "MySQL", driver: db.DriverName.MySQL, wantContain: "TABLE_CONSTRAINTS"},
-		{name: "Postgres", driver: db.DriverName.Postgres, wantContain: "pg_constraint"},
-		{name: "SQLite", driver: db.DriverName.SQLite, wantContain: "foreign_key_list"},
+		{name: "MySQL no schema", driver: db.DriverName.MySQL, ref: makeRef("", "my_table"), wantContain: "TABLE_CONSTRAINTS"},
+		{name: "MySQL with schema", driver: db.DriverName.MySQL, ref: makeRef("myschema", "my_table"), wantContain: "myschema"},
+		{name: "Postgres no schema", driver: db.DriverName.Postgres, ref: makeRef("", "my_table"), wantContain: "pg_constraint"},
+		{name: "Postgres with schema", driver: db.DriverName.Postgres, ref: makeRef("public", "my_table"), wantContain: "public"},
+		{name: "SQLite", driver: db.DriverName.SQLite, ref: makeRef("", "my_table"), wantContain: "foreign_key_list"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableConstraintsSQL(makeConn(tt.driver), tableName)
+			got := db.GetTableConstraintsSQL(makeConn(tt.driver), tt.ref)
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
-			if !strings.Contains(got, tableName) {
-				t.Errorf("expected SQL to contain table name %q, got %q", tableName, got)
+			if !strings.Contains(got, tt.ref.Name) {
+				t.Errorf("expected SQL to contain table name %q, got %q", tt.ref.Name, got)
+			}
+			if !strings.Contains(got, tt.wantContain) {
+				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
 			}
 		})
 	}
@@ -159,38 +191,58 @@ func TestGetTableConstraintsSQL(t *testing.T) {
 func TestGetTableRowsSQL(t *testing.T) {
 	tests := []struct {
 		name              string
-		tableName         string
+		driver            db.DriverNameType
+		ref               db.TableReference
 		primaryKeyColumns []string
 		sortOrder         string
 		wantContain       []string
 		wantNotContain    []string
 	}{
 		{
-			name:              "no primary keys - no ORDER BY",
-			tableName:         "users",
+			name:              "no schema no primary keys",
+			driver:            db.DriverName.Postgres,
+			ref:               makeRef("", "users"),
 			primaryKeyColumns: []string{},
 			sortOrder:         "ASC",
-			wantContain:       []string{"SELECT * FROM users", "LIMIT"},
+			wantContain:       []string{`SELECT * FROM "users"`, "LIMIT"},
 			wantNotContain:    []string{"ORDER BY"},
 		},
 		{
-			name:              "single primary key ASC",
-			tableName:         "users",
+			name:              "no schema single primary key ASC",
+			driver:            db.DriverName.Postgres,
+			ref:               makeRef("", "users"),
 			primaryKeyColumns: []string{"id"},
 			sortOrder:         "ASC",
-			wantContain:       []string{"SELECT * FROM users", "ORDER BY id ASC", "LIMIT"},
+			wantContain:       []string{`SELECT * FROM "users"`, "ORDER BY id ASC", "LIMIT"},
+		},
+		{
+			name:              "with schema qualifies FROM clause (postgres double-quote)",
+			driver:            db.DriverName.Postgres,
+			ref:               makeRef("public", "users"),
+			primaryKeyColumns: []string{"id"},
+			sortOrder:         "ASC",
+			wantContain:       []string{`SELECT * FROM "public"."users"`, "ORDER BY id ASC", "LIMIT"},
+		},
+		{
+			name:              "mysql with schema uses backtick quoting",
+			driver:            db.DriverName.MySQL,
+			ref:               makeRef("myschema", "orders"),
+			primaryKeyColumns: []string{"id"},
+			sortOrder:         "DESC",
+			wantContain:       []string{"SELECT * FROM `myschema`.`orders`", "ORDER BY id DESC", "LIMIT"},
 		},
 		{
 			name:              "multiple primary keys DESC",
-			tableName:         "order_items",
+			driver:            db.DriverName.Postgres,
+			ref:               makeRef("", "order_items"),
 			primaryKeyColumns: []string{"order_id", "item_id"},
 			sortOrder:         "DESC",
-			wantContain:       []string{"ORDER BY order_id, item_id DESC", "LIMIT"},
+			wantContain:       []string{`SELECT * FROM "order_items"`, "ORDER BY order_id, item_id DESC", "LIMIT"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableRowsSQL(tt.tableName, tt.primaryKeyColumns, tt.sortOrder)
+			got := db.GetTableRowsSQL(makeConn(tt.driver), tt.ref, tt.primaryKeyColumns, tt.sortOrder)
 			for _, want := range tt.wantContain {
 				if !strings.Contains(got, want) {
 					t.Errorf("expected SQL to contain %q, got: %q", want, got)

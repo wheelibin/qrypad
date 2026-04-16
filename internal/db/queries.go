@@ -17,6 +17,27 @@ type Table struct {
 	RowCount int
 }
 
+// quotedTableRef returns the quoted, driver-appropriate table reference for use in SQL.
+// Postgres: "schema"."table" or just "table" (no schema)
+// MySQL:    `schema`.`table` or just `table` (no schema)
+// SQLite:   table (no quoting needed, schema always empty)
+func quotedTableRef(dbConn DBConn, ref TableReference) string {
+	switch dbConn.DriverName {
+	case DriverName.Postgres:
+		if ref.Schema != "" {
+			return fmt.Sprintf(`"%s"."%s"`, ref.Schema, ref.Name)
+		}
+		return fmt.Sprintf(`"%s"`, ref.Name)
+	case DriverName.MySQL:
+		if ref.Schema != "" {
+			return fmt.Sprintf("`%s`.`%s`", ref.Schema, ref.Name)
+		}
+		return fmt.Sprintf("`%s`", ref.Name)
+	default:
+		return ref.Name
+	}
+}
+
 func GetDatabasesSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
@@ -40,18 +61,18 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverName.MySQL:
-		query = `SELECT TABLE_NAME name, format(TABLE_ROWS,0) 'rows' 
-            FROM information_schema.TABLES 
-            WHERE TABLE_SCHEMA not in ('mysql', 'performance_schema', 'sys') 
+		query = `SELECT TABLE_SCHEMA "schema", TABLE_NAME name, format(TABLE_ROWS,0) 'rows'
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'sys')
              AND TABLE_TYPE LIKE 'BASE_TABLE'
-            ORDER BY name;`
+            ORDER BY table_schema, name;`
 	case DriverName.Postgres:
-		query = `SELECT relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows 
-          FROM pg_stat_user_tables 
-					ORDER BY name;`
+		query = `SELECT schemaname schema, relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows
+          FROM pg_stat_user_tables
+          ORDER BY schema, name;`
 	case DriverName.SQLite:
 		query = `SELECT name FROM sqlite_master
-					WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
+				WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
 	}
 
 	return query
@@ -61,52 +82,79 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 func GetSchemaViewsSQL(dbConn DBConn) string {
 	var query string
 	switch dbConn.DriverName {
-	case DriverName.MySQL, DriverName.Postgres:
-		query = `SELECT table_name name
-							FROM information_schema.views
-							WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys', 'pg_catalog')
-							ORDER BY table_name;`
+	case DriverName.MySQL:
+		query = `SELECT table_schema schema, table_name name
+                        FROM information_schema.views
+                        WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+                        ORDER BY schema, table_name;`
+	case DriverName.Postgres:
+		query = `SELECT table_schema schema, table_name name
+                        FROM information_schema.views
+                        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+                        ORDER BY schema, table_name;`
 	case DriverName.SQLite:
 		query = `SELECT name
-							FROM sqlite_master
-							WHERE type = 'view'
-								AND name NOT LIKE 'sqlite_%'
-							ORDER BY name;`
+                        FROM sqlite_master
+                        WHERE type = 'view'
+                            AND name NOT LIKE 'sqlite_%'
+                        ORDER BY name;`
 	}
 	return query
 }
 
 // GetTableColumnsSQL fetches the column information for the specified table.
-func GetTableColumnsSQL(dbConn DBConn, tableName string) string {
+func GetTableColumnsSQL(dbConn DBConn, ref TableReference) string {
 	var query string
 	switch dbConn.DriverName {
-	case DriverName.MySQL, DriverName.Postgres:
-		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable  
-												FROM INFORMATION_SCHEMA.COLUMNS
-												WHERE TABLE_NAME = '%s' ORDER BY column_name;`, tableName)
+	case DriverName.MySQL:
+		schemaFilter := "TABLE_SCHEMA = DATABASE()"
+		if ref.Schema != "" {
+			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
+		}
+		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable
+                                        FROM INFORMATION_SCHEMA.COLUMNS
+                                        WHERE %s AND TABLE_NAME = '%s' ORDER BY column_name;`,
+			schemaFilter, ref.Name)
+	case DriverName.Postgres:
+		schemaFilter := "table_schema = current_schema()"
+		if ref.Schema != "" {
+			schemaFilter = fmt.Sprintf("table_schema = '%s'", ref.Schema)
+		}
+		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable
+                                        FROM INFORMATION_SCHEMA.COLUMNS
+                                        WHERE %s AND TABLE_NAME = '%s' ORDER BY column_name;`,
+			schemaFilter, ref.Name)
 	case DriverName.SQLite:
-		query = fmt.Sprintf(`SELECT * FROM pragma_table_info('%s');`, tableName)
+		query = fmt.Sprintf(`SELECT * FROM pragma_table_info('%s');`, ref.Name)
 	}
 	return query
 }
 
 // GetTableIndexesSQL fetches the index information for the specified table.
-func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
+func GetTableIndexesSQL(dbConn DBConn, ref TableReference) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverName.MySQL:
+		schemaFilter := "TABLE_SCHEMA = DATABASE()"
+		if ref.Schema != "" {
+			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
+		}
 		query = fmt.Sprintf(`SELECT
-                        index_name 'name', 
-                        GROUP_CONCAT(column_name) cols, 
+                        index_name 'name',
+                        GROUP_CONCAT(column_name) cols,
                         case when non_unique = 0 then 'unique' else '' end as 'unique',
                         case when index_name = 'PRIMARY' then 'primary' else '' end as 'primary'
                       FROM
                         INFORMATION_SCHEMA.statistics
                       WHERE
-                        TABLE_NAME = '%s'
+                        %s AND TABLE_NAME = '%s'
                         group by index_name, non_unique
-                        order by seq_in_index;`, tableName)
+                        order by seq_in_index;`, schemaFilter, ref.Name)
 	case DriverName.Postgres:
+		tableFilter := fmt.Sprintf("t.relname like '%s'", ref.Name)
+		if ref.Schema != "" {
+			tableFilter = fmt.Sprintf("t.relname like '%s' AND n.nspname = '%s'", ref.Name, ref.Schema)
+		}
 		query = fmt.Sprintf(`select
                           i.relname as "name",
                           array_to_string(array_agg(a.attname), ', ') as cols,
@@ -116,14 +164,16 @@ func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
                           pg_class t,
                           pg_class i,
                           pg_index ix,
-                          pg_attribute a
+                          pg_attribute a,
+                          pg_namespace n
                       where
                           t.oid = ix.indrelid
                           and i.oid = ix.indexrelid
                           and a.attrelid = t.oid
                           and a.attnum = ANY(ix.indkey)
                           and t.relkind = 'r'
-                          and t.relname like '%s'
+                          and t.relnamespace = n.oid
+                          and %s
                       group by
                           t.relname,
                           i.relname,
@@ -131,15 +181,15 @@ func GetTableIndexesSQL(dbConn DBConn, tableName string) string {
                       ix.indisprimary
                       order by
                           t.relname,
-                          i.relname;`, tableName)
+                          i.relname;`, tableFilter)
 	case DriverName.SQLite:
-		query = fmt.Sprintf(`select * from pragma_index_list('%s');`, tableName)
+		query = fmt.Sprintf(`select * from pragma_index_list('%s');`, ref.Name)
 	}
 	return query
 }
 
-func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, tableName string) (*Data, error) {
-	inds, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_list('%s')", tableName))
+func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error) {
+	inds, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_list('%s')", ref.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -169,55 +219,72 @@ func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, tableName string)
 }
 
 // GetTableConstraintsSQL fetches the constraints information for the specified table.
-func GetTableConstraintsSQL(dbConn DBConn, tableName string) string {
+func GetTableConstraintsSQL(dbConn DBConn, ref TableReference) string {
 	var query string
 	switch dbConn.DriverName {
 	case DriverName.MySQL:
+		schemaFilter := "TABLE_SCHEMA = DATABASE()"
+		if ref.Schema != "" {
+			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
+		}
 		query = fmt.Sprintf(`SELECT
-													CONSTRAINT_NAME 'name',
-													CONSTRAINT_TYPE 'type'
-												FROM
-													INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-												WHERE
-													TABLE_SCHEMA = DATABASE()
-													AND TABLE_NAME = '%s';`, tableName)
+                                        CONSTRAINT_NAME 'name',
+                                        CONSTRAINT_TYPE 'type'
+                                    FROM
+                                        INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+                                    WHERE
+                                        %s
+                                        AND TABLE_NAME = '%s';`, schemaFilter, ref.Name)
 	case DriverName.Postgres:
+		schemaJoin := ""
+		schemaWhere := ""
+		if ref.Schema != "" {
+			schemaJoin = "JOIN pg_namespace n ON c.connamespace = n.oid"
+			schemaWhere = fmt.Sprintf("AND n.nspname = '%s'", ref.Schema)
+		}
 		query = fmt.Sprintf(`SELECT
-														conname AS name,
-														contype AS type,
-														pg_get_constraintdef(c.oid) AS definition
-												FROM
-														pg_constraint c
-												JOIN
-														pg_class t ON c.conrelid = t.oid
-												WHERE
-														t.relname = '%s';`, tableName)
+                                        conname AS name,
+                                        contype AS type,
+                                        pg_get_constraintdef(c.oid) AS definition
+                                FROM
+                                        pg_constraint c
+                                JOIN
+                                        pg_class t ON c.conrelid = t.oid
+                                %s
+                                WHERE
+                                        t.relname = '%s'
+                                        %s;`, schemaJoin, ref.Name, schemaWhere)
 	case DriverName.SQLite:
-		query = fmt.Sprintf(`PRAGMA foreign_key_list('%s');`, tableName)
+		query = fmt.Sprintf(`PRAGMA foreign_key_list('%s');`, ref.Name)
 	}
 	return query
 }
 
-func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) ([]string, error) {
+func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
 	var query string
 	switch dbConn.DriverName {
 	case DriverName.MySQL:
+		schemaFilter := "TABLE_SCHEMA = DATABASE()"
+		if ref.Schema != "" {
+			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
+		}
 		query = fmt.Sprintf(`SELECT COLUMN_NAME name
-												FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-												WHERE TABLE_SCHEMA = DATABASE()
-													AND TABLE_NAME = '%s'
-													AND CONSTRAINT_NAME = 'PRIMARY'
-												ORDER BY ORDINAL_POSITION;`, tableName)
+                                        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                                        WHERE %s
+                                            AND TABLE_NAME = '%s'
+                                            AND CONSTRAINT_NAME = 'PRIMARY'
+                                        ORDER BY ORDINAL_POSITION;`, schemaFilter, ref.Name)
 	case DriverName.Postgres:
+		qualifiedRef := quotedTableRef(dbConn, ref)
 		query = fmt.Sprintf(`SELECT a.attname name
-												FROM pg_index i
-												JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
-												WHERE i.indrelid = '%s'::regclass AND i.indisprimary;`, tableName)
+                                        FROM pg_index i
+                                        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+                                        WHERE i.indrelid = '%s'::regclass AND i.indisprimary;`, qualifiedRef)
 	case DriverName.SQLite:
 		query = fmt.Sprintf(`SELECT name
-												FROM pragma_table_info('%s')
-												WHERE pk > 0
-												ORDER BY pk;`, tableName)
+                                        FROM pragma_table_info('%s')
+                                        WHERE pk > 0
+                                        ORDER BY pk;`, ref.Name)
 	}
 	data, err := fetchRows(ctx, dbConn, query)
 	if err != nil {
@@ -232,8 +299,8 @@ func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, tableName string) 
 	return columns, nil
 }
 
-func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, tableName string) ([]string, error) {
-	query := GetTableColumnsSQL(dbConn, tableName)
+func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
+	query := GetTableColumnsSQL(dbConn, ref)
 	data, err := fetchRows(ctx, dbConn, query)
 	if err != nil {
 		return nil, err
@@ -248,8 +315,9 @@ func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, tableName string
 }
 
 // GetTableRowsSQL fetches n rows from the specified table.
-func GetTableRowsSQL(tableName string, primaryKeyColumns []string, sortOrder string) string {
-	query := fmt.Sprintf("SELECT * FROM %s", tableName)
+func GetTableRowsSQL(dbConn DBConn, ref TableReference, primaryKeyColumns []string, sortOrder string) string {
+	from := quotedTableRef(dbConn, ref)
+	query := fmt.Sprintf("SELECT * FROM %s", from)
 
 	if len(primaryKeyColumns) > 0 {
 		orderClause := " ORDER BY " + strings.Join(primaryKeyColumns, ", ") + " " + sortOrder

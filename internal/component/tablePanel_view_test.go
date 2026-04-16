@@ -32,6 +32,21 @@ func TestTablePanelView(t *testing.T) {
 		assertGolden(t, "TablePanel_active", m.View())
 	})
 
+	t.Run("with_schema", func(t *testing.T) {
+		m := component.NewTablePanelModel()
+		m.SetActive(true)
+		m.SetData(&db.Data{
+			Columns: []string{"schema", "name", "rows"},
+			Rows: []map[string]any{
+				{"schema": "public", "name": "users", "rows": "100"},
+				{"schema": "public", "name": "orders", "rows": "250"},
+				{"schema": "myschema", "name": "products", "rows": "50"},
+			},
+		})
+		m.SetSize(80, 24)
+		assertGolden(t, "TablePanel_with_schema", m.View())
+	})
+
 	t.Run("views_tab", func(t *testing.T) {
 		m := component.NewTablePanelModel()
 		m.SetActive(true)

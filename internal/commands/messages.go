@@ -1,5 +1,7 @@
 package commands
 
+import "github.com/wheelibin/qrypad/internal/db"
+
 // ErrMsg wraps an error for use as a Bubble Tea message.
 // All command errors are passed back using this.
 //
@@ -29,8 +31,8 @@ type LoadingMsg struct{ Loading bool }
 // DatabaseSelectedMsg contains the selected database name.
 type DatabaseSelectedMsg string
 
-// TableSelectedMsg contains the selected table name.
-type TableSelectedMsg string
+// TableSelectedMsg contains the selected table reference.
+type TableSelectedMsg db.TableReference
 
 // QueryFileReadMsg contains the details of the query file.
 type QueryFileReadMsg struct{ FileName, Contents string }

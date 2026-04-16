@@ -83,6 +83,7 @@ type model struct {
 	activePanelIndex int
 	errorMessage     string
 	selectedDatabase string
+	currentTableRef  db.TableReference
 	activePopup      PopupKindType
 	cancelQuery      context.CancelFunc
 

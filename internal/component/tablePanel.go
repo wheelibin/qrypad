@@ -35,8 +35,8 @@ type TablePanelModel struct {
 	width          int
 	height         int
 	table          table.Model
-	selectedTable  string
-	allNames       []string
+	selectedTable  db.TableReference
+	allRefs        []db.TableReference
 	activeTabIndex int
 	help           help.Model
 	keymap         tablePanelKeymap
@@ -86,13 +86,7 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case db.SchemaEntitiesFetchedMsg:
-		if len(m.table.HighlightedRow().Data) > 0 {
-			if name, ok := m.table.HighlightedRow().Data["name"].(string); ok {
-				m.selectedTable = name
-			}
-		} else {
-			m.selectedTable = ""
-		}
+		m.selectedTable = m.highlightedRef()
 		cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 
 	case tea.KeyPressMsg:
@@ -120,13 +114,7 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 		cmds = append(cmds, cmd)
 		for _, e := range m.table.GetLastUpdateUserEvents() {
 			if _, ok := e.(table.UserEventHighlightedIndexChanged); ok {
-				if len(m.table.HighlightedRow().Data) > 0 {
-					if name, ok := m.table.HighlightedRow().Data["name"].(string); ok {
-						m.selectedTable = name
-					}
-				} else {
-					m.selectedTable = ""
-				}
+				m.selectedTable = m.highlightedRef()
 				cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 			}
 		}
@@ -142,36 +130,65 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 
 	cols := []table.Column{}
 	rows := []table.Row{}
-	names := make([]string, 0, len(data.Rows))
+	refs := make([]db.TableReference, 0, len(data.Rows))
 
-	// get cols
-	// name
-	cols = append(cols, table.NewFlexColumn(data.Columns[0], data.Columns[0], 1).WithFiltered(true))
+	// Check whether this dataset includes a schema column
+	hasSchema := false
+	for _, col := range data.Columns {
+		if col == "schema" {
+			hasSchema = true
+			break
+		}
+	}
 
-	if len(data.Columns) > 1 {
-		// rows
-		cols = append(cols, table.NewColumn(data.Columns[1], data.Columns[1], 12).WithFiltered(true))
+	// Build columns: schema (fixed 16 chars, if present), name (flex), other columns (fixed 12)
+	if hasSchema {
+		cols = append(cols, table.NewColumn("schema", "schema", 16).WithFiltered(true))
+	}
+	cols = append(cols, table.NewFlexColumn("name", "name", 1).WithFiltered(true))
+	for _, col := range data.Columns {
+		if col != "schema" && col != "name" {
+			cols = append(cols, table.NewColumn(col, col, 12).WithFiltered(true))
+		}
 	}
 
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
-		if name, ok := row["name"]; ok {
-			names = append(names, fmt.Sprintf("%v", name))
+		name := ""
+		if n, ok := row["name"]; ok {
+			name = fmt.Sprintf("%v", n)
 		}
+		schema := ""
+		if hasSchema {
+			if s, ok := row["schema"]; ok {
+				schema = fmt.Sprintf("%v", s)
+			}
+		}
+		refs = append(refs, db.TableReference{Schema: schema, Name: name})
 	}
 
-	m.allNames = names
+	m.allRefs = refs
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
 }
 
-func (m TablePanelModel) GetSelectedTable() string {
+func (m TablePanelModel) GetSelectedTable() db.TableReference {
 	return m.selectedTable
 }
 
-// GetAllTableNames returns all table/view names currently loaded in the panel.
-func (m TablePanelModel) GetAllTableNames() []string {
-	return m.allNames
+// GetAllTableRefs returns all table/view references currently loaded in the panel.
+func (m TablePanelModel) GetAllTableRefs() []db.TableReference {
+	return m.allRefs
+}
+
+func (m TablePanelModel) highlightedRef() db.TableReference {
+	row := m.table.HighlightedRow()
+	if len(row.Data) == 0 {
+		return db.TableReference{}
+	}
+	name, _ := row.Data["name"].(string)
+	schema, _ := row.Data["schema"].(string)
+	return db.TableReference{Schema: schema, Name: name}
 }
 
 func (m *TablePanelModel) SetActive(active bool) {

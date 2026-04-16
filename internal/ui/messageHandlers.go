@@ -149,13 +149,14 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		}
 
 	case commands.TableSelectedMsg:
+		m.currentTableRef = db.TableReference(msg)
 		switch m.tableInfoPanel.GetActiveTabIndex() {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints)
 		}
 
 	case commands.TablePanelTabChangedMsg:
@@ -169,11 +170,11 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	case commands.TableInfoTabChangedMsg:
 		switch msg {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints)
 		}
 
 	case commands.DatabaseSelectedMsg:
@@ -270,7 +271,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.ViewData):
 		switch m.activePanelIndex {
 		case PanelIndexTables:
-			if m.tablePanel.GetSelectedTable() != "" {
+			if m.tablePanel.GetSelectedTable().Name != "" {
 				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "asc")
 			}
 		case PanelIndexResults:
@@ -287,7 +288,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.ViewDataDesc):
 		if m.activePanelIndex == PanelIndexTables {
-			if m.tablePanel.GetSelectedTable() != "" {
+			if m.tablePanel.GetSelectedTable().Name != "" {
 				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "desc")
 			}
 		}
@@ -355,7 +356,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		var valueToCopy, copiedTextInfo string
 		switch m.activePanelIndex {
 		case PanelIndexTables:
-			valueToCopy = m.tablePanel.GetSelectedTable()
+			valueToCopy = m.tablePanel.GetSelectedTable().QualifiedName()
 		case PanelIndexTableInfo:
 			row := m.tableInfoPanel.GetSelectedRow()
 			if name, ok := row["name"]; ok {
@@ -377,7 +378,8 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			result := autocomplete.GetCompletions(
 				m.queryPanel.GetCurrentStatement(),
 				m.queryPanel.GetWordAtCursor(),
-				m.tablePanel.GetAllTableNames(),
+				m.tablePanel.GetAllTableRefs(),
+				m.db,
 			)
 			return m.handleCompletionResult(result)
 		}
@@ -387,7 +389,8 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			result := autocomplete.GetCompletionsForced(
 				m.queryPanel.GetCurrentStatement(),
 				m.queryPanel.GetWordAtCursor(),
-				m.tablePanel.GetAllTableNames(),
+				m.tablePanel.GetAllTableRefs(),
+				m.db,
 			)
 			return m.handleCompletionResult(result)
 		}
@@ -413,7 +416,8 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 				result := autocomplete.GetCompletions(
 					m.queryPanel.GetCurrentStatement(),
 					m.queryPanel.GetWordAtCursor(),
-					m.tablePanel.GetAllTableNames(),
+					m.tablePanel.GetAllTableRefs(),
+					m.db,
 				)
 				if result.Kind == autocomplete.CompletionTable {
 					return m.handleCompletionResult(result)
@@ -440,8 +444,11 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 func (m *model) handleCompletionResult(result autocomplete.CompletionResult) tea.Cmd {
 	switch result.Kind {
 	case autocomplete.CompletionColumn:
-		return commands.GetAutocompleteData(m.db, result.TableName)
+		return commands.GetAutocompleteData(m.db, result.TableRef)
 	case autocomplete.CompletionTable:
+		m.queryPanel.SetAutoCompleteActive(true)
+		return m.queryPanel.SetAutoCompleteOptions(result.Items)
+	case autocomplete.CompletionSchema:
 		m.queryPanel.SetAutoCompleteActive(true)
 		return m.queryPanel.SetAutoCompleteOptions(result.Items)
 	case autocomplete.CompletionNone:

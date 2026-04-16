@@ -81,14 +81,14 @@ var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 	return db.DataFetchedMsg{Data: d, Err: err}
 }
 
-func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
+func GetTableRows(dbConn db.DBConn, ref db.TableReference, sortOrder string) tea.Cmd {
 	return func() tea.Msg {
-		primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, tableName)
+		primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, ref)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
 
-		query := db.GetTableRowsSQL(tableName, primaryKeyColumns, sortOrder)
+		query := db.GetTableRowsSQL(dbConn, ref, primaryKeyColumns, sortOrder)
 		timeout := db.GetTimeoutSecs()
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
@@ -102,9 +102,9 @@ func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
 	}
 }
 
-func GetAutocompleteData(dbConn db.DBConn, tableName string) tea.Cmd {
+func GetAutocompleteData(dbConn db.DBConn, ref db.TableReference) tea.Cmd {
 	return func() tea.Msg {
-		cols, err := db.GetAutoCompleteColumns(context.Background(), dbConn, tableName)
+		cols, err := db.GetAutoCompleteColumns(context.Background(), dbConn, ref)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
@@ -112,24 +112,24 @@ func GetAutocompleteData(dbConn db.DBConn, tableName string) tea.Cmd {
 	}
 }
 
-func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
+func GetTableInfo(dbConn db.DBConn, ref db.TableReference, kind TableInfoKindType) tea.Cmd {
 	switch kind {
 	case TableInfoKind.Columns:
-		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
+		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})
 	case TableInfoKind.Indexes:
 		if dbConn.DriverName == db.DriverName.SQLite {
-			d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, tableName)
+			d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, ref)
 			return func() tea.Msg {
 				return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 			}
 		}
-		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
+		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})
 	case TableInfoKind.Constraints:
-		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
+		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
 			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
 		})
 	}
@@ -206,9 +206,9 @@ func CancelQuery() tea.Cmd {
 	}
 }
 
-func TableSelectionChanged(tableName string) tea.Cmd {
+func TableSelectionChanged(ref db.TableReference) tea.Cmd {
 	return func() tea.Msg {
-		return TableSelectedMsg(tableName)
+		return TableSelectedMsg(ref)
 	}
 }
 

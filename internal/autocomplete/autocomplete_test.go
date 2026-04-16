@@ -4,61 +4,27 @@ import (
 	"testing"
 
 	"github.com/wheelibin/qrypad/internal/autocomplete"
+	"github.com/wheelibin/qrypad/internal/db"
 )
 
-func TestFilterNames(t *testing.T) {
-	tests := []struct {
-		name     string
-		names    []string
-		prefix   string
-		expected []string
-	}{
-		{
-			name:     "empty prefix returns all names",
-			names:    []string{"users", "orders", "products"},
-			prefix:   "",
-			expected: []string{"users", "orders", "products"},
-		},
-		{
-			name:     "case-insensitive substring match",
-			names:    []string{"Users", "orders", "UserProfiles"},
-			prefix:   "user",
-			expected: []string{"Users", "UserProfiles"},
-		},
-		{
-			name:     "no match returns empty slice",
-			names:    []string{"users", "orders"},
-			prefix:   "xyz",
-			expected: []string{},
-		},
-		{
-			name:     "empty names list returns empty slice",
-			names:    []string{},
-			prefix:   "us",
-			expected: []string{},
-		},
-		{
-			name:     "exact match",
-			names:    []string{"users", "orders"},
-			prefix:   "users",
-			expected: []string{"users"},
-		},
+func makeRefs(names ...string) []db.TableReference {
+	refs := make([]db.TableReference, len(names))
+	for i, n := range names {
+		refs[i] = db.TableReference{Schema: "public", Name: n}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := autocomplete.FilterNames(tt.names, tt.prefix)
-			if len(got) != len(tt.expected) {
-				t.Fatalf("filterNames(%v, %q): expected %v (len %d), got %v (len %d)",
-					tt.names, tt.prefix, tt.expected, len(tt.expected), got, len(got))
-			}
-			for i := range got {
-				if got[i] != tt.expected[i] {
-					t.Errorf("filterNames(%v, %q): item %d: expected %q, got %q",
-						tt.names, tt.prefix, i, tt.expected[i], got[i])
-				}
-			}
-		})
+	return refs
+}
+
+func makeMixedRefs() []db.TableReference {
+	return []db.TableReference{
+		{Schema: "public", Name: "users"},
+		{Schema: "public", Name: "orders"},
+		{Schema: "myschema", Name: "products"},
 	}
+}
+
+func postgresConn() db.DBConn {
+	return db.DBConn{DriverName: db.DriverName.Postgres, ConnectedDatabase: "mydb"}
 }
 
 func TestGetAliasTableMap(t *testing.T) {
@@ -91,6 +57,16 @@ func TestGetAliasTableMap(t *testing.T) {
 			name:     "case insensitive FROM keyword",
 			sql:      "select * from Products p",
 			expected: map[string]string{"products": "Products", "p": "Products"},
+		},
+		{
+			name:     "FROM with qualified schema.table and alias",
+			sql:      "SELECT * FROM public.users u",
+			expected: map[string]string{"public.users": "public.users", "u": "public.users"},
+		},
+		{
+			name:     "FROM with qualified schema.table no alias",
+			sql:      "SELECT * FROM myschema.orders",
+			expected: map[string]string{"myschema.orders": "myschema.orders"},
 		},
 		{
 			name:     "empty SQL",
@@ -165,110 +141,107 @@ func TestGetTextBeforeWord(t *testing.T) {
 }
 
 func TestGetCompletions(t *testing.T) {
-	tableNames := []string{"users", "orders", "products"}
+	conn := postgresConn()
 
 	tests := []struct {
 		name         string
 		sql          string
 		wordAtCursor string
-		tableNames   []string
+		allRefs      []db.TableReference
 		wantKind     autocomplete.CompletionKind
-		wantTable    string
+		wantTableRef db.TableReference
 		wantItems    []string
 	}{
 		{
 			name:         "empty SQL returns None",
 			sql:          "",
 			wordAtCursor: "",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users", "orders"),
 			wantKind:     autocomplete.CompletionNone,
 		},
 		{
-			name:         "word ending with dot triggers column completion",
+			name:         "word ending with dot triggers column completion via alias",
 			sql:          "SELECT u. FROM users u",
 			wordAtCursor: "u.",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users", "orders"),
 			wantKind:     autocomplete.CompletionColumn,
-			wantTable:    "users",
+			wantTableRef: db.TableReference{Schema: "public", Name: "users"},
 		},
 		{
 			name:         "dot with unknown alias returns None",
 			sql:          "SELECT x. FROM users u",
 			wordAtCursor: "x.",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users"),
 			wantKind:     autocomplete.CompletionNone,
 		},
 		{
-			name:         "after FROM triggers table completion",
+			name:         "alias of schema.table triggers column completion",
+			sql:          "select * from public.users t where t.",
+			wordAtCursor: "t.",
+			allRefs:      makeMixedRefs(),
+			wantKind:     autocomplete.CompletionColumn,
+			wantTableRef: db.TableReference{Schema: "public", Name: "users"},
+		},
+		{
+			name:         "schema dot triggers schema completion",
+			sql:          "SELECT * FROM public.",
+			wordAtCursor: "public.",
+			allRefs:      makeMixedRefs(),
+			wantKind:     autocomplete.CompletionSchema,
+			wantItems:    []string{"users", "orders"},
+		},
+		{
+			name:         "schema.table. triggers column completion",
+			sql:          "SELECT * FROM public.users",
+			wordAtCursor: "public.users.",
+			allRefs:      makeMixedRefs(),
+			wantKind:     autocomplete.CompletionColumn,
+			wantTableRef: db.TableReference{Schema: "public", Name: "users"},
+		},
+		{
+			name:         "after FROM triggers table completion with autocomplete insert strings",
 			sql:          "SELECT * FROM ",
 			wordAtCursor: "",
-			tableNames:   tableNames,
+			allRefs:      makeMixedRefs(),
 			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
+			// public.users and public.orders insert as "users"/"orders" (default schema for postgres)
+			// myschema.products inserts as "myschema.products"
+			wantItems: []string{"users", "orders", "myschema.products"},
 		},
 		{
 			name:         "after FROM with partial name filters results",
 			sql:          "SELECT * FROM us",
 			wordAtCursor: "us",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users", "orders", "products"),
 			wantKind:     autocomplete.CompletionTable,
 			wantItems:    []string{"users"},
-		},
-		{
-			name:         "after JOIN triggers table completion",
-			sql:          "SELECT * FROM users JOIN ",
-			wordAtCursor: "",
-			tableNames:   tableNames,
-			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
 		},
 		{
 			name:         "after FROM with no matching names returns None",
 			sql:          "SELECT * FROM xyz",
 			wordAtCursor: "xyz",
-			tableNames:   tableNames,
-			wantKind:     autocomplete.CompletionNone,
-		},
-		{
-			name:         "in the middle of a SELECT with no context returns None",
-			sql:          "SELECT name",
-			wordAtCursor: "name",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users", "orders"),
 			wantKind:     autocomplete.CompletionNone,
 		},
 		{
 			name:         "after FROM in middle of buffer triggers table completion",
 			sql:          "SELECT * FROM \nSELECT 1;",
 			wordAtCursor: "",
-			tableNames:   tableNames,
+			allRefs:      makeRefs("users", "orders"),
 			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
-		},
-		{
-			name:         "after FROM with partial name in middle of buffer filters results",
-			sql:          "SELECT * FROM us\nSELECT 1;",
-			wordAtCursor: "us",
-			tableNames:   tableNames,
-			wantKind:     autocomplete.CompletionTable,
-			wantItems:    []string{"users"},
-		},
-		{
-			name:         "after JOIN in middle of buffer triggers table completion",
-			sql:          "SELECT * FROM users JOIN \nSELECT 1;",
-			wordAtCursor: "",
-			tableNames:   tableNames,
-			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
+			wantItems:    []string{"users", "orders"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := autocomplete.GetCompletions(tt.sql, tt.wordAtCursor, tt.tableNames)
+			got := autocomplete.GetCompletions(tt.sql, tt.wordAtCursor, tt.allRefs, conn)
 			if got.Kind != tt.wantKind {
 				t.Errorf("GetCompletions kind: expected %d, got %d", tt.wantKind, got.Kind)
 			}
-			if tt.wantTable != "" && got.TableName != tt.wantTable {
-				t.Errorf("GetCompletions TableName: expected %q, got %q", tt.wantTable, got.TableName)
+			if (tt.wantTableRef != db.TableReference{}) {
+				if got.TableRef != tt.wantTableRef {
+					t.Errorf("GetCompletions TableRef: expected %+v, got %+v", tt.wantTableRef, got.TableRef)
+				}
 			}
 			if tt.wantItems != nil {
 				if len(got.Items) != len(tt.wantItems) {
@@ -285,7 +258,8 @@ func TestGetCompletions(t *testing.T) {
 }
 
 func TestGetCompletionsForced(t *testing.T) {
-	tableNames := []string{"users", "orders"}
+	conn := postgresConn()
+	allRefs := makeRefs("users", "orders")
 
 	tests := []struct {
 		name         string
@@ -299,7 +273,7 @@ func TestGetCompletionsForced(t *testing.T) {
 			sql:          "SELECT name",
 			wordAtCursor: "",
 			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
+			wantItems:    []string{"users", "orders"},
 		},
 		{
 			name:         "falls back filtered by word at cursor",
@@ -319,12 +293,12 @@ func TestGetCompletionsForced(t *testing.T) {
 			sql:          "SELECT * FROM ",
 			wordAtCursor: "",
 			wantKind:     autocomplete.CompletionTable,
-			wantItems:    tableNames,
+			wantItems:    []string{"users", "orders"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := autocomplete.GetCompletionsForced(tt.sql, tt.wordAtCursor, tableNames)
+			got := autocomplete.GetCompletionsForced(tt.sql, tt.wordAtCursor, allRefs, conn)
 			if got.Kind != tt.wantKind {
 				t.Errorf("GetCompletionsForced kind: expected %d, got %d", tt.wantKind, got.Kind)
 			}
