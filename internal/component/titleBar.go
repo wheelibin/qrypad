@@ -40,6 +40,14 @@ func (m *TitleBarModel) SetSize(w, h int) {
 	m.height = h
 }
 
+func (m *TitleBarModel) SetConnectionName(name string) {
+	m.connectionName = name
+}
+
+func (m *TitleBarModel) SetConn(conn db.ConnectionConfig) {
+	m.conn = conn
+}
+
 func (m TitleBarModel) View() string {
 	baseStyle := lipgloss.NewStyle().
 		Background(theme.GetTheme().TitleBar.BG).

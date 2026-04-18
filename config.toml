@@ -31,7 +31,8 @@ database         = "test-db/sqlite/sqlite.db"
 
 [theme]
 # catppuccin-mocha (default) / kanagawa-wave / rose-pine-moon
-name = "rose-pine-moon"
+name = "kanagawa-wave"
+
 # borderActive          = { bg = "", fg = "#ff00ff" }
 # currentStatement      = { bg = "", fg = "" }
 # databaseSwitcherPopup = { bg = "", fg = "" }

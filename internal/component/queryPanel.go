@@ -181,6 +181,10 @@ func (m *QueryPanelModel) SetDirty(dirty bool) {
 	m.dirty = dirty
 }
 
+func (m *QueryPanelModel) SetConnectionName(name string) {
+	m.connectionName = name
+}
+
 func (m *QueryPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h

@@ -35,19 +35,21 @@ type PopupKindType int
 
 //nolint:gochecknoglobals // singleton enum struct used as namespaced constants
 var PopupKind = struct {
-	Error            PopupKindType
-	Help             PopupKindType
-	Password         PopupKindType
-	ResultRow        PopupKindType
-	DatabaseSwitcher PopupKindType
-	Loading          PopupKindType
+	Error              PopupKindType
+	Help               PopupKindType
+	Password           PopupKindType
+	ResultRow          PopupKindType
+	DatabaseSwitcher   PopupKindType
+	Loading            PopupKindType
+	ConnectionSwitcher PopupKindType
 }{
-	Error:            1,
-	Help:             2,
-	Password:         3,
-	ResultRow:        4,
-	DatabaseSwitcher: 5,
-	Loading:          6,
+	Error:              1,
+	Help:               2,
+	Password:           3,
+	ResultRow:          4,
+	DatabaseSwitcher:   5,
+	Loading:            6,
+	ConnectionSwitcher: 7,
 }
 
 type bounds struct {
@@ -63,18 +65,19 @@ var appStyle = lipgloss.NewStyle()
 //nolint:recvcheck // Bubble Tea model: Init/View/Update use value receiver per interface, mutating methods use pointer receiver
 type model struct {
 	// components
-	tablePanel            component.TablePanelModel
-	tableInfoPanel        component.TableInfoPanelModel
-	queryPanel            component.QueryPanelModel
-	resultsPanel          component.ResultsPanelModel
-	statusBar             component.StatusBarModel
-	titleBar              component.TitleBarModel
-	errorPopup            component.ErrorPopupModel
-	passwordPopup         component.PasswordPopupModel
-	resultRowPopup        component.ResultRowPopupModel
-	databaseSwitcherPopup component.DatabaseSwitcherPopupModel
-	helpPopup             component.HelpPopupModel
-	loadingPopup          component.LoadingPopupModel
+	tablePanel              component.TablePanelModel
+	tableInfoPanel          component.TableInfoPanelModel
+	queryPanel              component.QueryPanelModel
+	resultsPanel            component.ResultsPanelModel
+	statusBar               component.StatusBarModel
+	titleBar                component.TitleBarModel
+	errorPopup              component.ErrorPopupModel
+	passwordPopup           component.PasswordPopupModel
+	resultRowPopup          component.ResultRowPopupModel
+	databaseSwitcherPopup   component.DatabaseSwitcherPopupModel
+	connectionSwitcherPopup component.ConnectionSwitcherPopupModel
+	helpPopup               component.HelpPopupModel
+	loadingPopup            component.LoadingPopupModel
 
 	// state
 	connectionName   string
@@ -116,26 +119,28 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 	passwordPopup := component.NewPasswordPopupModel()
 	resultRowPopup := component.NewResultRowPopupModel()
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
+	connectionSwitcherPopup := component.NewConnectionSwitcherPopupModel()
 	helpPopup := component.NewHelpPopupModel()
 	loadingPopup := component.NewLoadingPopupModel()
 
 	return model{
-		connectionName:        connectionName,
-		dbConfig:              dbConfig,
-		tablePanel:            tablePanel,
-		tableInfoPanel:        tableInfoPanel,
-		queryPanel:            queryPanel,
-		resultsPanel:          resultsPanel,
-		statusBar:             statusBar,
-		titleBar:              titleBar,
-		errorPopup:            errorPopup,
-		passwordPopup:         passwordPopup,
-		resultRowPopup:        resultRowPopup,
-		databaseSwitcherPopup: databaseSwitcherPopup,
-		helpPopup:             helpPopup,
-		loadingPopup:          loadingPopup,
-		selectablePanelCount:  4,
-		autoSave:              autoSave,
+		connectionName:          connectionName,
+		dbConfig:                dbConfig,
+		tablePanel:              tablePanel,
+		tableInfoPanel:          tableInfoPanel,
+		queryPanel:              queryPanel,
+		resultsPanel:            resultsPanel,
+		statusBar:               statusBar,
+		titleBar:                titleBar,
+		errorPopup:              errorPopup,
+		passwordPopup:           passwordPopup,
+		resultRowPopup:          resultRowPopup,
+		databaseSwitcherPopup:   databaseSwitcherPopup,
+		connectionSwitcherPopup: connectionSwitcherPopup,
+		helpPopup:               helpPopup,
+		loadingPopup:            loadingPopup,
+		selectablePanelCount:    4,
+		autoSave:                autoSave,
 	}
 }
 
@@ -207,6 +212,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		db.DataFetchedMsg,
 		db.DatabaseConnectedMsg,
 		db.DatabaseListFetchedMsg,
+		db.ConnectionListFetchedMsg,
 		db.SchemaEntitiesFetchedMsg,
 		db.TableInfoDataFetchedMsg,
 		db.QueryControlMsg:
@@ -219,6 +225,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commands.ActivePanelChangedMsg,
 		commands.CopyValueMsg,
 		commands.DatabaseSelectedMsg,
+		commands.ConnectionSelectedMsg,
 		commands.PasswordEnteredMsg,
 		commands.PasswordInputNeededMsg,
 		commands.PopupClosedMsg,
@@ -310,6 +317,8 @@ func (m *model) updateActivePopup(msg tea.Msg) tea.Cmd {
 		m.errorPopup, cmd = m.errorPopup.Update(msg)
 	case PopupKind.DatabaseSwitcher:
 		m.databaseSwitcherPopup, cmd = m.databaseSwitcherPopup.Update(msg)
+	case PopupKind.ConnectionSwitcher:
+		m.connectionSwitcherPopup, cmd = m.connectionSwitcherPopup.Update(msg)
 	case PopupKind.Loading:
 		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
 	}
@@ -328,6 +337,8 @@ func (m model) activePopupView() string {
 		return m.passwordPopup.View()
 	case PopupKind.DatabaseSwitcher:
 		return m.databaseSwitcherPopup.View()
+	case PopupKind.ConnectionSwitcher:
+		return m.connectionSwitcherPopup.View()
 	case PopupKind.Loading:
 		return m.loadingPopup.View()
 	}
@@ -374,6 +385,7 @@ func (m *model) adjustSizes() {
 	m.errorPopup.SetSize(m.width/2, 5)
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
+	m.connectionSwitcherPopup.SetSize(m.width/3, m.height/3)
 	m.passwordPopup.SetSize(m.width/3, 5)
 	m.helpPopup.SetSize(120, 5)
 }

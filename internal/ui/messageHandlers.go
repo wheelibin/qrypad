@@ -96,6 +96,14 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		}
 		return commands.SetLoading(false)
 
+	case db.ConnectionListFetchedMsg:
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.connectionSwitcherPopup.SetData(msg.Data)
+			m.adjustSizes()
+		}
+
 	case db.AutoCompleteDataFetchedMsg:
 		if len(msg) > 0 {
 			m.queryPanel.SetAutoCompleteActive(true)
@@ -124,7 +132,7 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case commands.LoadingMsg:
-		if m.popupIsActive(PopupKind.DatabaseSwitcher) {
+		if m.popupIsActive(PopupKind.DatabaseSwitcher) || m.popupIsActive(PopupKind.ConnectionSwitcher) {
 			return nil
 		}
 		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
@@ -180,7 +188,43 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	case commands.DatabaseSelectedMsg:
 		m.selectedDatabase = string(msg)
 		m.dbConfig.Database = string(msg)
+		// Optimistic update: title bar reflects new config before connection is confirmed.
+		// statusBar updates only on DatabaseConnectedMsg (after successful connect).
+		m.titleBar.SetConn(m.dbConfig)
 		return commands.ConnectToDB(m.connectionName, m.dbConfig)
+
+	case commands.ConnectionSelectedMsg:
+		connName := string(msg)
+		conns, err := db.GetConnections()
+		if err != nil {
+			m.handleError(err)
+			return nil
+		}
+		conn, ok := conns[connName]
+		if !ok {
+			m.handleError(errors.New("connection not found"))
+			return nil
+		}
+
+		// Save current buffer to old connection's file before switching (bypass debouncer)
+		if m.queryPanel.GetValue() != m.lastSavedQueryContents {
+			if saveErr := commands.SaveQueryFileToDisk(m.connectionName, m.queryPanel.GetValue()); saveErr != nil {
+				m.handleError(saveErr)
+				return nil
+			}
+			m.lastSavedQueryContents = m.queryPanel.GetValue()
+			m.queryPanel.SetDirty(false)
+		}
+
+		m.queryPanel.SetConnectionName(connName)
+		m.connectionName = connName
+		m.dbConfig = conn
+		m.titleBar.SetConnectionName(connName)
+		m.titleBar.SetConn(conn)
+		return tea.Batch(
+			commands.ConnectToDB(m.connectionName, m.dbConfig),
+			commands.ReadOrCreateQueryFile(connName),
+		)
 
 	case commands.PasswordEnteredMsg:
 		return commands.SavePassword(m.connectionName, string(msg))
@@ -208,6 +252,7 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.queryPanel.SetValue(msg.Contents)
 		m.queryPanel.SetFilename(msg.FileName)
 		m.lastSavedQueryContents = msg.Contents
+		m.queryPanel.SetDirty(false)
 	}
 
 	return nil
@@ -345,6 +390,12 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		if !m.popupIsActive(PopupKind.DatabaseSwitcher) {
 			m.showPopup(PopupKind.DatabaseSwitcher)
 			return commands.GetDatabases(m.db)
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.SwitchConnection):
+		if !m.popupIsActive(PopupKind.ConnectionSwitcher) {
+			m.showPopup(PopupKind.ConnectionSwitcher)
+			return commands.GetConnectionList()
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):

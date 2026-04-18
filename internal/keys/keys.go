@@ -5,26 +5,27 @@ import (
 )
 
 type keyMap struct {
-	AutoComplete    key.Binding
-	CancelQuery     key.Binding
-	ClosePopup      key.Binding
-	CopyValue       key.Binding
-	ExecuteQuery    key.Binding
-	FilterTable     key.Binding
-	Help            key.Binding
-	NextPanel       key.Binding
-	NextTab         key.Binding
-	OpenInEditor    key.Binding
-	PrevPanel       key.Binding
-	PrevTab         key.Binding
-	Quit            key.Binding
-	ReloadQuery     key.Binding
-	SaveQuery       key.Binding
-	SwitchDatabase  key.Binding
-	ToggleLeftPanel key.Binding
-	UpdatePassword  key.Binding
-	ViewData        key.Binding
-	ViewDataDesc    key.Binding
+	AutoComplete     key.Binding
+	CancelQuery      key.Binding
+	ClosePopup       key.Binding
+	CopyValue        key.Binding
+	ExecuteQuery     key.Binding
+	FilterTable      key.Binding
+	Help             key.Binding
+	NextPanel        key.Binding
+	NextTab          key.Binding
+	OpenInEditor     key.Binding
+	PrevPanel        key.Binding
+	PrevTab          key.Binding
+	Quit             key.Binding
+	ReloadQuery      key.Binding
+	SaveQuery        key.Binding
+	SwitchDatabase   key.Binding
+	SwitchConnection key.Binding
+	ToggleLeftPanel  key.Binding
+	UpdatePassword   key.Binding
+	ViewData         key.Binding
+	ViewDataDesc     key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -37,7 +38,7 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
+		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
 		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
 		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue, k.Quit},
 	}
@@ -64,6 +65,10 @@ var DefaultKeyMap = keyMap{
 	UpdatePassword: key.NewBinding(
 		key.WithKeys("f3"),
 		key.WithHelp("F3", "update password"),
+	),
+	SwitchConnection: key.NewBinding(
+		key.WithKeys("f4"),
+		key.WithHelp("F4", "switch connection"),
 	),
 	NextPanel: key.NewBinding(
 		key.WithKeys("tab"),

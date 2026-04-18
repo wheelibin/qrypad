@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -142,6 +143,16 @@ func GetDatabases(dbConn db.DBConn) tea.Cmd {
 	})
 }
 
+func GetConnectionList() tea.Cmd {
+	return func() tea.Msg {
+		conns, err := db.GetConnections()
+		if err != nil {
+			return db.ConnectionListFetchedMsg{Data: nil, Err: err}
+		}
+		return db.ConnectionListFetchedMsg{Data: connectionsToDataResponse(conns), Err: nil}
+	}
+}
+
 func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType) tea.Cmd {
 	switch kind {
 	case TablePanelKind.Tables:
@@ -218,6 +229,12 @@ func DatabaseSelectionChanged(name string) tea.Cmd {
 	}
 }
 
+func ConnectionSelectionChanged(name string) tea.Cmd {
+	return func() tea.Msg {
+		return ConnectionSelectedMsg(name)
+	}
+}
+
 func ClosePopup() tea.Cmd {
 	return func() tea.Msg {
 		return PopupClosedMsg{}
@@ -265,16 +282,20 @@ func ReadOrCreateQueryFile(connectionName string) tea.Cmd {
 	}
 }
 
-func SaveQueryFile(connectionName string, contents string) tea.Cmd {
-	return func() tea.Msg {
-		dir, err := GetOutputDir()
-		if err != nil {
-			return ErrMsg{err}
-		}
-		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
+// SaveQueryFileToDisk writes contents to <outputDir>/<connectionName>.sql synchronously.
+func SaveQueryFileToDisk(connectionName, contents string) error {
+	dir, err := GetOutputDir()
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
+	return os.WriteFile(filename, []byte(contents), 0o600)
+}
 
-		err = os.WriteFile(filename, []byte(contents), 0o600)
-		if err != nil {
+// SaveQueryFile returns a tea.Cmd that writes contents to <outputDir>/<connectionName>.sql.
+func SaveQueryFile(connectionName, contents string) tea.Cmd {
+	return func() tea.Msg {
+		if err := SaveQueryFileToDisk(connectionName, contents); err != nil {
 			return ErrMsg{err}
 		}
 		return QueryFileSavedMsg{}
@@ -330,4 +351,21 @@ func AutoCompleteClose() tea.Cmd {
 	return func() tea.Msg {
 		return AutoCompleteCloseMsg{}
 	}
+}
+
+func connectionsToDataResponse(conns map[string]db.ConnectionConfig) *db.Data {
+	d := db.Data{
+		Columns: []string{"name", "driver", "host"},
+		Rows:    make([]map[string]any, 0, len(conns)),
+	}
+	keys := make([]string, 0, len(conns))
+	for name := range conns {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+	for _, name := range keys {
+		c := conns[name]
+		d.Rows = append(d.Rows, map[string]any{"name": name, "driver": c.Driver, "host": c.Host})
+	}
+	return &d
 }

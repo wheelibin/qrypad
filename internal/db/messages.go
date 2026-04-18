@@ -27,5 +27,6 @@ type (
 	TableInfoDataFetchedMsg    QueryResultMsg
 	SchemaEntitiesFetchedMsg   QueryResultMsg
 	DatabaseListFetchedMsg     QueryResultMsg
+	ConnectionListFetchedMsg   QueryResultMsg
 	AutoCompleteDataFetchedMsg []string
 )

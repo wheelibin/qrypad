@@ -19,10 +19,6 @@ import (
 	"github.com/wheelibin/qrypad/internal/ui"
 )
 
-type config struct {
-	Connections map[string]db.ConnectionConfig `mapstructure:"connections"`
-}
-
 func main() {
 	viper.SetConfigName("config")               // name of config file (without extension)
 	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
@@ -35,10 +31,10 @@ func main() {
 			exitWithError("error reading config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		}
 	}
-	var cfg config
-	err := viper.Unmarshal(&cfg)
+
+	conns, err := db.GetConnections()
 	if err != nil {
-		exitWithError("error unmarshalling config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
+		exitWithError("error unmarshalling config\n(for config format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", err)
 	}
 
 	if len(os.Args[1:]) == 0 {
@@ -51,7 +47,7 @@ func main() {
 	}
 
 	connectionName := os.Args[1]
-	conn, ok := cfg.Connections[connectionName]
+	conn, ok := conns[connectionName]
 	if !ok {
 		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 	}

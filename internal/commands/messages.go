@@ -31,6 +31,9 @@ type LoadingMsg struct{ Loading bool }
 // DatabaseSelectedMsg contains the selected database name.
 type DatabaseSelectedMsg string
 
+// ConnectionSelectedMsg contains the selected connection name.
+type ConnectionSelectedMsg string
+
 // TableSelectedMsg contains the selected table reference.
 type TableSelectedMsg db.TableReference
 
