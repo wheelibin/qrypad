@@ -64,7 +64,7 @@ func GetSchemaTablesSQL(dbConn DBConn) string {
 		query = `SELECT TABLE_SCHEMA "schema", TABLE_NAME name, format(TABLE_ROWS,0) 'rows'
             FROM information_schema.TABLES
             WHERE TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'sys')
-             AND TABLE_TYPE LIKE 'BASE_TABLE'
+             AND TABLE_TYPE = 'BASE TABLE'
             ORDER BY table_schema, name;`
 	case DriverName.Postgres:
 		query = `SELECT schemaname schema, relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows
@@ -141,7 +141,7 @@ func GetTableIndexesSQL(dbConn DBConn, ref TableReference) string {
 		}
 		query = fmt.Sprintf(`SELECT
                         index_name 'name',
-                        GROUP_CONCAT(column_name) cols,
+                        GROUP_CONCAT(column_name ORDER BY seq_in_index) cols,
                         case when non_unique = 0 then 'unique' else '' end as 'unique',
                         case when index_name = 'PRIMARY' then 'primary' else '' end as 'primary'
                       FROM
@@ -149,7 +149,7 @@ func GetTableIndexesSQL(dbConn DBConn, ref TableReference) string {
                       WHERE
                         %s AND TABLE_NAME = '%s'
                         group by index_name, non_unique
-                        order by seq_in_index;`, schemaFilter, ref.Name)
+                        order by index_name;`, schemaFilter, ref.Name)
 	case DriverName.Postgres:
 		tableFilter := fmt.Sprintf("t.relname like '%s'", ref.Name)
 		if ref.Schema != "" {
@@ -157,7 +157,7 @@ func GetTableIndexesSQL(dbConn DBConn, ref TableReference) string {
 		}
 		query = fmt.Sprintf(`select
                           i.relname as "name",
-                          array_to_string(array_agg(a.attname), ', ') as cols,
+                          array_to_string(array_agg(a.attname ORDER BY array_position(ix.indkey::int[], a.attnum::int)), ', ') as cols,
                           ix.indisunique as "unique",
                           ix.indisprimary as "primary"
                       from
@@ -465,12 +465,18 @@ func truncateToSize(s string, maxBytes int) string {
 		return s
 	}
 
-	var size int
+	// Find the largest rune boundary i such that i <= maxBytes.
+	// `range` yields i = start byte of each rune; the end of the previous
+	// rune is the start of the current one.
+	lastFit := 0
 	for i := range s {
 		if i > maxBytes {
-			return s[:size]
+			return s[:lastFit]
 		}
-		size = i
+		lastFit = i
 	}
-	return s // all runes fit exactly
+	// Loop completed without exceeding maxBytes; the end of the final rune
+	// is len(s). If len(s) <= maxBytes we'd have returned above, so here
+	// len(s) > maxBytes and lastFit is the start of the final rune.
+	return s[:lastFit]
 }
