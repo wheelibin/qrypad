@@ -24,9 +24,10 @@ const (
 )
 
 type tablePanelKeymap struct {
-	viewData     key.Binding
-	viewDataDesc key.Binding
-	copy         key.Binding
+	viewData      key.Binding
+	viewDataDesc  key.Binding
+	copy          key.Binding
+	refreshSchema key.Binding
 }
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
@@ -69,6 +70,10 @@ func NewTablePanelModel() TablePanelModel {
 			copy: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
 				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy name"),
+			),
+			refreshSchema: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.RefreshSchema.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.RefreshSchema.Help().Key, "refresh schema"),
 			),
 		},
 	}
@@ -211,11 +216,15 @@ func (m TablePanelModel) GetActiveTabIndex() int {
 }
 
 func (m TablePanelModel) helpView() string {
-	return m.help.ShortHelpView([]key.Binding{
+	bindings := []key.Binding{
 		m.keymap.viewData,
 		m.keymap.viewDataDesc,
 		m.keymap.copy,
-	})
+	}
+	if m.showHelp {
+		bindings = append(bindings, m.keymap.refreshSchema)
+	}
+	return m.help.ShortHelpView(bindings)
 }
 
 func (m TablePanelModel) View() string {

@@ -45,13 +45,14 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 			_ = m.db.DB.Close()
 		}
 		m.db = db.DBConn(msg)
+		m.schemaCache.Invalidate()
 		m.closePopup()
 		m.statusBar.SetSelectedDatabase(m.db.ConnectedDatabase)
 		switch m.tablePanel.GetActiveTabIndex() {
 		case component.TablePanelTabIndexTables:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
 		}
 
 	case db.QueryControlMsg:
@@ -160,29 +161,29 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.currentTableRef = db.TableReference(msg)
 		switch m.tableInfoPanel.GetActiveTabIndex() {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
 		}
 
 	case commands.TablePanelTabChangedMsg:
 		switch msg {
 		case component.TablePanelTabIndexTables:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
 		}
 
 	case commands.TableInfoTabChangedMsg:
 		switch msg {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
 		}
 
 	case commands.DatabaseSelectedMsg:
@@ -446,6 +447,30 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			return m.handleCompletionResult(result)
 		}
 
+	case key.Matches(msg, keys.DefaultKeyMap.RefreshSchema):
+		if m.activePanelIndex == PanelIndexTables || m.activePanelIndex == PanelIndexTableInfo {
+			m.schemaCache.Invalidate()
+			m.statusBar.SetStatusInfo("schema refreshed")
+			var cmds []tea.Cmd
+			switch m.tablePanel.GetActiveTabIndex() {
+			case component.TablePanelTabIndexTables:
+				cmds = append(cmds, commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache))
+			case component.TablePanelTabIndexViews:
+				cmds = append(cmds, commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache))
+			}
+			if m.currentTableRef.Name != "" {
+				switch m.tableInfoPanel.GetActiveTabIndex() {
+				case component.TableInfoTabIndexColumns:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache))
+				case component.TableInfoTabIndexIndexes:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache))
+				case component.TableInfoTabIndexConstraints:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache))
+				}
+			}
+			return tea.Batch(cmds...)
+		}
+
 	default:
 		// any other key
 		if m.activePanelIndex == PanelIndexQuery {
@@ -495,7 +520,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 func (m *model) handleCompletionResult(result autocomplete.CompletionResult) tea.Cmd {
 	switch result.Kind {
 	case autocomplete.CompletionColumn:
-		return commands.GetAutocompleteData(m.db, result.TableRef)
+		return commands.GetAutocompleteData(m.db, result.TableRef, m.schemaCache)
 	case autocomplete.CompletionTable:
 		m.queryPanel.SetAutoCompleteActive(true)
 		return m.queryPanel.SetAutoCompleteOptions(result.Items)

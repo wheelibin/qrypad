@@ -18,6 +18,7 @@ type keyMap struct {
 	PrevPanel        key.Binding
 	PrevTab          key.Binding
 	Quit             key.Binding
+	RefreshSchema    key.Binding
 	ReloadQuery      key.Binding
 	SaveQuery        key.Binding
 	SwitchDatabase   key.Binding
@@ -38,7 +39,7 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
+		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel, k.RefreshSchema},
 		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
 		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue, k.Quit},
 	}
@@ -101,6 +102,10 @@ var DefaultKeyMap = keyMap{
 	ReloadQuery: key.NewBinding(
 		key.WithKeys("ctrl+r"),
 		key.WithHelp("ctrl+r", "reload query"),
+	),
+	RefreshSchema: key.NewBinding(
+		key.WithKeys("R"),
+		key.WithHelp("R", "refresh schema"),
 	),
 	CancelQuery: key.NewBinding(
 		key.WithKeys("esc"),

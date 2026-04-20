@@ -89,6 +89,7 @@ type model struct {
 	currentTableRef  db.TableReference
 	activePopup      PopupKindType
 	cancelQuery      context.CancelFunc
+	schemaCache      *db.SchemaCache
 
 	windowTooSmall         bool
 	width                  int
@@ -141,6 +142,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 		loadingPopup:            loadingPopup,
 		selectablePanelCount:    4,
 		autoSave:                autoSave,
+		schemaCache:             db.NewSchemaCache(),
 	}
 }
 

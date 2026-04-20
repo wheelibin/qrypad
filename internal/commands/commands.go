@@ -103,8 +103,21 @@ func GetTableRows(dbConn db.DBConn, ref db.TableReference, sortOrder string) tea
 	}
 }
 
-func GetAutocompleteData(dbConn db.DBConn, ref db.TableReference) tea.Cmd {
+func GetAutocompleteData(dbConn db.DBConn, ref db.TableReference, cache *db.SchemaCache) tea.Cmd {
 	return func() tea.Msg {
+		// Reuse cached column data if available (populated when tableInfoPanel fetches cols).
+		if cache != nil {
+			if cached, ok := cache.GetTableInfo(ref, string(TableInfoKind.Columns)); ok {
+				cols := make([]string, 0, len(cached.Rows))
+				for _, row := range cached.Rows {
+					if name, ok := row["name"].(string); ok {
+						cols = append(cols, name)
+					}
+				}
+				return db.AutoCompleteDataFetchedMsg(cols)
+			}
+		}
+
 		cols, err := db.GetAutoCompleteColumns(context.Background(), dbConn, ref)
 		if err != nil {
 			return ErrMsg{Err: err}
@@ -113,26 +126,39 @@ func GetAutocompleteData(dbConn db.DBConn, ref db.TableReference) tea.Cmd {
 	}
 }
 
-func GetTableInfo(dbConn db.DBConn, ref db.TableReference, kind TableInfoKindType) tea.Cmd {
-	switch kind {
-	case TableInfoKind.Columns:
-		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
-	case TableInfoKind.Indexes:
-		if dbConn.DriverName == db.DriverName.SQLite {
-			d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, ref)
+func GetTableInfo(dbConn db.DBConn, ref db.TableReference, kind TableInfoKindType, cache *db.SchemaCache) tea.Cmd {
+	cacheKey := string(kind)
+
+	// Cache hit: return immediately without a DB round-trip.
+	if cache != nil {
+		if cached, ok := cache.GetTableInfo(ref, cacheKey); ok {
 			return func() tea.Msg {
-				return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+				return db.TableInfoDataFetchedMsg{Data: cached, Err: nil}
 			}
 		}
-		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
+	}
+
+	// Cache miss: fetch from DB, populate cache on success.
+	storeResult := func(d *db.Data, err error) tea.Msg {
+		if err == nil && cache != nil {
+			cache.SetTableInfo(ref, cacheKey, d)
+		}
+		return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+	}
+
+	switch kind {
+	case TableInfoKind.Columns:
+		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, ref), storeResult)
+	case TableInfoKind.Indexes:
+		if dbConn.DriverName == db.DriverName.SQLite {
+			return func() tea.Msg {
+				d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, ref)
+				return storeResult(d, err)
+			}
+		}
+		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, ref), storeResult)
 	case TableInfoKind.Constraints:
-		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, ref), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, ref), storeResult)
 	}
 	return nil
 }
@@ -153,16 +179,29 @@ func GetConnectionList() tea.Cmd {
 	}
 }
 
-func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType) tea.Cmd {
+func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType, cache *db.SchemaCache) tea.Cmd {
+	cacheKey := string(kind)
+
+	if cache != nil {
+		if cached, ok := cache.GetEntities(cacheKey); ok {
+			return func() tea.Msg {
+				return db.SchemaEntitiesFetchedMsg{Data: cached, Err: nil}
+			}
+		}
+	}
+
+	storeResult := func(d *db.Data, err error) tea.Msg {
+		if err == nil && cache != nil {
+			cache.SetEntities(cacheKey, d)
+		}
+		return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
+	}
+
 	switch kind {
 	case TablePanelKind.Tables:
-		return ExecuteQuery(dbConn, db.GetSchemaTablesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
-			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, db.GetSchemaTablesSQL(dbConn), storeResult)
 	case TablePanelKind.Views:
-		return ExecuteQuery(dbConn, db.GetSchemaViewsSQL(dbConn), func(d *db.Data, err error) tea.Msg {
-			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, db.GetSchemaViewsSQL(dbConn), storeResult)
 	}
 	return nil
 }
