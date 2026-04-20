@@ -2,7 +2,9 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"slices"
+	"strings"
 
 	"charm.land/bubbles/v2/cursor"
 	"charm.land/bubbles/v2/help"
@@ -32,6 +34,7 @@ type QueryPanelModel struct {
 	CurrentStatement    *Statement
 	dirty               bool
 	filename            string
+	abbreviatedFilename string
 	help                help.Model
 	keymap              queryPanelKeymap
 	autoSaveEnabled     bool
@@ -175,6 +178,7 @@ func (m *QueryPanelModel) SetValue(value string) {
 
 func (m *QueryPanelModel) SetFilename(f string) {
 	m.filename = f
+	m.abbreviatedFilename = abbreviatePath(f)
 }
 
 func (m *QueryPanelModel) SetDirty(dirty bool) {
@@ -249,11 +253,73 @@ func (m QueryPanelModel) View() string {
 		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}
 
-	text := "queries"
+	leftText := "queries"
 	if m.dirty {
-		text += " [+]"
+		leftText += " [+]"
 	}
-	title := style.Title(m.width-2, m.active).MarginBottom(1).Render(text)
+
+	// titleStyle drives background/foreground/bold; Width is removed so we can
+	// split the bar into left+right segments manually.
+	baseStyle := style.Title(m.width-2, m.active)
+	bg := baseStyle.GetBackground()
+	fg := baseStyle.GetForeground()
+
+	// Render left segment without a fixed width so we know its natural width.
+	leftSegStyle := lipgloss.NewStyle().
+		Background(bg).
+		Foreground(fg).
+		Bold(true).
+		PaddingLeft(1)
+	left := leftSegStyle.Render(leftText)
+	leftWidth := lipgloss.Width(left)
+
+	// Total inner width of the title bar (Width passed to style.Title, minus the
+	// MarginLeft(1) that style.Title adds outside the box).
+	innerWidth := m.width - 2 // matches Width arg passed to style.Title
+
+	rightText := m.abbreviatedFilename
+	// Truncate to avoid crowding the left label (keep 2 rune padding).
+	// Use rune conversion to avoid splitting multi-byte characters.
+	available := innerWidth - leftWidth - 2
+	if available < 0 {
+		available = 0
+	}
+	if lipgloss.Width(rightText) > available {
+		runes := []rune(rightText)
+		// Trim from the left one rune at a time until the result fits.
+		// "…" is 1 display column wide.
+		truncated := ""
+		for i := 1; i < len(runes); i++ {
+			candidate := "…" + string(runes[i:])
+			if lipgloss.Width(candidate) <= available {
+				truncated = candidate
+				break
+			}
+		}
+		rightText = truncated // empty string if nothing fits
+	}
+
+	rightWidth := innerWidth - leftWidth
+	if rightWidth < 0 {
+		rightWidth = 0
+	}
+	// When active, match the label foreground so the path stays readable against
+	// the bright active title background. When inactive, use the faded status bar colour.
+	rightFG := theme.GetTheme().StatusBar.FG
+	if m.active {
+		rightFG = fg
+	}
+	right := lipgloss.NewStyle().
+		Background(bg).
+		Foreground(rightFG).
+		Bold(m.active).
+		Width(rightWidth).
+		AlignHorizontal(lipgloss.Right).
+		PaddingRight(1).
+		Render(rightText)
+
+	titleRow := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	title := lipgloss.NewStyle().MarginLeft(1).MarginBottom(1).Render(titleRow)
 	qb := m.queryBuffer.View()
 
 	if m.autoCompletePopup.active {
@@ -269,4 +335,23 @@ func (m QueryPanelModel) View() string {
 		style.ShortHelp(m.width).Render(m.helpView()),
 	)
 	return panelStyle.Render(v)
+}
+
+// abbreviatePath replaces the user's home directory prefix with "~".
+// Returns path unchanged if home cannot be determined or path is empty.
+func abbreviatePath(path string) string {
+	if path == "" {
+		return ""
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+	if path == home {
+		return "~"
+	}
+	if strings.HasPrefix(path, home+string(os.PathSeparator)) {
+		return "~" + path[len(home):]
+	}
+	return path
 }

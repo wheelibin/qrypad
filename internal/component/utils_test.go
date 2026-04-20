@@ -1,6 +1,8 @@
 package component_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/wheelibin/qrypad/internal/component"
@@ -206,6 +208,54 @@ func TestGetWordAtCursor(t *testing.T) {
 			got := component.GetWordAtCursor(tt.text, tt.row, tt.col)
 			if got != tt.want {
 				t.Errorf("getWordAtCursor(text, %d, %d) = %q, want %q", tt.row, tt.col, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAbbreviatePath(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Skip("cannot determine home directory")
+	}
+
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "empty path",
+			path: "",
+			want: "",
+		},
+		{
+			name: "path equals home exactly",
+			path: home,
+			want: "~",
+		},
+		{
+			name: "path under home",
+			path: filepath.Join(home, ".local", "share", "qrypad", "prod.sql"),
+			want: "~" + string(os.PathSeparator) + filepath.Join(".local", "share", "qrypad", "prod.sql"),
+		},
+		{
+			name: "path that shares prefix but is not under home (collision case)",
+			path: home + "bob" + string(os.PathSeparator) + "file",
+			want: home + "bob" + string(os.PathSeparator) + "file",
+		},
+		{
+			name: "unrelated path",
+			path: "/tmp/something.sql",
+			want: "/tmp/something.sql",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := component.AbbreviatePath(tt.path)
+			if got != tt.want {
+				t.Errorf("AbbreviatePath(%q) = %q, want %q", tt.path, got, tt.want)
 			}
 		})
 	}

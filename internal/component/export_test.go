@@ -7,6 +7,7 @@ var (
 	GetStatementAtCursor = getStatementAtCursor //nolint:gochecknoglobals
 	GetWordAtCursor      = getWordAtCursor      //nolint:gochecknoglobals
 	GetColumnWidth       = getColumnWidth       //nolint:gochecknoglobals
+	AbbreviatePath       = abbreviatePath       //nolint:gochecknoglobals
 )
 
 func (m *TablePanelModel) SetActiveTabIndex(i int) {
