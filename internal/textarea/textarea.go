@@ -59,6 +59,9 @@ type KeyMap struct {
 	CapitalizeWordForward key.Binding
 
 	TransposeCharacterBackward key.Binding
+
+	PageUp   key.Binding
+	PageDown key.Binding
 }
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
@@ -90,6 +93,9 @@ var DefaultKeyMap = KeyMap{
 	UppercaseWordForward:  key.NewBinding(key.WithKeys("alt+u")),
 
 	TransposeCharacterBackward: key.NewBinding(key.WithKeys("ctrl+t")),
+
+	PageUp:   key.NewBinding(key.WithKeys("pgup")),
+	PageDown: key.NewBinding(key.WithKeys("pgdown")),
 }
 
 // LineInfo is a helper for keeping track of line information regarding
@@ -522,6 +528,20 @@ func (m *Model) CursorUp() {
 	}
 }
 
+// PageUp moves the cursor up by the height of the viewport.
+func (m *Model) PageUp() {
+	for range m.height {
+		m.CursorUp()
+	}
+}
+
+// PageDown moves the cursor down by the height of the viewport.
+func (m *Model) PageDown() {
+	for range m.height {
+		m.CursorDown()
+	}
+}
+
 // SetCursor moves the cursor to the given position. If the position is
 // out of bounds the cursor will be moved to the start or end accordingly.
 func (m *Model) SetCursor(col int) {
@@ -947,6 +967,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.PasteMsg:
+		m.insertRunesFromUserInput([]rune(msg.Content))
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.KeyMap.DeleteAfterCursor):
@@ -1032,6 +1054,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.capitalizeRight()
 		case key.Matches(msg, m.KeyMap.TransposeCharacterBackward):
 			m.transposeLeft()
+		case key.Matches(msg, m.KeyMap.PageUp):
+			m.PageUp()
+		case key.Matches(msg, m.KeyMap.PageDown):
+			m.PageDown()
 
 		default:
 			m.insertRunesFromUserInput([]rune(msg.Text))
