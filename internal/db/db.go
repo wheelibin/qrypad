@@ -13,6 +13,7 @@ type DBConn struct {
 	DB                *sql.DB
 	DriverName        DriverNameType
 	ConnectedDatabase string
+	Queries           QueryProvider
 }
 
 type ConnectionConfig struct {
@@ -66,5 +67,20 @@ func Connect(conn ConnectionConfig, password string) (DBConn, error) {
 		connectedDB = dbName
 	}
 
-	return DBConn{DB: dbConn, DriverName: conn.Driver, ConnectedDatabase: connectedDB}, nil
+	var queries QueryProvider
+	switch conn.Driver {
+	case DriverName.MySQL:
+		queries = mysqlQueries{}
+	case DriverName.Postgres:
+		queries = postgresQueries{}
+	case DriverName.SQLite:
+		queries = sqliteQueries{}
+	}
+
+	return DBConn{
+		DB:                dbConn,
+		DriverName:        conn.Driver,
+		ConnectedDatabase: connectedDB,
+		Queries:           queries,
+	}, nil
 }

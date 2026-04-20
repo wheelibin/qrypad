@@ -8,14 +8,14 @@ import (
 )
 
 func makeConn(driver db.DriverNameType) db.DBConn {
-	return db.DBConn{DriverName: driver}
+	return db.DBConn{DriverName: driver, Queries: db.QueriesForDriver(driver)}
 }
 
 func makeRef(schema, name string) db.TableReference {
 	return db.TableReference{Schema: schema, Name: name}
 }
 
-func TestGetDatabasesSQL(t *testing.T) {
+func TestDatabases(t *testing.T) {
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
@@ -28,7 +28,7 @@ func TestGetDatabasesSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetDatabasesSQL(makeConn(tt.driver))
+			got := makeConn(tt.driver).Queries.Databases()
 			if tt.wantEmpty && got != "" {
 				t.Errorf("expected empty string, got %q", got)
 			}
@@ -39,7 +39,7 @@ func TestGetDatabasesSQL(t *testing.T) {
 	}
 }
 
-func TestGetSchemaTablesSQL(t *testing.T) {
+func TestSchemaTables(t *testing.T) {
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
@@ -52,7 +52,7 @@ func TestGetSchemaTablesSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetSchemaTablesSQL(makeConn(tt.driver))
+			got := makeConn(tt.driver).Queries.SchemaTables()
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
@@ -70,7 +70,7 @@ func TestGetSchemaTablesSQL(t *testing.T) {
 	}
 }
 
-func TestGetSchemaViewsSQL(t *testing.T) {
+func TestSchemaViews(t *testing.T) {
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
@@ -83,7 +83,7 @@ func TestGetSchemaViewsSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetSchemaViewsSQL(makeConn(tt.driver))
+			got := makeConn(tt.driver).Queries.SchemaViews()
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
@@ -101,7 +101,7 @@ func TestGetSchemaViewsSQL(t *testing.T) {
 	}
 }
 
-func TestGetTableColumnsSQL(t *testing.T) {
+func TestTableColumns(t *testing.T) {
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
@@ -116,7 +116,7 @@ func TestGetTableColumnsSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableColumnsSQL(makeConn(tt.driver), tt.ref)
+			got := makeConn(tt.driver).Queries.TableColumns(tt.ref)
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
@@ -130,36 +130,7 @@ func TestGetTableColumnsSQL(t *testing.T) {
 	}
 }
 
-func TestGetTableIndexesSQL(t *testing.T) {
-	tests := []struct {
-		name        string
-		driver      db.DriverNameType
-		ref         db.TableReference
-		wantContain string
-	}{
-		{name: "MySQL no schema", driver: db.DriverName.MySQL, ref: makeRef("", "my_table"), wantContain: "INFORMATION_SCHEMA.statistics"},
-		{name: "MySQL with schema", driver: db.DriverName.MySQL, ref: makeRef("myschema", "my_table"), wantContain: "myschema"},
-		{name: "Postgres no schema", driver: db.DriverName.Postgres, ref: makeRef("", "my_table"), wantContain: "pg_index"},
-		{name: "Postgres with schema", driver: db.DriverName.Postgres, ref: makeRef("public", "my_table"), wantContain: "public"},
-		{name: "SQLite", driver: db.DriverName.SQLite, ref: makeRef("", "my_table"), wantContain: "pragma_index_list"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableIndexesSQL(makeConn(tt.driver), tt.ref)
-			if got == "" {
-				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
-			}
-			if !strings.Contains(got, tt.ref.Name) {
-				t.Errorf("expected SQL to contain table name %q, got %q", tt.ref.Name, got)
-			}
-			if !strings.Contains(got, tt.wantContain) {
-				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
-			}
-		})
-	}
-}
-
-func TestGetTableConstraintsSQL(t *testing.T) {
+func TestTableConstraints(t *testing.T) {
 	tests := []struct {
 		name        string
 		driver      db.DriverNameType
@@ -174,7 +145,7 @@ func TestGetTableConstraintsSQL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableConstraintsSQL(makeConn(tt.driver), tt.ref)
+			got := makeConn(tt.driver).Queries.TableConstraints(tt.ref)
 			if got == "" {
 				t.Fatalf("expected non-empty SQL for driver %q", tt.driver)
 			}
@@ -188,7 +159,7 @@ func TestGetTableConstraintsSQL(t *testing.T) {
 	}
 }
 
-func TestGetTableRowsSQL(t *testing.T) {
+func TestTableRows(t *testing.T) {
 	tests := []struct {
 		name              string
 		driver            db.DriverNameType
@@ -239,10 +210,18 @@ func TestGetTableRowsSQL(t *testing.T) {
 			sortOrder:         "DESC",
 			wantContain:       []string{`SELECT * FROM "order_items"`, "ORDER BY order_id, item_id DESC", "LIMIT"},
 		},
+		{
+			name:              "sqlite no schema no quoting",
+			driver:            db.DriverName.SQLite,
+			ref:               makeRef("", "users"),
+			primaryKeyColumns: []string{"id"},
+			sortOrder:         "ASC",
+			wantContain:       []string{"SELECT * FROM users", "ORDER BY id ASC", "LIMIT"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := db.GetTableRowsSQL(makeConn(tt.driver), tt.ref, tt.primaryKeyColumns, tt.sortOrder)
+			got := makeConn(tt.driver).Queries.TableRows(tt.ref, tt.primaryKeyColumns, tt.sortOrder)
 			for _, want := range tt.wantContain {
 				if !strings.Contains(got, want) {
 					t.Errorf("expected SQL to contain %q, got: %q", want, got)

@@ -84,12 +84,12 @@ var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 
 func GetTableRows(dbConn db.DBConn, ref db.TableReference, sortOrder string) tea.Cmd {
 	return func() tea.Msg {
-		primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, ref)
+		primaryKeyColumns, err := dbConn.Queries.PrimaryKeyColumns(context.Background(), dbConn, ref)
 		if err != nil {
 			return ErrMsg{Err: err}
 		}
 
-		query := db.GetTableRowsSQL(dbConn, ref, primaryKeyColumns, sortOrder)
+		query := dbConn.Queries.TableRows(ref, primaryKeyColumns, sortOrder)
 		timeout := db.GetTimeoutSecs()
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 
@@ -148,23 +148,20 @@ func GetTableInfo(dbConn db.DBConn, ref db.TableReference, kind TableInfoKindTyp
 
 	switch kind {
 	case TableInfoKind.Columns:
-		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, ref), storeResult)
+		return ExecuteQuery(dbConn, dbConn.Queries.TableColumns(ref), storeResult)
 	case TableInfoKind.Indexes:
-		if dbConn.DriverName == db.DriverName.SQLite {
-			return func() tea.Msg {
-				d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, ref)
-				return storeResult(d, err)
-			}
+		return func() tea.Msg {
+			d, err := dbConn.Queries.TableIndexes(context.Background(), dbConn, ref)
+			return storeResult(d, err)
 		}
-		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, ref), storeResult)
 	case TableInfoKind.Constraints:
-		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, ref), storeResult)
+		return ExecuteQuery(dbConn, dbConn.Queries.TableConstraints(ref), storeResult)
 	}
 	return nil
 }
 
 func GetDatabases(dbConn db.DBConn) tea.Cmd {
-	return ExecuteQuery(dbConn, db.GetDatabasesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
+	return ExecuteQuery(dbConn, dbConn.Queries.Databases(), func(d *db.Data, err error) tea.Msg {
 		return db.DatabaseListFetchedMsg{Data: d, Err: err}
 	})
 }
@@ -199,9 +196,9 @@ func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType, cache *db.Sche
 
 	switch kind {
 	case TablePanelKind.Tables:
-		return ExecuteQuery(dbConn, db.GetSchemaTablesSQL(dbConn), storeResult)
+		return ExecuteQuery(dbConn, dbConn.Queries.SchemaTables(), storeResult)
 	case TablePanelKind.Views:
-		return ExecuteQuery(dbConn, db.GetSchemaViewsSQL(dbConn), storeResult)
+		return ExecuteQuery(dbConn, dbConn.Queries.SchemaViews(), storeResult)
 	}
 	return nil
 }

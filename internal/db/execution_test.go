@@ -27,7 +27,63 @@ func openTestDB(t *testing.T) db.DBConn {
 			t.Errorf("openTestDB: Close: %v", err)
 		}
 	})
-	return db.DBConn{DB: sqlDB, DriverName: db.DriverName.SQLite}
+	return db.DBConn{
+		DB:         sqlDB,
+		DriverName: db.DriverName.SQLite,
+		Queries:    db.QueriesForDriver(db.DriverName.SQLite),
+	}
+}
+
+func TestSQLiteTableIndexes_MultiPragmaWalk(t *testing.T) {
+	conn := openTestDB(t)
+	ctx := context.Background()
+
+	// Create a table with two indexes: one single-column, one composite.
+	stmts := []string{
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT, first_name TEXT, last_name TEXT)",
+		"CREATE INDEX idx_users_email ON users(email)",
+		"CREATE INDEX idx_users_name ON users(first_name, last_name)",
+	}
+	for _, s := range stmts {
+		if _, err := conn.DB.ExecContext(ctx, s); err != nil {
+			t.Fatalf("setup: %q: %v", s, err)
+		}
+	}
+
+	data, err := conn.Queries.TableIndexes(ctx, conn, db.TableReference{Name: "users"})
+	if err != nil {
+		t.Fatalf("TableIndexes: unexpected error: %v", err)
+	}
+	if data == nil {
+		t.Fatalf("TableIndexes: nil data")
+	}
+
+	wantCols := []string{"name", "cols"}
+	if !slices.Equal(data.Columns, wantCols) {
+		t.Errorf("Columns: got %v, want %v", data.Columns, wantCols)
+	}
+
+	// Build a map of index name -> columns for order-independent assertion.
+	got := make(map[string][]string)
+	for _, row := range data.Rows {
+		name, _ := row["name"].(string)
+		cols, _ := row["cols"].([]string)
+		got[name] = cols
+	}
+
+	wantEmail := []string{"email"}
+	if cols, ok := got["idx_users_email"]; !ok {
+		t.Errorf("expected index idx_users_email in results, got: %v", got)
+	} else if !slices.Equal(cols, wantEmail) {
+		t.Errorf("idx_users_email cols: got %v, want %v", cols, wantEmail)
+	}
+
+	wantName := []string{"first_name", "last_name"}
+	if cols, ok := got["idx_users_name"]; !ok {
+		t.Errorf("expected index idx_users_name in results, got: %v", got)
+	} else if !slices.Equal(cols, wantName) {
+		t.Errorf("idx_users_name cols: got %v, want %v", cols, wantName)
+	}
 }
 
 func TestExecuteQuery_Routing(t *testing.T) {

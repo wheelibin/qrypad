@@ -17,12 +17,46 @@ type Table struct {
 	RowCount int
 }
 
-// quotedTableRef returns the quoted, driver-appropriate table reference for use in SQL.
+// QueryProvider produces driver-specific SQL strings and executes
+// driver-specific queries. A single implementation exists per driver;
+// the correct one is attached to DBConn.Queries at connection time.
+type QueryProvider interface {
+	// Databases returns SQL listing databases (or schemas) visible to the
+	// current connection. Returns "" for SQLite (single-file databases).
+	Databases() string
+	// SchemaTables returns SQL listing user tables in the current database.
+	// Result columns: schema (omitted for SQLite), name, rows (optional).
+	SchemaTables() string
+	// SchemaViews returns SQL listing user views. Result columns: schema
+	// (omitted for SQLite), name.
+	SchemaViews() string
+	// TableColumns returns SQL listing the columns of the given table.
+	// Result columns: name, type, nullable (MySQL/Postgres); SQLite returns
+	// pragma_table_info shape (cid, name, type, notnull, dflt_value, pk).
+	TableColumns(ref TableReference) string
+	// TableConstraints returns SQL listing the constraints of the given table.
+	// SQLite returns only foreign keys (pragma_foreign_key_list shape).
+	TableConstraints(ref TableReference) string
+	// TableRows returns SQL selecting rows from the given table, ordered
+	// by primaryKeyColumns (if any) in the given sortOrder ("ASC"/"DESC"),
+	// limited to a configured row count.
+	TableRows(ref TableReference, primaryKeyColumns []string, sortOrder string) string
+	// TableIndexes fetches the indexes of the given table. Result columns:
+	// name, cols, and (MySQL/Postgres only) unique, primary. SQLite performs
+	// a two-pragma walk and returns cols as a []string per row.
+	TableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error)
+	// PrimaryKeyColumns returns the list of primary-key column names for
+	// the given table, ordered by position within the primary key.
+	PrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error)
+}
+
+// quotedTableRefForDriver returns the quoted, driver-appropriate table
+// reference for use in SQL, given the driver name directly.
 // Postgres: "schema"."table" or just "table" (no schema)
 // MySQL:    `schema`.`table` or just `table` (no schema)
 // SQLite:   table (no quoting needed, schema always empty)
-func quotedTableRef(dbConn DBConn, ref TableReference) string {
-	switch dbConn.DriverName {
+func quotedTableRefForDriver(driver DriverNameType, ref TableReference) string {
+	switch driver {
 	case DriverName.Postgres:
 		if ref.Schema != "" {
 			return fmt.Sprintf(`"%s"."%s"`, ref.Schema, ref.Name)
@@ -38,285 +72,10 @@ func quotedTableRef(dbConn DBConn, ref TableReference) string {
 	}
 }
 
-func GetDatabasesSQL(dbConn DBConn) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		query = `SELECT SCHEMA_NAME name FROM information_schema.SCHEMATA 
-						WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'sys') 
-						ORDER BY name;`
-	case DriverName.Postgres:
-		query = `SELECT datname name
-						FROM pg_database
-						WHERE has_database_privilege(datname, 'CONNECT')
-							AND NOT datistemplate
-						ORDER BY datname;`
-	}
-
-	return query
-}
-
-// GetSchemaTablesSQL fetches the user tables in the database.
-func GetSchemaTablesSQL(dbConn DBConn) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		query = `SELECT TABLE_SCHEMA "schema", TABLE_NAME name, format(TABLE_ROWS,0) 'rows'
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'sys')
-             AND TABLE_TYPE = 'BASE TABLE'
-            ORDER BY table_schema, name;`
-	case DriverName.Postgres:
-		query = `SELECT schemaname schema, relname name, TO_CHAR(n_live_tup, 'FM999,999,999') rows
-          FROM pg_stat_user_tables
-          ORDER BY schema, name;`
-	case DriverName.SQLite:
-		query = `SELECT name FROM sqlite_master
-				WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`
-	}
-
-	return query
-}
-
-// GetSchemaViewsSQL fetches the user views in the database.
-func GetSchemaViewsSQL(dbConn DBConn) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		query = `SELECT table_schema schema, table_name name
-                        FROM information_schema.views
-                        WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
-                        ORDER BY schema, table_name;`
-	case DriverName.Postgres:
-		query = `SELECT table_schema schema, table_name name
-                        FROM information_schema.views
-                        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-                        ORDER BY schema, table_name;`
-	case DriverName.SQLite:
-		query = `SELECT name
-                        FROM sqlite_master
-                        WHERE type = 'view'
-                            AND name NOT LIKE 'sqlite_%'
-                        ORDER BY name;`
-	}
-	return query
-}
-
-// GetTableColumnsSQL fetches the column information for the specified table.
-func GetTableColumnsSQL(dbConn DBConn, ref TableReference) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		schemaFilter := "TABLE_SCHEMA = DATABASE()"
-		if ref.Schema != "" {
-			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable
-                                        FROM INFORMATION_SCHEMA.COLUMNS
-                                        WHERE %s AND TABLE_NAME = '%s' ORDER BY column_name;`,
-			schemaFilter, ref.Name)
-	case DriverName.Postgres:
-		schemaFilter := "table_schema = current_schema()"
-		if ref.Schema != "" {
-			schemaFilter = fmt.Sprintf("table_schema = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT column_name name, data_type type, case when is_nullable = 'NO' then 'NOT NULL' else 'NULL' end nullable
-                                        FROM INFORMATION_SCHEMA.COLUMNS
-                                        WHERE %s AND TABLE_NAME = '%s' ORDER BY column_name;`,
-			schemaFilter, ref.Name)
-	case DriverName.SQLite:
-		query = fmt.Sprintf(`SELECT * FROM pragma_table_info('%s');`, ref.Name)
-	}
-	return query
-}
-
-// GetTableIndexesSQL fetches the index information for the specified table.
-func GetTableIndexesSQL(dbConn DBConn, ref TableReference) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		schemaFilter := "TABLE_SCHEMA = DATABASE()"
-		if ref.Schema != "" {
-			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT
-                        index_name 'name',
-                        GROUP_CONCAT(column_name ORDER BY seq_in_index) cols,
-                        case when non_unique = 0 then 'unique' else '' end as 'unique',
-                        case when index_name = 'PRIMARY' then 'primary' else '' end as 'primary'
-                      FROM
-                        INFORMATION_SCHEMA.statistics
-                      WHERE
-                        %s AND TABLE_NAME = '%s'
-                        group by index_name, non_unique
-                        order by index_name;`, schemaFilter, ref.Name)
-	case DriverName.Postgres:
-		tableFilter := fmt.Sprintf("t.relname like '%s'", ref.Name)
-		if ref.Schema != "" {
-			tableFilter = fmt.Sprintf("t.relname like '%s' AND n.nspname = '%s'", ref.Name, ref.Schema)
-		}
-		query = fmt.Sprintf(`select
-                          i.relname as "name",
-                          array_to_string(array_agg(a.attname ORDER BY array_position(ix.indkey::int[], a.attnum::int)), ', ') as cols,
-                          ix.indisunique as "unique",
-                          ix.indisprimary as "primary"
-                      from
-                          pg_class t,
-                          pg_class i,
-                          pg_index ix,
-                          pg_attribute a,
-                          pg_namespace n
-                      where
-                          t.oid = ix.indrelid
-                          and i.oid = ix.indexrelid
-                          and a.attrelid = t.oid
-                          and a.attnum = ANY(ix.indkey)
-                          and t.relkind = 'r'
-                          and t.relnamespace = n.oid
-                          and %s
-                      group by
-                          t.relname,
-                          i.relname,
-                          ix.indisunique,
-                      ix.indisprimary
-                      order by
-                          t.relname,
-                          i.relname;`, tableFilter)
-	case DriverName.SQLite:
-		query = fmt.Sprintf(`select * from pragma_index_list('%s');`, ref.Name)
-	}
-	return query
-}
-
-func GetSQLiteTableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error) {
-	inds, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_list('%s')", ref.Name))
-	if err != nil {
-		return nil, err
-	}
-	cols := []string{"name", "cols"}
-	rows := make([]map[string]any, 0)
-	for _, row := range inds.Rows {
-		info, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_info('%s')", row["name"]))
-		if err != nil {
-			return nil, err
-		}
-		indexCols := make([]string, 0)
-		for _, infoRow := range info.Rows {
-			if name, ok := infoRow["name"].(string); ok {
-				indexCols = append(indexCols, name)
-			}
-		}
-		rows = append(rows, map[string]any{
-			"name": row["name"],
-			"cols": indexCols,
-		})
-	}
-
-	return &Data{
-		Columns: cols,
-		Rows:    rows,
-	}, nil
-}
-
-// GetTableConstraintsSQL fetches the constraints information for the specified table.
-func GetTableConstraintsSQL(dbConn DBConn, ref TableReference) string {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		schemaFilter := "TABLE_SCHEMA = DATABASE()"
-		if ref.Schema != "" {
-			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT
-                                        CONSTRAINT_NAME 'name',
-                                        CONSTRAINT_TYPE 'type'
-                                    FROM
-                                        INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-                                    WHERE
-                                        %s
-                                        AND TABLE_NAME = '%s';`, schemaFilter, ref.Name)
-	case DriverName.Postgres:
-		schemaJoin := ""
-		schemaWhere := ""
-		if ref.Schema != "" {
-			schemaJoin = "JOIN pg_namespace n ON c.connamespace = n.oid"
-			schemaWhere = fmt.Sprintf("AND n.nspname = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT
-                                        conname AS name,
-                                        contype AS type,
-                                        pg_get_constraintdef(c.oid) AS definition
-                                FROM
-                                        pg_constraint c
-                                JOIN
-                                        pg_class t ON c.conrelid = t.oid
-                                %s
-                                WHERE
-                                        t.relname = '%s'
-                                        %s;`, schemaJoin, ref.Name, schemaWhere)
-	case DriverName.SQLite:
-		query = fmt.Sprintf(`PRAGMA foreign_key_list('%s');`, ref.Name)
-	}
-	return query
-}
-
-func GetPrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
-	var query string
-	switch dbConn.DriverName {
-	case DriverName.MySQL:
-		schemaFilter := "TABLE_SCHEMA = DATABASE()"
-		if ref.Schema != "" {
-			schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
-		}
-		query = fmt.Sprintf(`SELECT COLUMN_NAME name
-                                        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                                        WHERE %s
-                                            AND TABLE_NAME = '%s'
-                                            AND CONSTRAINT_NAME = 'PRIMARY'
-                                        ORDER BY ORDINAL_POSITION;`, schemaFilter, ref.Name)
-	case DriverName.Postgres:
-		qualifiedRef := quotedTableRef(dbConn, ref)
-		query = fmt.Sprintf(`SELECT a.attname name
-                                        FROM pg_index i
-                                        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
-                                        WHERE i.indrelid = '%s'::regclass AND i.indisprimary;`, qualifiedRef)
-	case DriverName.SQLite:
-		query = fmt.Sprintf(`SELECT name
-                                        FROM pragma_table_info('%s')
-                                        WHERE pk > 0
-                                        ORDER BY pk;`, ref.Name)
-	}
-	data, err := fetchRows(ctx, dbConn, query)
-	if err != nil {
-		return nil, err
-	}
-	columns := make([]string, 0)
-	for _, row := range data.Rows {
-		if name, ok := row["name"].(string); ok {
-			columns = append(columns, name)
-		}
-	}
-	return columns, nil
-}
-
-func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
-	query := GetTableColumnsSQL(dbConn, ref)
-	data, err := fetchRows(ctx, dbConn, query)
-	if err != nil {
-		return nil, err
-	}
-	columns := make([]string, 0)
-	for _, row := range data.Rows {
-		if name, ok := row["name"].(string); ok {
-			columns = append(columns, name)
-		}
-	}
-	return columns, nil
-}
-
-// GetTableRowsSQL fetches n rows from the specified table.
-func GetTableRowsSQL(dbConn DBConn, ref TableReference, primaryKeyColumns []string, sortOrder string) string {
-	from := quotedTableRef(dbConn, ref)
+// buildTableRowsSQL builds a SELECT * ... [ORDER BY pks sortOrder] LIMIT N
+// query. The caller is responsible for quoting `from` appropriately for
+// its driver (typically via quotedTableRefForDriver).
+func buildTableRowsSQL(from string, primaryKeyColumns []string, sortOrder string) string {
 	query := fmt.Sprintf("SELECT * FROM %s", from)
 
 	if len(primaryKeyColumns) > 0 {
@@ -326,6 +85,21 @@ func GetTableRowsSQL(dbConn DBConn, ref TableReference, primaryKeyColumns []stri
 
 	query += fmt.Sprintf(" LIMIT %d", getTableDataRowLimit())
 	return query
+}
+
+func GetAutoCompleteColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
+	query := dbConn.Queries.TableColumns(ref)
+	data, err := fetchRows(ctx, dbConn, query)
+	if err != nil {
+		return nil, err
+	}
+	columns := make([]string, 0)
+	for _, row := range data.Rows {
+		if name, ok := row["name"].(string); ok {
+			columns = append(columns, name)
+		}
+	}
+	return columns, nil
 }
 
 // ExecuteQuery executes a user supplied sql query or statement.
@@ -458,6 +232,23 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 			QueryTime: end.Sub(start),
 		}, nil
 	}
+}
+
+// fetchPrimaryKeyColumns runs the given SQL and reshapes the result into
+// a slice of column-name strings. Shared implementation used by every
+// driver's PrimaryKeyColumns method.
+func fetchPrimaryKeyColumns(ctx context.Context, dbConn DBConn, query string) ([]string, error) {
+	data, err := fetchRows(ctx, dbConn, query)
+	if err != nil {
+		return nil, err
+	}
+	columns := make([]string, 0)
+	for _, row := range data.Rows {
+		if name, ok := row["name"].(string); ok {
+			columns = append(columns, name)
+		}
+	}
+	return columns, nil
 }
 
 func truncateToSize(s string, maxBytes int) string {
