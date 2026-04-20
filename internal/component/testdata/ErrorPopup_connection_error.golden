@@ -2,12 +2,12 @@
 │                            error                           │
 │                                                            │
 │   There was a problem connecting to the database server,   │
-│  check the connection details in your config, or press F3  │
-│                to update the saved password                │
+│   check the connection details in your config, or press    │
+│            ctrl+p to update the saved password             │
 │                                                            │
 │                    ╭──────────────────╮                    │
 │                    │connection refused│                    │
 │                    ╰──────────────────╯                    │
 │                                                            │
-│               F3 update password • esc close               │
+│             ctrl+p update password • esc close             │
 ╰────────────────────────────────────────────────────────────╯

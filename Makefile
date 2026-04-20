@@ -1,4 +1,4 @@
-.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover
+.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover update-golden
 
 test:
 	go test ./...
@@ -27,4 +27,7 @@ format:
 
 lint:
 	golangci-lint run ./...
+
+update-golden:
+	go test ./internal/component/... -update
 

@@ -1,14 +1,14 @@
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                                                          help                                                          │
 │                                                                                                                        │
-│     tab       next panel            F5     execute statement at cursor    enter  view table data / view result row     │
-│     shift+tab previous panel        ctrl+s save query                     ]      next tab                              │
-│     F1        show help             ctrl+r reload query                   [      previous tab                          │
-│     F2        switch database       ctrl+e open query in editor           c      copy value                            │
-│     F4        switch connection                                           ctrl+c quit                                  │
-│     F3        update password                                                                                          │
-│     /         filter table                                                                                             │
-│     ctrl+t    toggle table panel                                                                                       │
+│      tab       next panel           F5     execute statement at cursor    enter  view table data / view result row     │
+│      shift+tab previous panel       ctrl+s save query                     ]      next tab                              │
+│      ?         show help            ctrl+r reload query                   [      previous tab                          │
+│      ctrl+d    switch database      ctrl+e open query in editor           y      copy value                            │
+│      ctrl+k    switch connection                                          ctrl+c quit                                  │
+│      ctrl+p    update password                                                                                         │
+│      /         filter table                                                                                            │
+│      ctrl+b    toggle left panel                                                                                       │
 │                                                                                                                        │
 │                                                       esc close                                                        │
 │                                                                                                                        │
