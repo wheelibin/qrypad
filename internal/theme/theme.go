@@ -18,7 +18,7 @@ import (
 //go:embed themes/*
 var themes embed.FS
 
-const defaultThemeName = "catppuccin-mocha"
+const defaultThemeName = "kanagawa"
 
 var (
 	theme     Theme     //nolint:gochecknoglobals // singleton theme loaded once via sync.Once
