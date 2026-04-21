@@ -221,9 +221,6 @@ func (m TablePanelModel) helpView() string {
 		m.keymap.viewDataDesc,
 		m.keymap.copy,
 	}
-	if m.showHelp {
-		bindings = append(bindings, m.keymap.refreshSchema)
-	}
 	return m.help.ShortHelpView(bindings)
 }
 
