@@ -10,7 +10,13 @@ services:
       - '50403:5432'
     volumes: 
       - ${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - db:/var/lib/postgresql/data
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qrypad -d qrypad"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
 volumes:
   db:
     driver: local

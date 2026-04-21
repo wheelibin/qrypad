@@ -1,12 +1,11 @@
 package component
 
 import (
-	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
@@ -17,6 +16,7 @@ type passwordKeymap struct {
 	cancel key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type PasswordPopupModel struct {
 	width  int
 	height int
@@ -28,7 +28,6 @@ type PasswordPopupModel struct {
 func NewPasswordPopupModel() PasswordPopupModel {
 	ti := textinput.New()
 	ti.Placeholder = "password"
-	ti.Cursor.SetMode(cursor.CursorBlink)
 	ti.CharLimit = 0
 	ti.EchoMode = textinput.EchoPassword
 	ti.EchoCharacter = '·'
@@ -67,8 +66,7 @@ func (m PasswordPopupModel) Update(msg tea.Msg) (PasswordPopupModel, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.accept):
 			cmd = commands.PasswordEntered(m.input.Value())
@@ -93,13 +91,13 @@ func (m *PasswordPopupModel) Clear() {
 func (m *PasswordPopupModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	m.input.Width = w / 2
+	m.input.SetWidth(w / 2)
 }
 
 func (m PasswordPopupModel) View() string {
 	popupStyle := style.GetBasePanelStyle().
-		Width(m.width).
-		Height(m.height).
+		Width(m.width + 2).
+		Height(m.height + 2).
 		BorderForeground(theme.GetTheme().Error.FG)
 
 	title := style.Title(m.width-2, false).

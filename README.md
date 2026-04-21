@@ -2,26 +2,23 @@
   <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" style="width:600px; height:auto;" />
 </p>
 
+A terminal SQL client for Postgres, MySQL and SQLite.
+
 ## Features
 
-### 🚀 Quick Exploration
-
-- Supports Postgres / MySQL / SQLite
-- View a snapshot of the selected table with one keypress
-- Automatically display columns and indexes for the current table
-- Filter result sets interactively to refine your queries
-
-### ✍️ Query Editing
-
-- Write and manage multiple queries in the query pad
-- Run the current statement with a single keypress
-- Save queries per connection for easy reuse
-- Syntax-highlighted query pad for better readability
-
-### 🔄 Connection Management (Postgres / MySQL only)
-
-- Switch databases on the current connection
-- Securely store passwords in the OS keychain
+- Browse tables, views, columns, indexes and constraints
+- Postgres schema support — switch schemas on the fly
+- Switch between configured connections without restarting
+- Switch databases on the current connection (Postgres / MySQL)
+- Table / column autocomplete in the query pad
+- Syntax highlighting
+- Filter tables, columns and result sets
+- View a snapshot of any table with a single keypress
+- Run the statement under the cursor
+- Save and reload a query pad per connection, or open it in `$EDITOR`
+- Inspect a full result row in a popup, with long values wrapped across lines
+- Passwords stored in the OS keychain
+- Configurable key bindings and themes
 
 <p align="center">
   <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" style="max-width:100%; height:auto;"/>
@@ -29,36 +26,40 @@
 
 ## Installation
 
-### Go Install
-
-`go install github.com/wheelibin/qrypad@latest`
-
-### Binary Install
+### Binary
 
 https://github.com/wheelibin/qrypad/releases
 
+### Go install
+
+```
+go install github.com/wheelibin/qrypad@latest
+```
+
 ## Usage
 
-`qrypad [connection name]`
+```
+qrypad [connection name]
+```
 
-- `[connection name]` must match an entry in the config file (see below)
-- Passwords will be prompted once, then stored securely
+`[connection name]` must match an entry in the config file. If the connection requires a password you will be prompted on first use; it is then stored in the OS keychain.
+
+You can also switch connections from inside the app with `Ctrl+K`.
 
 ## Config
 
-Config is read from `~/.config/qrypad/config.toml`
+Config is read from `~/.config/qrypad/config.toml`.
 
-### example config file
+### Example
 
 ```toml
-# the timeout for all queries
-queryTimeout = 60 
+# query timeout (seconds)
+queryTimeout = 60
 
-# the max number of rows to fetch when viewing table data (does not apply to ad-hoc queries)
+# max rows fetched when viewing table data (does not apply to ad-hoc queries)
 tableDataRowLimit = 100
 
-# color theme 
-[theme] 
+[theme]
 name = "catppuccin-mocha"
 
 [connections]
@@ -82,100 +83,103 @@ driver = "sqlite"
 database = "db/orders.db"
 ```
 
-## ⌨️ Key Bindings
+## Key bindings
 
 <details>
-    <summary>Default Key Bindings</summary>
+    <summary>Default key bindings</summary>
 
-### 🧭 General
+### General
 
-- `Tab` / `Shift+Tab` - switch panels
-- `F1` - show help
-- `F2` - switch database
-- `F3` - update stored password
-- `/` - filter tables (`esc` to cancel)
-- `Ctrl+T` - toggle left-side (tables/info)
+- `Tab` / `Shift+Tab` — switch panels
+- `?` — show help
+- `Ctrl+D` — switch database
+- `Ctrl+K` — switch connection
+- `Ctrl+P` — update stored password
+- `Ctrl+B` — toggle the left (tables / info) panel
+- `R` — refresh schema
+- `/` — filter tables (`esc` to cancel)
 
-### 📋 Tables Panel
+### Tables panel
 
-- `Enter` - fetch first 100 rows
-- `]` / `[` - switch tabs
-- `c` - copy selected table name
+- `Enter` — fetch first N rows (`tableDataRowLimit`)
+- `]` / `[` — switch tabs
+- `y` — copy the selected table name
 
-### 🛠 Table Info Panel
+### Table info panel
 
-- `]` / `[` - switch tabs
-- `c` - copy selected column/index name
-- `/` - filter columns (`esc` to cancel)
+- `]` / `[` — switch tabs
+- `y` — copy the selected column / index name
+- `/` — filter columns (`esc` to cancel)
 
-### 🧾 Queries Panel
+### Query panel
 
-- `F5` - run current query
-- `Ctrl+S` - save query pad (saved per connection)
-- `Ctrl+R` - reload saved query pad file
-- `Ctrl+E` - open query pad in external editor
+- `F5` — run the statement at the cursor
+- `Ctrl+Space` — autocomplete table / column
+- `Ctrl+S` — save the query pad (per connection)
+- `Ctrl+R` — reload the saved query pad from disk
+- `Ctrl+E` — open the query pad in `$EDITOR`
 
-### 📊 Results Panel
+### Results panel
 
-- `enter` - show full row data in popup
-  - `c` - copy selected value
-- `c` - copy selected row as JSON
-- `/` - filter results (`esc` to cancel)
+- `Enter` — open the selected row in a popup
+  - `y` — copy the selected value
+- `y` — copy the selected row as JSON
+- `/` — filter results (`esc` to cancel)
 
 </details>
 
-### Custom Key Bindings
+### Overriding key bindings
 
-You can override various key bindings using the following config key.
-The keys possible to override are shown below.
+Any of the keys below can be overridden in the config file.
 
 ```toml
 [keys]
-CopyValue       = "y"
-ExecuteQuery    = ""
-Help            = ""
-NextPanel       = ""
-NextTab         = ""
-OpenInEditor    = ""
-PrevPanel       = ""
-PrevTab         = ""
-ReloadQuery     = ""
-SaveQuery       = ""
-SwitchDatabase  = ""
-ToggleLeftPanel = ""
-UpdatePassword  = ""
-ViewData        = ""
-ViewDataDesc    = ""
+AutoComplete     = ""
+CopyValue        = ""
+ExecuteQuery     = ""
+Help             = ""
+NextPanel        = ""
+NextTab          = ""
+OpenInEditor     = ""
+PrevPanel        = ""
+PrevTab          = ""
+RefreshSchema    = ""
+ReloadQuery      = ""
+SaveQuery        = ""
+SwitchConnection = ""
+SwitchDatabase   = ""
+ToggleLeftPanel  = ""
+UpdatePassword   = ""
+ViewData         = ""
+ViewDataDesc     = ""
 ```
 
-## 🌈 Themes
+## Themes
 
-### Built-in Themes
+### Built-in themes
 
-There are currently the following built-in themes:
-
-- `catppuccin-mocha` (the default)
+- `catppuccin-mocha` (default)
 - `kanagawa-wave`
 - `rose-pine-moon`
 
-You can change the theme using the following config key
-
-```toml
-[theme] 
-name = "kanagawa-wave"
-```
-
-### Customising / Creating Themes
-
-You can customise an existing theme by overriding individual colours.
+Set the active theme in the config:
 
 ```toml
 [theme]
-name                  = "rose-pine-moon"
-borderActive          = { fg = "#ff00ff" }
+name = "kanagawa-wave"
 ```
 
-To create a new theme, simply give it a new name and set the colours.
+### Customising themes
+
+Override individual colours on top of an existing theme:
+
+```toml
+[theme]
+name         = "rose-pine-moon"
+borderActive = { fg = "#ff00ff" }
+```
+
+Or define a new theme from scratch by giving it a new name and setting the colours:
 
 ```toml
 [theme]
@@ -198,3 +202,7 @@ text                  = { bg = "", fg = "" }
 titleBar              = { bg = "", fg = "" }
 titleBarAlt           = { bg = "", fg = "" }
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).

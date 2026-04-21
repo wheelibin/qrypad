@@ -1,12 +1,13 @@
 package component
 
 import (
+	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -23,17 +24,20 @@ const (
 )
 
 type tablePanelKeymap struct {
-	viewData     key.Binding
-	viewDataDesc key.Binding
-	copy         key.Binding
+	viewData      key.Binding
+	viewDataDesc  key.Binding
+	copy          key.Binding
+	refreshSchema key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type TablePanelModel struct {
 	active         bool
 	width          int
 	height         int
 	table          table.Model
-	selectedTable  string
+	selectedTable  db.TableReference
+	allRefs        []db.TableReference
 	activeTabIndex int
 	help           help.Model
 	keymap         tablePanelKeymap
@@ -44,6 +48,9 @@ func NewTablePanelModel() TablePanelModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.GetTableHeaderStyle()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		Filtered(true).
 		Focused(true)
 
@@ -64,6 +71,10 @@ func NewTablePanelModel() TablePanelModel {
 				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
 				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy name"),
 			),
+			refreshSchema: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.RefreshSchema.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.RefreshSchema.Help().Key, "refresh schema"),
+			),
 		},
 	}
 }
@@ -80,28 +91,26 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case db.SchemaEntitiesFetchedMsg:
-		if len(m.table.HighlightedRow().Data) > 0 {
-			m.selectedTable = m.table.HighlightedRow().Data["name"].(string)
-		} else {
-			m.selectedTable = ""
-		}
+		m.selectedTable = m.highlightedRef()
 		cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, keys.DefaultKeyMap.NextTab):
-			m.activeTabIndex = (m.activeTabIndex + 1) % TablePanelTabCount
-			cmd = commands.SetActiveTablePanelTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
+	case tea.KeyPressMsg:
+		if m.active {
+			switch {
+			case key.Matches(msg, keys.DefaultKeyMap.NextTab):
+				m.activeTabIndex = (m.activeTabIndex + 1) % TablePanelTabCount
+				cmd = commands.SetActiveTablePanelTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 
-		case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
-			i := m.activeTabIndex - 1
-			if i < 0 {
-				i = TablePanelTabCount - 1
+			case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
+				i := m.activeTabIndex - 1
+				if i < 0 {
+					i = TablePanelTabCount - 1
+				}
+				m.activeTabIndex = i
+				cmd = commands.SetActiveTablePanelTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 			}
-			m.activeTabIndex = i
-			cmd = commands.SetActiveTablePanelTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -109,13 +118,8 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 		m.table, cmd = m.table.Update(msg)
 		cmds = append(cmds, cmd)
 		for _, e := range m.table.GetLastUpdateUserEvents() {
-			switch e.(type) {
-			case table.UserEventHighlightedIndexChanged:
-				if len(m.table.HighlightedRow().Data) > 0 {
-					m.selectedTable = m.table.HighlightedRow().Data["name"].(string)
-				} else {
-					m.selectedTable = ""
-				}
+			if _, ok := e.(table.UserEventHighlightedIndexChanged); ok {
+				m.selectedTable = m.highlightedRef()
 				cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 			}
 		}
@@ -131,26 +135,65 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 
 	cols := []table.Column{}
 	rows := []table.Row{}
+	refs := make([]db.TableReference, 0, len(data.Rows))
 
-	// get cols
-	// name
-	cols = append(cols, table.NewFlexColumn(data.Columns[0], data.Columns[0], 1).WithFiltered(true))
+	// Check whether this dataset includes a schema column
+	hasSchema := false
+	for _, col := range data.Columns {
+		if col == "schema" {
+			hasSchema = true
+			break
+		}
+	}
 
-	if len(data.Columns) > 1 {
-		// rows
-		cols = append(cols, table.NewColumn(data.Columns[1], data.Columns[1], 12).WithFiltered(true))
+	// Build columns: schema (fixed 16 chars, if present), name (flex), other columns (fixed 12)
+	if hasSchema {
+		cols = append(cols, table.NewColumn("schema", "schema", 16).WithFiltered(true))
+	}
+	cols = append(cols, table.NewFlexColumn("name", "name", 1).WithFiltered(true))
+	for _, col := range data.Columns {
+		if col != "schema" && col != "name" {
+			cols = append(cols, table.NewColumn(col, col, 12).WithFiltered(true))
+		}
 	}
 
 	for _, row := range data.Rows {
 		rows = append(rows, table.Row{Data: row})
+		name := ""
+		if n, ok := row["name"]; ok {
+			name = fmt.Sprintf("%v", n)
+		}
+		schema := ""
+		if hasSchema {
+			if s, ok := row["schema"]; ok {
+				schema = fmt.Sprintf("%v", s)
+			}
+		}
+		refs = append(refs, db.TableReference{Schema: schema, Name: name})
 	}
 
+	m.allRefs = refs
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
 }
 
-func (m TablePanelModel) GetSelectedTable() string {
+func (m TablePanelModel) GetSelectedTable() db.TableReference {
 	return m.selectedTable
+}
+
+// GetAllTableRefs returns all table/view references currently loaded in the panel.
+func (m TablePanelModel) GetAllTableRefs() []db.TableReference {
+	return m.allRefs
+}
+
+func (m TablePanelModel) highlightedRef() db.TableReference {
+	row := m.table.HighlightedRow()
+	if len(row.Data) == 0 {
+		return db.TableReference{}
+	}
+	name, _ := row.Data["name"].(string)
+	schema, _ := row.Data["schema"].(string)
+	return db.TableReference{Schema: schema, Name: name}
 }
 
 func (m *TablePanelModel) SetActive(active bool) {
@@ -173,17 +216,21 @@ func (m TablePanelModel) GetActiveTabIndex() int {
 }
 
 func (m TablePanelModel) helpView() string {
-	return m.help.ShortHelpView([]key.Binding{
+	bindings := []key.Binding{
 		m.keymap.viewData,
 		m.keymap.viewDataDesc,
 		m.keymap.copy,
-	})
+	}
+	if m.showHelp {
+		bindings = append(bindings, m.keymap.refreshSchema)
+	}
+	return m.help.ShortHelpView(bindings)
 }
 
 func (m TablePanelModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().Border.FG)
 	if m.active {

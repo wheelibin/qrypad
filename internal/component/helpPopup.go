@@ -1,10 +1,10 @@
 package component
 
 import (
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -15,6 +15,7 @@ type helpKeymap struct {
 	close key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type HelpPopupModel struct {
 	width  int
 	height int
@@ -23,8 +24,10 @@ type HelpPopupModel struct {
 }
 
 func NewHelpPopupModel() HelpPopupModel {
+	h := makeHelp()
+	h.ShowAll = true
 	return HelpPopupModel{
-		help: makeHelp(),
+		help: h,
 		keymap: helpKeymap{
 			close: key.NewBinding(
 				key.WithKeys("esc"),
@@ -40,10 +43,8 @@ func (m HelpPopupModel) Init() tea.Cmd {
 
 func (m HelpPopupModel) Update(msg tea.Msg) (HelpPopupModel, tea.Cmd) {
 	var cmds []tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keymap.close):
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		if key.Matches(msg, m.keymap.close) {
 			cmds = append(cmds, commands.ClosePopup())
 		}
 	}
@@ -60,12 +61,13 @@ func (m HelpPopupModel) helpView() string {
 func (m *HelpPopupModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
+	m.help.SetWidth(w)
 }
 
 func (m HelpPopupModel) View() string {
 	popupStyle := style.GetBasePanelStyle().
-		Width(m.width).
-		Height(m.height).
+		Width(m.width + 2).
+		Height(m.height + 2).
 		BorderForeground(theme.GetTheme().HelpPopup.BG)
 
 	title := style.Title(m.width-2, false).

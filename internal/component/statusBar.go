@@ -3,18 +3,18 @@ package component
 import (
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type StatusBarModel struct {
 	width            int
 	height           int
-	text             string
 	selectedDatabase string
-	copiedTextInfo   string
+	statusInfo       string
 }
 
 func NewStatusBarModel(selectedDatabase string) StatusBarModel {
@@ -25,7 +25,7 @@ func (m StatusBarModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m StatusBarModel) Update(msg tea.Msg) (StatusBarModel, tea.Cmd) {
+func (m StatusBarModel) Update(_ tea.Msg) (StatusBarModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)
@@ -40,12 +40,14 @@ func (m *StatusBarModel) SetSize(w, h int) {
 	m.height = h
 }
 
-func (m *StatusBarModel) SetText(text string) {
-	m.text = text
+// SetCopiedTextInfo sets a "copied: ..." status message. The "copied:" prefix is added here.
+func (m *StatusBarModel) SetCopiedTextInfo(info string) {
+	m.statusInfo = fmt.Sprintf(`copied: "%s"`, info)
 }
 
-func (m *StatusBarModel) SetCopiedTextInfo(info string) {
-	m.copiedTextInfo = info
+// SetStatusInfo sets a plain status message with no prefix.
+func (m *StatusBarModel) SetStatusInfo(info string) {
+	m.statusInfo = info
 }
 
 func (m StatusBarModel) View() string {
@@ -55,7 +57,7 @@ func (m StatusBarModel) View() string {
 
 	selectedDatabaseStyle := containerStyle
 	helpTextStyle := containerStyle
-	copiedTextInfoStyle := containerStyle.Foreground(theme.GetTheme().PanelTitleActive.BG)
+	statusInfoStyle := containerStyle.Foreground(theme.GetTheme().PanelTitleActive.BG)
 
 	containerStyle = containerStyle.
 		Width(m.width).
@@ -69,16 +71,16 @@ func (m StatusBarModel) View() string {
 
 	var helpText string
 	if keys.DefaultKeyMap.SwitchDatabase.Enabled() {
-		helpText = helpTextStyle.Render(fmt.Sprintf(" [%s] to switch", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
+		helpText = helpTextStyle.Render(fmt.Sprintf(" [%s] to switch database", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
 	}
 
-	var copiedTextInfo string
-	if m.copiedTextInfo != "" {
-		copiedTextInfo = copiedTextInfoStyle.
+	var statusInfo string
+	if m.statusInfo != "" {
+		statusInfo = statusInfoStyle.
 			AlignHorizontal(lipgloss.Right).
 			Width(m.width - lipgloss.Width(selectedDatabase+helpText) - 4).
-			Render(fmt.Sprintf(`copied: "%s"`, m.copiedTextInfo))
+			Render(m.statusInfo)
 	}
 
-	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText, copiedTextInfo))
+	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText, statusInfo))
 }

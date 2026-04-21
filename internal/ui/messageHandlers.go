@@ -3,20 +3,24 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
+	"strconv"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"github.com/atotto/clipboard"
+	"github.com/wheelibin/qrypad/internal/autocomplete"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
-	"golang.design/x/clipboard"
 )
 
 var (
-	debouncedMsgs = make(chan tea.Msg, 10)
-	debouncer     = commands.NewDebouncer(500*time.Millisecond, debouncedMsgs)
+	debouncedMsgs = make(chan tea.Msg, 10)                                     //nolint:gochecknoglobals // debouncer requires global channel
+	debouncer     = commands.NewDebouncer(500*time.Millisecond, debouncedMsgs) //nolint:gochecknoglobals // debouncer is a package-level singleton
 )
 
 func waitForResult(ch <-chan tea.Msg) tea.Cmd {
@@ -36,19 +40,19 @@ func (m *model) handleError(err error) {
 
 func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case db.DatabaseConnectedMsg:
 		if m.db.DB != nil {
-			m.db.DB.Close()
+			_ = m.db.DB.Close()
 		}
 		m.db = db.DBConn(msg)
+		m.schemaCache.Invalidate()
 		m.closePopup()
 		m.statusBar.SetSelectedDatabase(m.db.ConnectedDatabase)
 		switch m.tablePanel.GetActiveTabIndex() {
 		case component.TablePanelTabIndexTables:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
 		}
 
 	case db.QueryControlMsg:
@@ -93,6 +97,19 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		}
 		return commands.SetLoading(false)
 
+	case db.ConnectionListFetchedMsg:
+		if msg.Err != nil {
+			m.handleError(msg.Err)
+		} else {
+			m.connectionSwitcherPopup.SetData(msg.Data)
+			m.adjustSizes()
+		}
+
+	case db.AutoCompleteDataFetchedMsg:
+		if len(msg) > 0 {
+			m.queryPanel.SetAutoCompleteActive(true)
+			return m.queryPanel.SetAutoCompleteOptions(msg)
+		}
 	}
 
 	return nil
@@ -100,16 +117,14 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 
 func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case commands.ErrMsg:
 		m.handleError(msg.Err)
 		return commands.SetLoading(false)
 
-	case commands.DatabaseConnectErrMsg:
+	case commands.DatabaseConnectError:
 		m.errorPopup.SetIsConnectionError(true)
 		m.handleError(msg.Err)
 		return commands.SetLoading(false)
-
 	}
 
 	return nil
@@ -117,22 +132,21 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 
 func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
-
 	case commands.LoadingMsg:
-		if m.popupIsActive(PopupKind.DatabaseSwitcher) {
+		if m.popupIsActive(PopupKind.DatabaseSwitcher) || m.popupIsActive(PopupKind.ConnectionSwitcher) {
 			return nil
 		}
 		if msg.Loading && !m.popupIsActive(PopupKind.Error) {
-			m.showPopup(PopupKind.LoadingPopup)
-		} else {
+			m.showPopup(PopupKind.Loading)
+		} else if !m.popupIsActive(PopupKind.Error) {
 			// loading finished
-			if !m.popupIsActive(PopupKind.Error) {
-				m.closePopup()
-			}
+			m.closePopup()
 		}
 
 	case commands.CancelQueryMsg:
-		m.cancelQuery()
+		if m.cancelQuery != nil {
+			m.cancelQuery()
+		}
 
 	case commands.ActivePanelChangedMsg:
 		m.activePanelIndex = int(msg)
@@ -144,37 +158,74 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		}
 
 	case commands.TableSelectedMsg:
+		m.currentTableRef = db.TableReference(msg)
 		switch m.tableInfoPanel.GetActiveTabIndex() {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
 		}
 
 	case commands.TablePanelTabChangedMsg:
 		switch msg {
 		case component.TablePanelTabIndexTables:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views)
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
 		}
 
 	case commands.TableInfoTabChangedMsg:
 		switch msg {
 		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Columns)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
 		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Indexes)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
 		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.tablePanel.GetSelectedTable(), commands.TableInfoKind.Constraints)
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
 		}
 
 	case commands.DatabaseSelectedMsg:
 		m.selectedDatabase = string(msg)
 		m.dbConfig.Database = string(msg)
+		// Optimistic update: title bar reflects new config before connection is confirmed.
+		// statusBar updates only on DatabaseConnectedMsg (after successful connect).
+		m.titleBar.SetConn(m.dbConfig)
 		return commands.ConnectToDB(m.connectionName, m.dbConfig)
+
+	case commands.ConnectionSelectedMsg:
+		connName := string(msg)
+		conns, err := db.GetConnections()
+		if err != nil {
+			m.handleError(err)
+			return nil
+		}
+		conn, ok := conns[connName]
+		if !ok {
+			m.handleError(errors.New("connection not found"))
+			return nil
+		}
+
+		// Save current buffer to old connection's file before switching (bypass debouncer)
+		if m.queryPanel.GetValue() != m.lastSavedQueryContents {
+			if saveErr := commands.SaveQueryFileToDisk(m.connectionName, m.queryPanel.GetValue()); saveErr != nil {
+				m.handleError(saveErr)
+				return nil
+			}
+			m.lastSavedQueryContents = m.queryPanel.GetValue()
+			m.queryPanel.SetDirty(false)
+		}
+
+		m.queryPanel.SetConnectionName(connName)
+		m.connectionName = connName
+		m.dbConfig = conn
+		m.titleBar.SetConnectionName(connName)
+		m.titleBar.SetConn(conn)
+		return tea.Batch(
+			commands.ConnectToDB(m.connectionName, m.dbConfig),
+			commands.ReadOrCreateQueryFile(connName),
+		)
 
 	case commands.PasswordEnteredMsg:
 		return commands.SavePassword(m.connectionName, string(msg))
@@ -196,32 +247,35 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			m.statusBar.SetCopiedTextInfo(msg.Value)
 		}
 
-		clipboard.Write(clipboard.FmtText, []byte(msg.Value))
+		_ = clipboard.WriteAll(msg.Value)
 
 	case commands.QueryFileReadMsg:
 		m.queryPanel.SetValue(msg.Contents)
 		m.queryPanel.SetFilename(msg.FileName)
 		m.lastSavedQueryContents = msg.Contents
+		m.queryPanel.SetDirty(false)
 	}
 
 	return nil
 }
 
-func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
-	if tea.MouseEvent(msg).Button == tea.MouseButtonLeft {
-		if isInBounds(msg.X, msg.Y, m.tablePanelBounds) {
+func (m *model) handleMouseMessages(msg tea.MouseClickMsg) tea.Cmd {
+	if msg.Button == tea.MouseLeft {
+		mouse := msg.Mouse()
+		switch {
+		case isInBounds(mouse.X, mouse.Y, m.tablePanelBounds):
 			if m.activePanelIndex != PanelIndexTables {
 				return commands.SetActivePanel(PanelIndexTables)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.tableInfoPanelBounds) {
+		case isInBounds(mouse.X, mouse.Y, m.tableInfoPanelBounds):
 			if m.activePanelIndex != PanelIndexTableInfo {
 				return commands.SetActivePanel(PanelIndexTableInfo)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.queryPanelBounds) {
+		case isInBounds(mouse.X, mouse.Y, m.queryPanelBounds):
 			if m.activePanelIndex != PanelIndexQuery {
 				return commands.SetActivePanel(PanelIndexQuery)
 			}
-		} else if isInBounds(msg.X, msg.Y, m.resultsPanelBounds) {
+		case isInBounds(mouse.X, mouse.Y, m.resultsPanelBounds):
 			if m.activePanelIndex != PanelIndexResults {
 				return commands.SetActivePanel(PanelIndexResults)
 			}
@@ -231,10 +285,11 @@ func (m *model) handleMouseMessages(msg tea.MouseMsg) tea.Cmd {
 	return nil
 }
 
-func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
+//nolint:gocyclo,cyclop // Bubble Tea key handler inherently requires complex switch statements
+func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	if key.Matches(msg, keys.DefaultKeyMap.Quit) {
 		if m.db.DB != nil {
-			m.db.DB.Close()
+			_ = m.db.DB.Close()
 		}
 		return tea.Quit
 	}
@@ -245,7 +300,6 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	switch {
-
 	case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 		nextPanelIndex := (m.activePanelIndex + 1) % m.selectablePanelCount
 		if m.leftPanelHidden {
@@ -263,7 +317,7 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.ViewData):
 		switch m.activePanelIndex {
 		case PanelIndexTables:
-			if m.tablePanel.GetSelectedTable() != "" {
+			if m.tablePanel.GetSelectedTable().Name != "" {
 				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "asc")
 			}
 		case PanelIndexResults:
@@ -279,9 +333,8 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ViewDataDesc):
-		switch m.activePanelIndex {
-		case PanelIndexTables:
-			if m.tablePanel.GetSelectedTable() != "" {
+		if m.activePanelIndex == PanelIndexTables {
+			if m.tablePanel.GetSelectedTable().Name != "" {
 				return commands.GetTableRows(m.db, m.tablePanel.GetSelectedTable(), "desc")
 			}
 		}
@@ -340,6 +393,12 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 			return commands.GetDatabases(m.db)
 		}
 
+	case key.Matches(msg, keys.DefaultKeyMap.SwitchConnection):
+		if !m.popupIsActive(PopupKind.ConnectionSwitcher) {
+			m.showPopup(PopupKind.ConnectionSwitcher)
+			return commands.GetConnectionList()
+		}
+
 	case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):
 		if m.activePanelIndex == PanelIndexQuery {
 			return commands.OpenEditor(m.queryPanel.GetFilename())
@@ -349,9 +408,12 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 		var valueToCopy, copiedTextInfo string
 		switch m.activePanelIndex {
 		case PanelIndexTables:
-			valueToCopy = m.tablePanel.GetSelectedTable()
+			valueToCopy = m.tablePanel.GetSelectedTable().QualifiedName()
 		case PanelIndexTableInfo:
-			valueToCopy = m.tableInfoPanel.GetSelectedRow()["name"].(string)
+			row := m.tableInfoPanel.GetSelectedRow()
+			if name, ok := row["name"]; ok {
+				valueToCopy = fmt.Sprintf("%v", name)
+			}
 		case PanelIndexResults:
 			valueToCopy = m.resultsPanel.GetSelectedRowJSON()
 			copiedTextInfo = "<row as json>"
@@ -363,9 +425,82 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.UpdatePassword):
 		m.showPopup(PopupKind.Password)
 
+	case key.Matches(msg, key.NewBinding(key.WithKeys("."))):
+		if m.activePanelIndex == PanelIndexQuery {
+			result := autocomplete.GetCompletions(
+				m.queryPanel.GetCurrentStatement(),
+				m.queryPanel.GetWordAtCursor(),
+				m.tablePanel.GetAllTableRefs(),
+				m.db,
+			)
+			return m.handleCompletionResult(result)
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.AutoComplete):
+		if m.activePanelIndex == PanelIndexQuery {
+			result := autocomplete.GetCompletionsForced(
+				m.queryPanel.GetCurrentStatement(),
+				m.queryPanel.GetWordAtCursor(),
+				m.tablePanel.GetAllTableRefs(),
+				m.db,
+			)
+			return m.handleCompletionResult(result)
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.RefreshSchema):
+		if m.activePanelIndex == PanelIndexTables || m.activePanelIndex == PanelIndexTableInfo {
+			m.schemaCache.Invalidate()
+			m.statusBar.SetStatusInfo("schema refreshed")
+			var cmds []tea.Cmd
+			switch m.tablePanel.GetActiveTabIndex() {
+			case component.TablePanelTabIndexTables:
+				cmds = append(cmds, commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache))
+			case component.TablePanelTabIndexViews:
+				cmds = append(cmds, commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache))
+			}
+			if m.currentTableRef.Name != "" {
+				switch m.tableInfoPanel.GetActiveTabIndex() {
+				case component.TableInfoTabIndexColumns:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache))
+				case component.TableInfoTabIndexIndexes:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache))
+				case component.TableInfoTabIndexConstraints:
+					cmds = append(cmds, commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache))
+				}
+			}
+			return tea.Batch(cmds...)
+		}
+
 	default:
 		// any other key
 		if m.activePanelIndex == PanelIndexQuery {
+			if m.queryPanel.GetAutoCompleteActive() {
+				key := msg.String()
+				if !isAutoCompleteKey(key) {
+					if isPrintableKey(key) {
+						m.queryPanel.AutoCompleteFilterAppend(key)
+					} else if key == "backspace" {
+						m.queryPanel.AutoCompleteFilterPop()
+					}
+				}
+			}
+
+			// Check for table name completion after space (e.g. "FROM ", "JOIN ")
+			// queryPanel.Update is called before handleKeyMessages in ui.Update,
+			// so the textarea has already processed the space — read current state directly.
+			if msg.String() == "space" && !m.queryPanel.GetAutoCompleteActive() {
+				result := autocomplete.GetCompletions(
+					m.queryPanel.GetCurrentStatement(),
+					m.queryPanel.GetWordAtCursor(),
+					m.tablePanel.GetAllTableRefs(),
+					m.db,
+				)
+				if result.Kind == autocomplete.CompletionTable {
+					return m.handleCompletionResult(result)
+				}
+			}
+
+			// buffer file operations
 			if m.lastSavedQueryContents != m.queryPanel.GetValue() {
 				// buffer has changed
 				if m.autoSave {
@@ -373,12 +508,36 @@ func (m *model) handleKeyMessages(msg tea.KeyMsg) tea.Cmd {
 					m.lastSavedQueryContents = m.queryPanel.GetValue()
 					debouncer.Trigger("save-query", commands.SaveQueryFile(m.connectionName, m.queryPanel.GetValue()))
 					return waitForResult(debouncedMsgs)
-				} else {
-					m.queryPanel.SetDirty(true)
 				}
+				m.queryPanel.SetDirty(true)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (m *model) handleCompletionResult(result autocomplete.CompletionResult) tea.Cmd {
+	switch result.Kind {
+	case autocomplete.CompletionColumn:
+		return commands.GetAutocompleteData(m.db, result.TableRef, m.schemaCache)
+	case autocomplete.CompletionTable:
+		m.queryPanel.SetAutoCompleteActive(true)
+		return m.queryPanel.SetAutoCompleteOptions(result.Items)
+	case autocomplete.CompletionSchema:
+		m.queryPanel.SetAutoCompleteActive(true)
+		return m.queryPanel.SetAutoCompleteOptions(result.Items)
+	case autocomplete.CompletionNone:
+		// nothing to complete
+	}
+	return nil
+}
+
+func isAutoCompleteKey(key string) bool {
+	acKeys := []string{"up", "down", "esc", "enter"}
+	return slices.Contains(acKeys, key)
+}
+
+func isPrintableKey(key string) bool {
+	return len(key) == 1 && strconv.IsPrint(rune(key[0]))
 }

@@ -1,12 +1,12 @@
 package component
 
 import (
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/stopwatch"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/stopwatch"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -17,6 +17,7 @@ type loadingPopupKeymap struct {
 	cancel key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type LoadingPopupModel struct {
 	width     int
 	height    int
@@ -54,7 +55,6 @@ func (m LoadingPopupModel) Update(msg tea.Msg) (LoadingPopupModel, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
-
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -63,9 +63,8 @@ func (m LoadingPopupModel) Update(msg tea.Msg) (LoadingPopupModel, tea.Cmd) {
 		cmds = append(cmds, m.spinner.Tick)
 		cmds = append(cmds, tea.Sequence(m.stopwatch.Reset(), m.stopwatch.Start()))
 
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keymap.cancel):
+	case tea.KeyPressMsg:
+		if key.Matches(msg, m.keymap.cancel) {
 			cmds = append(cmds, commands.CancelQuery())
 		}
 	}
@@ -101,8 +100,8 @@ func (m LoadingPopupModel) View() string {
 	loadingPopupContent := lipgloss.JoinVertical(lipgloss.Center, spinnerDisplay, helpView)
 	loadingPopup := style.GetBasePanelStyle().
 		BorderForeground(theme.GetTheme().Spinner.FG).
-		Width(loadingPopupWidth).
-		Height(5).Render(loadingPopupContent)
+		Width(loadingPopupWidth + 2).
+		Height(7).Render(loadingPopupContent)
 
 	return loadingPopup
 }

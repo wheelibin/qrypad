@@ -1,12 +1,14 @@
 package component
 
 import (
+	"fmt"
 	"math"
+	"strings"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
@@ -14,11 +16,25 @@ import (
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
+const maxRowLines = 5
+
+// clampToLines returns s with at most n newline-separated lines.
+// If s has more than n lines, the excess is removed and "…" is appended.
+func clampToLines(s string, n int) string {
+	lines := strings.SplitN(s, "\n", n+1)
+	if len(lines) > n {
+		lines = lines[:n]
+		return strings.Join(lines, "\n") + "…"
+	}
+	return s
+}
+
 type resultRowPopupKeymap struct {
 	copy  key.Binding
 	close key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ResultRowPopupModel struct {
 	width  int
 	height int
@@ -30,9 +46,13 @@ type ResultRowPopupModel struct {
 func NewResultRowPopupModel() ResultRowPopupModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		WithHeaderVisibility(false).
 		Filtered(true).
-		Focused(true)
+		Focused(true).
+		WithMultiline(true)
 
 	return ResultRowPopupModel{
 		table: t,
@@ -63,8 +83,7 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 		cmds []tea.Cmd
 	)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.copy):
 			var valDesc string
@@ -87,7 +106,18 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 }
 
 func (m ResultRowPopupModel) GetSelectedValue() string {
-	return m.table.HighlightedRow().Data["value"].(string)
+	row := m.table.HighlightedRow()
+	if row.Data == nil {
+		return ""
+	}
+	val, ok := row.Data["value"]
+	if !ok {
+		return ""
+	}
+	if s, ok := val.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", val)
 }
 
 func (m *ResultRowPopupModel) SetData(data map[string]any) {
@@ -102,7 +132,18 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 	rows := []table.Row{}
 
 	for k, v := range data {
-		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": v}})
+		val := fmt.Sprintf("%v", v)
+		// Pre-truncate long single-line values so word-wrap cannot create
+		// more than maxRowLines lines regardless of column width.
+		maxChars := m.width * maxRowLines
+		if maxChars <= 0 {
+			maxChars = 200 * maxRowLines // fallback when width not yet set
+		}
+		if runeCount := len([]rune(val)); runeCount > maxChars {
+			val = string([]rune(val)[:maxChars]) + "…"
+		}
+		val = clampToLines(val, maxRowLines)
+		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": val}})
 	}
 
 	m.table = m.table.WithRows(rows)
@@ -121,8 +162,8 @@ func (m *ResultRowPopupModel) SetSize(w, h int) {
 
 func (m ResultRowPopupModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().RowDetailsPopup.BG)
 

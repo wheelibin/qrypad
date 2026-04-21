@@ -3,43 +3,52 @@ package component
 import (
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
-type TitlBarModel struct {
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
+type TitleBarModel struct {
 	width          int
 	height         int
 	connectionName string
 	conn           db.ConnectionConfig
 }
 
-func NewTitlBarModel(connectionName string, conn db.ConnectionConfig) TitlBarModel {
-	return TitlBarModel{
+func NewTitleBarModel(connectionName string, conn db.ConnectionConfig) TitleBarModel {
+	return TitleBarModel{
 		connectionName: connectionName,
 		conn:           conn,
 	}
 }
 
-func (m TitlBarModel) Init() tea.Cmd {
+func (m TitleBarModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m TitlBarModel) Update(msg tea.Msg) (TitlBarModel, tea.Cmd) {
+func (m TitleBarModel) Update(_ tea.Msg) (TitleBarModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m *TitlBarModel) SetSize(w, h int) {
+func (m *TitleBarModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
 }
 
-func (m TitlBarModel) View() string {
+func (m *TitleBarModel) SetConnectionName(name string) {
+	m.connectionName = name
+}
+
+func (m *TitleBarModel) SetConn(conn db.ConnectionConfig) {
+	m.conn = conn
+}
+
+func (m TitleBarModel) View() string {
 	baseStyle := lipgloss.NewStyle().
 		Background(theme.GetTheme().TitleBar.BG).
 		Foreground(theme.GetTheme().TitleBar.FG)

@@ -1,3 +1,4 @@
+// Package style provides styling utilities for terminal UI rendering.
 // copied from here: https://github.com/charmbracelet/lipgloss/pull/102/files
 // see discussion: https://github.com/charmbracelet/lipgloss/pull/102
 package style
@@ -117,8 +118,9 @@ func clamp(v, lower, upper int) int {
 
 // Split a string into lines, additionally returning the size of the widest
 // line.
-func getLines(s string) (lines []string, widest int) {
-	lines = strings.Split(s, "\n")
+func getLines(s string) ([]string, int) {
+	lines := strings.Split(s, "\n")
+	var widest int
 
 	for _, l := range lines {
 		w := ansi.PrintableRuneWidth(l)
@@ -168,32 +170,3 @@ func (w whitespace) render(width int) string {
 
 // WhitespaceOption sets a styling rule for rendering whitespace.
 type WhitespaceOption func(*whitespace)
-
-// WithWhitespaceForeground sets the color of the characters in the whitespace.
-func WithWhitespaceForeground(c TerminalColor) WhitespaceOption {
-	return func(w *whitespace) {
-		w.style = w.style.Foreground(c.color())
-	}
-}
-
-// WithWhitespaceBackground sets the background color of the whitespace.
-func WithWhitespaceBackground(c TerminalColor) WhitespaceOption {
-	return func(w *whitespace) {
-		w.style = w.style.Background(c.color())
-	}
-}
-
-// WithWhitespaceChars sets the characters to be rendered in the whitespace.
-func WithWhitespaceChars(s string) WhitespaceOption {
-	return func(w *whitespace) {
-		w.chars = s
-	}
-}
-
-// TerminalColor is a color intended to be rendered in the terminal. It
-// satisfies the Go color.Color interface.
-type TerminalColor interface {
-	value() string
-	color() termenv.Color
-	RGBA() (r, g, b, a uint32)
-}

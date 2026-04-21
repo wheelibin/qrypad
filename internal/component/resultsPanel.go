@@ -3,14 +3,14 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"math"
 	"time"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
@@ -24,6 +24,7 @@ type resultsPanelKeymap struct {
 	copyRow key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ResultsPanelModel struct {
 	active        bool
 	width         int
@@ -119,7 +120,7 @@ func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	j, err := json.Marshal(m.table.HighlightedRow().Data)
 	if err != nil {
-		log.Println("error converting row to json", err)
+		slog.Error("error converting row to json", "error", err)
 	}
 	return string(j)
 }
@@ -128,6 +129,9 @@ func newTable(cols []table.Column) table.Model {
 	return table.New(cols).
 		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.GetTableHeaderStyle()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
 }
@@ -142,8 +146,8 @@ func (m ResultsPanelModel) helpView() string {
 
 func (m ResultsPanelModel) View() string {
 	panelStyle := style.GetBasePanelStyle().
-		Width(m.width).
-		Height(m.height)
+		Width(m.width + 2).
+		Height(m.height + 2)
 	if m.active {
 		panelStyle = panelStyle.BorderForeground(theme.GetTheme().BorderActive.FG)
 	}

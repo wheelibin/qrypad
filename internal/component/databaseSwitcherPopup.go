@@ -3,11 +3,11 @@ package component
 import (
 	"math"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -20,6 +20,7 @@ type dbSwitcherKeymap struct {
 	cancel  key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type DatabaseSwitcherPopupModel struct {
 	width   int
 	height  int
@@ -33,6 +34,9 @@ type DatabaseSwitcherPopupModel struct {
 func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		WithHeaderVisibility(false).
 		Filtered(true).
 		Focused(true)
@@ -77,8 +81,7 @@ func (m DatabaseSwitcherPopupModel) Update(msg tea.Msg) (DatabaseSwitcherPopupMo
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.connect):
 			cmd = commands.DatabaseSelectionChanged(m.GetSelectedDatabase())
@@ -103,7 +106,8 @@ func (m *DatabaseSwitcherPopupModel) SetLoading(loading bool) {
 }
 
 func (m DatabaseSwitcherPopupModel) GetSelectedDatabase() string {
-	return m.table.HighlightedRow().Data["name"].(string)
+	name, _ := m.table.HighlightedRow().Data["name"].(string)
+	return name
 }
 
 func (m *DatabaseSwitcherPopupModel) SetData(data *db.Data) {
@@ -141,8 +145,8 @@ func (m *DatabaseSwitcherPopupModel) SetSize(w, h int) {
 
 func (m DatabaseSwitcherPopupModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().DatabaseSwitcherPopup.BG)
 

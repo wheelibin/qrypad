@@ -1,0 +1,13 @@
+╭────────────────────────────────────────────────────────────╮
+│                            error                           │
+│                                                            │
+│   There was a problem connecting to the database server,   │
+│   check the connection details in your config, or press    │
+│            ctrl+p to update the saved password             │
+│                                                            │
+│                    ╭──────────────────╮                    │
+│                    │connection refused│                    │
+│                    ╰──────────────────╯                    │
+│                                                            │
+│             ctrl+p update password • esc close             │
+╰────────────────────────────────────────────────────────────╯

@@ -1,29 +1,32 @@
 package keys
 
 import (
-	"github.com/charmbracelet/bubbles/key"
+	"charm.land/bubbles/v2/key"
 )
 
 type keyMap struct {
-	CancelQuery     key.Binding
-	ClosePopup      key.Binding
-	CopyValue       key.Binding
-	ExecuteQuery    key.Binding
-	FilterTable     key.Binding
-	Help            key.Binding
-	NextPanel       key.Binding
-	NextTab         key.Binding
-	OpenInEditor    key.Binding
-	PrevPanel       key.Binding
-	PrevTab         key.Binding
-	Quit            key.Binding
-	ReloadQuery     key.Binding
-	SaveQuery       key.Binding
-	SwitchDatabase  key.Binding
-	ToggleLeftPanel key.Binding
-	UpdatePassword  key.Binding
-	ViewData        key.Binding
-	ViewDataDesc    key.Binding
+	AutoComplete     key.Binding
+	CancelQuery      key.Binding
+	ClosePopup       key.Binding
+	CopyValue        key.Binding
+	ExecuteQuery     key.Binding
+	FilterTable      key.Binding
+	Help             key.Binding
+	NextPanel        key.Binding
+	NextTab          key.Binding
+	OpenInEditor     key.Binding
+	PrevPanel        key.Binding
+	PrevTab          key.Binding
+	Quit             key.Binding
+	RefreshSchema    key.Binding
+	ReloadQuery      key.Binding
+	SaveQuery        key.Binding
+	SwitchDatabase   key.Binding
+	SwitchConnection key.Binding
+	ToggleLeftPanel  key.Binding
+	UpdatePassword   key.Binding
+	ViewData         key.Binding
+	ViewDataDesc     key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
@@ -36,28 +39,37 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel},
+		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel, k.RefreshSchema},
 		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
 		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue, k.Quit},
 	}
 }
 
+//nolint:gochecknoglobals // global keymap is required for Bubble Tea key handling and is modified at startup
 var DefaultKeyMap = keyMap{
+	AutoComplete: key.NewBinding(
+		key.WithKeys("ctrl+space"),
+		key.WithHelp("ctrl+space", "autocomplete"),
+	),
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c"),
 		key.WithHelp("ctrl+c", "quit"),
 	),
 	Help: key.NewBinding(
-		key.WithKeys("f1"),
-		key.WithHelp("F1", "show help"),
+		key.WithKeys("?"),
+		key.WithHelp("?", "show help"),
 	),
 	SwitchDatabase: key.NewBinding(
-		key.WithKeys("f2"),
-		key.WithHelp("F2", "switch database"),
+		key.WithKeys("ctrl+d"),
+		key.WithHelp("ctrl+d", "switch database"),
 	),
 	UpdatePassword: key.NewBinding(
-		key.WithKeys("f3"),
-		key.WithHelp("F3", "update password"),
+		key.WithKeys("ctrl+p"),
+		key.WithHelp("ctrl+p", "update password"),
+	),
+	SwitchConnection: key.NewBinding(
+		key.WithKeys("ctrl+k"),
+		key.WithHelp("ctrl+k", "switch connection"),
 	),
 	NextPanel: key.NewBinding(
 		key.WithKeys("tab"),
@@ -76,12 +88,12 @@ var DefaultKeyMap = keyMap{
 		key.WithHelp("enter", "view table data / view result row"),
 	),
 	ViewDataDesc: key.NewBinding(
-		key.WithKeys("ctrl+d"),
-		key.WithHelp("ctrl+d", "view table data (desc)"),
+		key.WithKeys("D"),
+		key.WithHelp("D", "view table data (desc)"),
 	),
 	ToggleLeftPanel: key.NewBinding(
-		key.WithKeys("ctrl+t"),
-		key.WithHelp("ctrl+t", "toggle table panel"),
+		key.WithKeys("ctrl+b"),
+		key.WithHelp("ctrl+b", "toggle left panel"),
 	),
 	SaveQuery: key.NewBinding(
 		key.WithKeys("ctrl+s"),
@@ -90,6 +102,10 @@ var DefaultKeyMap = keyMap{
 	ReloadQuery: key.NewBinding(
 		key.WithKeys("ctrl+r"),
 		key.WithHelp("ctrl+r", "reload query"),
+	),
+	RefreshSchema: key.NewBinding(
+		key.WithKeys("R"),
+		key.WithHelp("R", "refresh schema"),
 	),
 	CancelQuery: key.NewBinding(
 		key.WithKeys("esc"),
@@ -108,8 +124,8 @@ var DefaultKeyMap = keyMap{
 		key.WithHelp("ctrl+e", "open query in editor"),
 	),
 	CopyValue: key.NewBinding(
-		key.WithKeys("c"),
-		key.WithHelp("c", "copy value"),
+		key.WithKeys("y"),
+		key.WithHelp("y", "copy value"),
 	),
 	FilterTable: key.NewBinding(
 		key.WithKeys("/"),

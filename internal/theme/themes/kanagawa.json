@@ -1,0 +1,21 @@
+{
+  "border": {"fg": "#2A2A37"},
+  "border:active": {"fg": "#7E9CD8"},
+  "currentStatement": {"bg": "#223249", "fg": "#DCD7BA"},
+  "databaseSwitcherPopup": {"bg": "#7FB4CA", "fg": "#1F1F28"},
+  "connectionSwitcherPopup": {"bg": "#E6C384", "fg": "#1F1F28"},
+  "error": {"bg": "#1F1F28", "fg": "#E46876"},
+  "helpPopup": {"bg": "#957FB8", "fg": "#1F1F28"},
+  "helpKey": {"fg": "#7E9CD8"},
+  "helpDesc": {"fg": "#727169"},
+  "panelTitle": {"bg": "#2A2A37", "fg": "#C8C093"},
+  "panelTitle:active": {"bg": "#7E9CD8", "fg": "#1F1F28"},
+  "rowDetailsPopup": {"bg": "#7E9CD8", "fg": "#1F1F28"},
+  "spinner": {"fg": "#FFA066"},
+  "statusBar": {"bg": "#1F1F28", "fg": "#727169"},
+  "tableBorder": {"fg": "#2A2A37"},
+  "tableHeader": {"fg": "#54546D"},
+  "text": {"fg": "#DCD7BA"},
+  "titleBar": {"bg": "#2D4F67", "fg": "#DCD7BA"},
+  "titleBarAlt": {"fg": "#7FB4CA"}
+}

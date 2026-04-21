@@ -4,10 +4,10 @@ import (
 	"math"
 	"slices"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/db"
@@ -28,6 +28,7 @@ type tableInfoKeymap struct {
 	copy    key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type TableInfoPanelModel struct {
 	active         bool
 	width          int
@@ -42,6 +43,9 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 	t := table.New([]table.Column{}).
 		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.GetTableHeaderStyle()).
+		HighlightStyle(style.GetTableHighlightStyle()).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
 		Filtered(true)
 
 	return TableInfoPanelModel{
@@ -75,23 +79,23 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 		cmds = append(cmds, cmd)
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if m.active {
+		if msg, ok := msg.(tea.KeyPressMsg); ok {
+			switch {
+			case key.Matches(msg, keys.DefaultKeyMap.NextTab):
+				m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount
+				cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 
-		switch {
-		case key.Matches(msg, keys.DefaultKeyMap.NextTab):
-			m.activeTabIndex = (m.activeTabIndex + 1) % TableInfoTabCount
-			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
-
-		case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
-			i := m.activeTabIndex - 1
-			if i < 0 {
-				i = TableInfoTabCount - 1
+			case key.Matches(msg, keys.DefaultKeyMap.PrevTab):
+				i := m.activeTabIndex - 1
+				if i < 0 {
+					i = TableInfoTabCount - 1
+				}
+				m.activeTabIndex = i
+				cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
+				cmds = append(cmds, cmd)
 			}
-			m.activeTabIndex = i
-			cmd = commands.SetActiveTableInfoTab(m.activeTabIndex)
-			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -166,8 +170,8 @@ func (m TableInfoPanelModel) helpView() string {
 
 func (m TableInfoPanelModel) View() string {
 	panelStyle := style.GetBasePanelStyle()
-	panelStyle = panelStyle.Width(m.width)
-	panelStyle = panelStyle.Height(m.height)
+	panelStyle = panelStyle.Width(m.width + 2)
+	panelStyle = panelStyle.Height(m.height + 2)
 
 	panelStyle = panelStyle.BorderForeground(theme.GetTheme().Border.FG)
 	if m.active {

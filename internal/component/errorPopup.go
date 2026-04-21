@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/wheelibin/qrypad/internal/commands"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
@@ -19,6 +19,7 @@ type errorKeymap struct {
 	close          key.Binding
 }
 
+//nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ErrorPopupModel struct {
 	width             int
 	height            int
@@ -47,8 +48,7 @@ func (m ErrorPopupModel) Init() tea.Cmd {
 
 func (m ErrorPopupModel) Update(msg tea.Msg) (ErrorPopupModel, tea.Cmd) {
 	var cmds []tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
 		switch {
 		case key.Matches(msg, m.keymap.updatePassword):
 			if m.isConnectionError {
@@ -58,9 +58,8 @@ func (m ErrorPopupModel) Update(msg tea.Msg) (ErrorPopupModel, tea.Cmd) {
 		case key.Matches(msg, m.keymap.close):
 			if m.isConnectionError {
 				return m, tea.Quit
-			} else {
-				return m, commands.ClosePopup()
 			}
+			return m, commands.ClosePopup()
 		}
 	}
 
@@ -95,7 +94,7 @@ func (m *ErrorPopupModel) SetIsConnectionError(v bool) {
 func (m ErrorPopupModel) View() string {
 	theme := theme.GetTheme()
 	popupStyle := style.GetBasePanelStyle().
-		Width(m.width).
+		Width(m.width + 2).
 		BorderForeground(theme.Error.FG)
 
 	errStyle := lipgloss.NewStyle().
@@ -103,15 +102,15 @@ func (m ErrorPopupModel) View() string {
 		Align(lipgloss.Left).
 		Width(m.width - 2)
 
-	msgWidth := int(math.Min(float64(m.width)-16, float64(len(m.text))))
+	msgWidth := int(math.Min(float64(m.width)-16, float64(len(m.text)))) + 2
 	err := errStyle.
-		Width(int(msgWidth)).
+		Width(msgWidth).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(theme.Border.FG).
 		Render(m.text)
 
 	errHeight := lipgloss.Height(err)
-	popupStyle = popupStyle.Height(errHeight + 2)
+	popupStyle = popupStyle.Height(errHeight + 4)
 
 	var extraText string
 	if m.isConnectionError {

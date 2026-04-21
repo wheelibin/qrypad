@@ -1,11 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/ncruces/go-sqlite3/driver"
@@ -18,30 +19,27 @@ import (
 	"github.com/wheelibin/qrypad/internal/ui"
 )
 
-type config struct {
-	Debug       bool                           `mapstructure:"debug"`
-	Connections map[string]db.ConnectionConfig `mapstructure:"connections"`
-}
-
 func main() {
 	viper.SetConfigName("config")               // name of config file (without extension)
 	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
 	viper.AddConfigPath(".")                    // optionally look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var notFound viper.ConfigFileNotFoundError
+		if errors.As(err, &notFound) {
 			exitWithError("no config found\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		} else {
 			exitWithError("error reading config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 		}
 	}
-	var cfg config
-	err := viper.Unmarshal(&cfg)
+
+	conns, err := db.GetConnections()
 	if err != nil {
-		exitWithError("error unmarshalling config\n(for proper format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
+		exitWithError("error unmarshalling config\n(for config format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", err)
 	}
 
 	if len(os.Args[1:]) == 0 {
-		fmt.Printf(
+		_, _ = fmt.Fprintf(
+			os.Stderr,
 			"\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n",
 			constants.AppDesc,
 		)
@@ -49,7 +47,7 @@ func main() {
 	}
 
 	connectionName := os.Args[1]
-	conn, ok := cfg.Connections[connectionName]
+	conn, ok := conns[connectionName]
 	if !ok {
 		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
 	}
@@ -68,12 +66,7 @@ func main() {
 	keys.MapCustomKeys()
 	m := ui.NewModel(connectionName, conn)
 
-	p := tea.NewProgram(
-		m,
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-		tea.WithReportFocus(),
-	)
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		exitWithError("unexpected error\n\n", err)
 	}
@@ -81,9 +74,9 @@ func main() {
 
 func exitWithError(msg string, err error) {
 	if err != nil {
-		fmt.Printf("%s: %v", msg, err)
+		_, _ = fmt.Fprintf(os.Stderr, "%s: %v", msg, err)
 	} else {
-		fmt.Printf("%s", msg)
+		_, _ = fmt.Fprint(os.Stderr, msg)
 	}
 	os.Exit(1)
 }

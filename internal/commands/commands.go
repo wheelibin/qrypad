@@ -8,14 +8,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/password"
 )
 
 type TablePanelKindType string
 
+//nolint:gochecknoglobals // singleton-like enum structs used as namespaced constants
 var TablePanelKind = struct {
 	Tables TablePanelKindType
 	Views  TablePanelKindType
@@ -26,6 +28,7 @@ var TablePanelKind = struct {
 
 type TableInfoKindType string
 
+//nolint:gochecknoglobals // singleton-like enum struct used as namespaced constants
 var TableInfoKind = struct {
 	Columns     TableInfoKindType
 	Indexes     TableInfoKindType
@@ -68,67 +71,134 @@ func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
 			if errors.Is(err, password.ErrPasswordNotSaved) {
 				return PasswordInputNeededMsg{}
 			}
-			return DatabaseConnectErrMsg{err}
+			return DatabaseConnectError{err}
 		}
 		return db.DatabaseConnectedMsg(dbConn)
 	})
 }
 
+//nolint:gochecknoglobals // function variable for dependency injection in tests
 var QueryResultBuilder = func(d *db.Data, err error) tea.Msg {
 	return db.DataFetchedMsg{Data: d, Err: err}
 }
 
-func GetTableRows(dbConn db.DBConn, tableName, sortOrder string) tea.Cmd {
-	primaryKeyColumns, err := db.GetPrimaryKeyColumns(context.Background(), dbConn, tableName)
-	if err != nil {
-		return func() tea.Msg {
+func GetTableRows(dbConn db.DBConn, ref db.TableReference, sortOrder string) tea.Cmd {
+	return func() tea.Msg {
+		primaryKeyColumns, err := dbConn.Queries.PrimaryKeyColumns(context.Background(), dbConn, ref)
+		if err != nil {
 			return ErrMsg{Err: err}
+		}
+
+		query := dbConn.Queries.TableRows(ref, primaryKeyColumns, sortOrder)
+		timeout := db.GetTimeoutSecs()
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+		resultCh := make(chan tea.Msg, 1)
+		go func() {
+			data, err := db.ExecuteQuery(ctx, dbConn, query)
+			resultCh <- QueryResultBuilder(data, err)
+		}()
+
+		return db.QueryControlMsg{Cancel: cancel, ResultChan: resultCh}
+	}
+}
+
+func GetAutocompleteData(dbConn db.DBConn, ref db.TableReference, cache *db.SchemaCache) tea.Cmd {
+	return func() tea.Msg {
+		// Reuse cached column data if available (populated when tableInfoPanel fetches cols).
+		if cache != nil {
+			if cached, ok := cache.GetTableInfo(ref, string(TableInfoKind.Columns)); ok {
+				cols := make([]string, 0, len(cached.Rows))
+				for _, row := range cached.Rows {
+					if name, ok := row["name"].(string); ok {
+						cols = append(cols, name)
+					}
+				}
+				return db.AutoCompleteDataFetchedMsg(cols)
+			}
+		}
+
+		cols, err := db.GetAutoCompleteColumns(context.Background(), dbConn, ref)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return db.AutoCompleteDataFetchedMsg(cols)
+	}
+}
+
+func GetTableInfo(dbConn db.DBConn, ref db.TableReference, kind TableInfoKindType, cache *db.SchemaCache) tea.Cmd {
+	cacheKey := string(kind)
+
+	// Cache hit: return immediately without a DB round-trip.
+	if cache != nil {
+		if cached, ok := cache.GetTableInfo(ref, cacheKey); ok {
+			return func() tea.Msg {
+				return db.TableInfoDataFetchedMsg{Data: cached, Err: nil}
+			}
 		}
 	}
 
-	return ExecuteQuery(dbConn, db.GetTableRowsSQL(tableName, primaryKeyColumns, sortOrder), QueryResultBuilder)
-}
+	// Cache miss: fetch from DB, populate cache on success.
+	storeResult := func(d *db.Data, err error) tea.Msg {
+		if err == nil && cache != nil {
+			cache.SetTableInfo(ref, cacheKey, d)
+		}
+		return db.TableInfoDataFetchedMsg{Data: d, Err: err}
+	}
 
-func GetTableInfo(dbConn db.DBConn, tableName string, kind TableInfoKindType) tea.Cmd {
 	switch kind {
 	case TableInfoKind.Columns:
-		return ExecuteQuery(dbConn, db.GetTableColumnsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, dbConn.Queries.TableColumns(ref), storeResult)
 	case TableInfoKind.Indexes:
-		if dbConn.DriverName == db.DriverName.SQLite {
-			d, err := db.GetSQLiteTableIndexes(context.Background(), dbConn, tableName)
-			return func() tea.Msg {
-				return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-			}
+		return func() tea.Msg {
+			d, err := dbConn.Queries.TableIndexes(context.Background(), dbConn, ref)
+			return storeResult(d, err)
 		}
-		return ExecuteQuery(dbConn, db.GetTableIndexesSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
 	case TableInfoKind.Constraints:
-		return ExecuteQuery(dbConn, db.GetTableConstraintsSQL(dbConn, tableName), func(d *db.Data, err error) tea.Msg {
-			return db.TableInfoDataFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, dbConn.Queries.TableConstraints(ref), storeResult)
 	}
 	return nil
 }
 
 func GetDatabases(dbConn db.DBConn) tea.Cmd {
-	return ExecuteQuery(dbConn, db.GetDatabasesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
+	return ExecuteQuery(dbConn, dbConn.Queries.Databases(), func(d *db.Data, err error) tea.Msg {
 		return db.DatabaseListFetchedMsg{Data: d, Err: err}
 	})
 }
 
-func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType) tea.Cmd {
+func GetConnectionList() tea.Cmd {
+	return func() tea.Msg {
+		conns, err := db.GetConnections()
+		if err != nil {
+			return db.ConnectionListFetchedMsg{Data: nil, Err: err}
+		}
+		return db.ConnectionListFetchedMsg{Data: connectionsToDataResponse(conns), Err: nil}
+	}
+}
+
+func GetSchemaEntities(dbConn db.DBConn, kind TablePanelKindType, cache *db.SchemaCache) tea.Cmd {
+	cacheKey := string(kind)
+
+	if cache != nil {
+		if cached, ok := cache.GetEntities(cacheKey); ok {
+			return func() tea.Msg {
+				return db.SchemaEntitiesFetchedMsg{Data: cached, Err: nil}
+			}
+		}
+	}
+
+	storeResult := func(d *db.Data, err error) tea.Msg {
+		if err == nil && cache != nil {
+			cache.SetEntities(cacheKey, d)
+		}
+		return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
+	}
+
 	switch kind {
 	case TablePanelKind.Tables:
-		return ExecuteQuery(dbConn, db.GetSchemaTablesSQL(dbConn), func(d *db.Data, err error) tea.Msg {
-			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, dbConn.Queries.SchemaTables(), storeResult)
 	case TablePanelKind.Views:
-		return ExecuteQuery(dbConn, db.GetSchemaViewsSQL(dbConn), func(d *db.Data, err error) tea.Msg {
-			return db.SchemaEntitiesFetchedMsg{Data: d, Err: err}
-		})
+		return ExecuteQuery(dbConn, dbConn.Queries.SchemaViews(), storeResult)
 	}
 	return nil
 }
@@ -183,15 +253,21 @@ func CancelQuery() tea.Cmd {
 	}
 }
 
-func TableSelectionChanged(tableName string) tea.Cmd {
+func TableSelectionChanged(ref db.TableReference) tea.Cmd {
 	return func() tea.Msg {
-		return TableSelectedMsg(tableName)
+		return TableSelectedMsg(ref)
 	}
 }
 
 func DatabaseSelectionChanged(name string) tea.Cmd {
 	return func() tea.Msg {
 		return DatabaseSelectedMsg(name)
+	}
+}
+
+func ConnectionSelectionChanged(name string) tea.Cmd {
+	return func() tea.Msg {
+		return ConnectionSelectedMsg(name)
 	}
 }
 
@@ -242,28 +318,20 @@ func ReadOrCreateQueryFile(connectionName string) tea.Cmd {
 	}
 }
 
-func SaveQueryFile(connectionName string, contents string) tea.Cmd {
+// SaveQueryFileToDisk writes contents to <outputDir>/<connectionName>.sql synchronously.
+func SaveQueryFileToDisk(connectionName, contents string) error {
+	dir, err := GetOutputDir()
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
+	return os.WriteFile(filename, []byte(contents), 0o600)
+}
+
+// SaveQueryFile returns a tea.Cmd that writes contents to <outputDir>/<connectionName>.sql.
+func SaveQueryFile(connectionName, contents string) tea.Cmd {
 	return func() tea.Msg {
-		dir, err := GetOutputDir()
-		if err != nil {
-			return ErrMsg{err}
-		}
-		filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
-
-		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-			_, err := os.Create(filename)
-			if err != nil {
-				return ErrMsg{err}
-			}
-		}
-
-		f, err := os.Create(filename)
-		if err != nil {
-			return ErrMsg{err}
-		}
-
-		_, err = f.WriteString(contents)
-		if err != nil {
+		if err := SaveQueryFileToDisk(connectionName, contents); err != nil {
 			return ErrMsg{err}
 		}
 		return QueryFileSavedMsg{}
@@ -280,16 +348,16 @@ func GetOutputDir() (string, error) {
 	case "darwin", "linux":
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("error getting home directory: %w", err)
 		}
 		outputDir = filepath.Join(homeDir, ".local", "share", "qrypad")
 	default:
-		return "", fmt.Errorf("error determining folder to hold query files, unsupported OS")
+		return "", errors.New("error determining folder to hold query files, unsupported OS")
 	}
 
 	// Ensure the directory exists
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err = os.MkdirAll(outputDir, 0755)
+		err = os.MkdirAll(outputDir, 0o750)
 		if err != nil {
 			return "", fmt.Errorf("error creating folder to hold query files: %w", err)
 		}
@@ -303,8 +371,37 @@ func OpenEditor(file string) tea.Cmd {
 	if editor == "" {
 		editor = "vim"
 	}
-	c := exec.Command(editor, file) //nolint:gosec
+	c := exec.CommandContext(context.Background(), editor, file)
 	return tea.ExecProcess(c, func(err error) tea.Msg {
-		return EditorFinishedMsg{err}
+		return EditorFinishedMsg{Err: err}
 	})
+}
+
+func AutoCompleteEntrySelect(entry string) tea.Cmd {
+	return func() tea.Msg {
+		return AutoCompleteEntrySelectedMsg(entry)
+	}
+}
+
+func AutoCompleteClose() tea.Cmd {
+	return func() tea.Msg {
+		return AutoCompleteCloseMsg{}
+	}
+}
+
+func connectionsToDataResponse(conns map[string]db.ConnectionConfig) *db.Data {
+	d := db.Data{
+		Columns: []string{"name", "driver", "host"},
+		Rows:    make([]map[string]any, 0, len(conns)),
+	}
+	keys := make([]string, 0, len(conns))
+	for name := range conns {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+	for _, name := range keys {
+		c := conns[name]
+		d.Rows = append(d.Rows, map[string]any{"name": name, "driver": c.Driver, "host": c.Host})
+	}
+	return &d
 }

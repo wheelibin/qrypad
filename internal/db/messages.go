@@ -4,14 +4,13 @@ import (
 	"context"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 type Data struct {
 	Columns   []string
 	Rows      []map[string]any
 	QueryTime time.Duration
-	Cancel    context.CancelFunc
 }
 
 type (
@@ -24,8 +23,10 @@ type (
 		Cancel     context.CancelFunc
 		ResultChan <-chan tea.Msg
 	}
-	DataFetchedMsg           QueryResultMsg
-	TableInfoDataFetchedMsg  QueryResultMsg
-	SchemaEntitiesFetchedMsg QueryResultMsg
-	DatabaseListFetchedMsg   QueryResultMsg
+	DataFetchedMsg             QueryResultMsg
+	TableInfoDataFetchedMsg    QueryResultMsg
+	SchemaEntitiesFetchedMsg   QueryResultMsg
+	DatabaseListFetchedMsg     QueryResultMsg
+	ConnectionListFetchedMsg   QueryResultMsg
+	AutoCompleteDataFetchedMsg []string
 )

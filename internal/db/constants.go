@@ -7,6 +7,7 @@ const (
 
 type DriverNameType string
 
+//nolint:gochecknoglobals // singleton enum struct used as namespaced constants
 var DriverName = struct {
 	Postgres DriverNameType
 	MySQL    DriverNameType
