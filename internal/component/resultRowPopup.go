@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
@@ -14,6 +15,19 @@ import (
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
+
+const maxRowLines = 5
+
+// clampToLines returns s with at most n newline-separated lines.
+// If s has more than n lines, the excess is removed and "…" is appended.
+func clampToLines(s string, n int) string {
+	lines := strings.SplitN(s, "\n", n+1)
+	if len(lines) > n {
+		lines = lines[:n]
+		return strings.Join(lines, "\n") + "…"
+	}
+	return s
+}
 
 type resultRowPopupKeymap struct {
 	copy  key.Binding
@@ -37,7 +51,8 @@ func NewResultRowPopupModel() ResultRowPopupModel {
 		BorderRounded().
 		WithHeaderVisibility(false).
 		Filtered(true).
-		Focused(true)
+		Focused(true).
+		WithMultiline(true)
 
 	return ResultRowPopupModel{
 		table: t,
@@ -117,7 +132,18 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 	rows := []table.Row{}
 
 	for k, v := range data {
-		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": v}})
+		val := fmt.Sprintf("%v", v)
+		// Pre-truncate long single-line values so word-wrap cannot create
+		// more than maxRowLines lines regardless of column width.
+		maxChars := m.width * maxRowLines
+		if maxChars <= 0 {
+			maxChars = 200 * maxRowLines // fallback when width not yet set
+		}
+		if runeCount := len([]rune(val)); runeCount > maxChars {
+			val = string([]rune(val)[:maxChars]) + "…"
+		}
+		val = clampToLines(val, maxRowLines)
+		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": val}})
 	}
 
 	m.table = m.table.WithRows(rows)
