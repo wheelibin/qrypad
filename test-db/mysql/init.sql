@@ -1,5 +1,6 @@
 -- Drop and recreate tables (MySQL requires reverse order due to FK constraints)
 DROP TABLE IF EXISTS adoptions;
+DROP VIEW IF EXISTS adopted_animals;
 DROP TABLE IF EXISTS animals;
 DROP TABLE IF EXISTS staff;
 DROP TABLE IF EXISTS species;
@@ -470,4 +471,14 @@ INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (294,
 INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (298, 'Michael Brown', '2025-05-04', 3);
 INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (299, 'Chris Johnson', '2025-03-07', 1);
 
+-- View for integration tests
+CREATE VIEW adopted_animals AS
+SELECT a.id AS animal_id,
+       a.name AS animal_name,
+       s.name AS species,
+       ad.adopted_by,
+       ad.adopted_on
+FROM animals a
+JOIN adoptions ad ON ad.animal_id = a.id
+JOIN species s ON s.id = a.species_id;
 

@@ -1,5 +1,7 @@
-.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover update-golden
+.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover update-golden integration-test integration-down
 
+# Default test target: runs fast unit tests, no Docker required.
+# For integration tests, run `make integration-test`.
 test:
 	go test ./...
 
@@ -21,6 +23,26 @@ testdb-mysql-down:
 test-sqlite-up:
 	sqlite3 test-db/sqlite/sqlite.db < test-db/sqlite/init.sql
 
+integration-test:
+	@echo "Starting test databases..."
+	@cd test-db/postgres && docker compose up -d --wait
+	@cd test-db/mysql && docker compose up -d --wait
+	@$(MAKE) test-sqlite-up
+	@echo "Running integration tests..."
+	@if go test -tags=integration -count=1 ./internal/db/...; then \
+		echo "Integration tests passed. Tearing down..."; \
+		(cd test-db/postgres && docker compose down -v); \
+		(cd test-db/mysql && docker compose down -v); \
+	else \
+		echo "Integration tests FAILED. Containers left running for debugging."; \
+		echo "Run 'make integration-down' to clean up."; \
+		exit 1; \
+	fi
+
+integration-down:
+	@(cd test-db/postgres && docker compose down -v)
+	@(cd test-db/mysql && docker compose down -v)
+
 format:
 	go install github.com/segmentio/golines@latest
 	find . -name '*.go' | xargs golines --max-len=150 -w
@@ -30,4 +52,3 @@ lint:
 
 update-golden:
 	go test ./internal/component/... -update
-

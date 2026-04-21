@@ -4,6 +4,17 @@ package db
 
 var TruncateToSize = truncateToSize //nolint:gochecknoglobals
 
+// Test-only exports of private SQL builders on driver provider types.
+// These let external tests (package db_test) assert on the generated SQL
+// without keeping the builders as part of the public QueryProvider API.
+var (
+	MySQLTableIndexesSQL         = mysqlQueries{}.tableIndexesSQL         //nolint:gochecknoglobals
+	PostgresTableIndexesSQL      = postgresQueries{}.tableIndexesSQL      //nolint:gochecknoglobals
+	MySQLPrimaryKeyColumnsSQL    = mysqlQueries{}.primaryKeyColumnsSQL    //nolint:gochecknoglobals
+	PostgresPrimaryKeyColumnsSQL = postgresQueries{}.primaryKeyColumnsSQL //nolint:gochecknoglobals
+	SQLitePrimaryKeyColumnsSQL   = sqliteQueries{}.primaryKeyColumnsSQL   //nolint:gochecknoglobals
+)
+
 // QueriesForDriver returns the QueryProvider for the given driver name.
 // Exported for tests only.
 func QueriesForDriver(driver DriverNameType) QueryProvider {

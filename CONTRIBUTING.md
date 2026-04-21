@@ -3,8 +3,27 @@
 ## Running the Tests
 
 ```bash
-go test ./...
+make test
 ```
+
+Runs fast unit tests against all packages; no Docker required. This is what CI runs for its unit test job.
+
+### Integration Tests
+
+For end-to-end verification against real databases (Postgres, MySQL, SQLite):
+
+```bash
+make integration-test
+```
+
+This starts Postgres and MySQL via Docker Compose (using the files in `test-db/`), seeds SQLite, runs all integration tests, and tears down on success. On test failure, containers are left running for debugging — run `make integration-down` to clean up.
+
+Local ports used:
+- Postgres: `50403`
+- MySQL: `50306` (non-standard to avoid conflicts with locally-installed MySQL)
+- SQLite: `test-db/sqlite/sqlite.db` (file-based)
+
+Integration tests are gated by the `//go:build integration` build tag, so `go test ./...` ignores them by default. CI runs both the unit tests and integration tests on every push and PR.
 
 ## View Tests and Golden Files
 

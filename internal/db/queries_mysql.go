@@ -15,7 +15,7 @@ func (mysqlQueries) Databases() string {
 }
 
 func (mysqlQueries) SchemaTables() string {
-	return `SELECT TABLE_SCHEMA "schema", TABLE_NAME name, format(TABLE_ROWS,0) 'rows'
+	return `SELECT TABLE_SCHEMA ` + "`schema`" + `, TABLE_NAME name, format(TABLE_ROWS,0) 'rows'
             FROM information_schema.TABLES
             WHERE TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'sys')
              AND TABLE_TYPE = 'BASE TABLE'
@@ -23,10 +23,10 @@ func (mysqlQueries) SchemaTables() string {
 }
 
 func (mysqlQueries) SchemaViews() string {
-	return `SELECT table_schema schema, table_name name
+	return `SELECT table_schema ` + "`schema`" + `, table_name name
                         FROM information_schema.views
                         WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
-                        ORDER BY schema, table_name;`
+                        ORDER BY table_schema, table_name;`
 }
 
 func (mysqlQueries) TableColumns(ref TableReference) string {
