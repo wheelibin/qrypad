@@ -60,7 +60,7 @@ queryTimeout = 60
 tableDataRowLimit = 100
 
 [theme]
-name = "catppuccin-mocha"
+name = "catppuccin"
 
 [connections]
 
@@ -158,15 +158,15 @@ ViewDataDesc     = ""
 
 ### Built-in themes
 
-- `catppuccin-mocha` (default)
-- `kanagawa-wave`
-- `rose-pine-moon`
+- `kanagawa` (default)
+- `catppuccin`
+- `rose-pine`
 
 Set the active theme in the config:
 
 ```toml
 [theme]
-name = "kanagawa-wave"
+name = "catppuccin"
 ```
 
 ### Customising themes
@@ -175,7 +175,7 @@ Override individual colours on top of an existing theme:
 
 ```toml
 [theme]
-name         = "rose-pine-moon"
+name         = "catppuccin"
 borderActive = { fg = "#ff00ff" }
 ```
 

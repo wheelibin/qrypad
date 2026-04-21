@@ -30,8 +30,8 @@ driver           = "sqlite"
 database         = "test-db/sqlite/sqlite.db"
 
 [theme]
-# catppuccin-mocha (default) / kanagawa-wave / rose-pine-moon
-name = "kanagawa-wave"
+# kanagawa (default) / catppuccin / rose-pine
+name = "kanagawa"
 
 # borderActive          = { bg = "", fg = "#ff00ff" }
 # currentStatement      = { bg = "", fg = "" }
