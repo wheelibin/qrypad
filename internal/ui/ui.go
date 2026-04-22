@@ -42,6 +42,7 @@ var PopupKind = struct {
 	DatabaseSwitcher   PopupKindType
 	Loading            PopupKindType
 	ConnectionSwitcher PopupKindType
+	ExportFormat       PopupKindType
 }{
 	Error:              1,
 	Help:               2,
@@ -50,6 +51,7 @@ var PopupKind = struct {
 	DatabaseSwitcher:   5,
 	Loading:            6,
 	ConnectionSwitcher: 7,
+	ExportFormat:       8,
 }
 
 type bounds struct {
@@ -78,6 +80,7 @@ type model struct {
 	connectionSwitcherPopup component.ConnectionSwitcherPopupModel
 	helpPopup               component.HelpPopupModel
 	loadingPopup            component.LoadingPopupModel
+	exportFormatPopup       component.ExportFormatPopupModel
 
 	// state
 	connectionName   string
@@ -123,6 +126,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 	connectionSwitcherPopup := component.NewConnectionSwitcherPopupModel()
 	helpPopup := component.NewHelpPopupModel()
 	loadingPopup := component.NewLoadingPopupModel()
+	exportFormatPopup := component.NewExportFormatPopupModel()
 
 	return model{
 		connectionName:          connectionName,
@@ -140,6 +144,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 		connectionSwitcherPopup: connectionSwitcherPopup,
 		helpPopup:               helpPopup,
 		loadingPopup:            loadingPopup,
+		exportFormatPopup:       exportFormatPopup,
 		selectablePanelCount:    4,
 		autoSave:                autoSave,
 		schemaCache:             db.NewSchemaCache(),
@@ -147,10 +152,9 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 }
 
 func (m model) initKeyMap() {
-	if m.dbConfig.Driver == db.DriverName.SQLite {
-		keys.DefaultKeyMap.SwitchDatabase.SetEnabled(false)
-		keys.DefaultKeyMap.UpdatePassword.SetEnabled(false)
-	}
+	isSQLite := m.dbConfig.Driver == db.DriverName.SQLite
+	keys.DefaultKeyMap.SwitchDatabase.SetEnabled(!isSQLite)
+	keys.DefaultKeyMap.UpdatePassword.SetEnabled(!isSQLite)
 }
 
 func (m model) Init() tea.Cmd {
@@ -237,7 +241,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.TableSelectedMsg,
 		commands.QueryFileReadMsg,
 		commands.LoadingMsg,
-		commands.CancelQueryMsg:
+		commands.CancelQueryMsg,
+		commands.ExportRequestedMsg,
+		commands.ExportCompletedMsg:
 		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseClickMsg:
@@ -323,6 +329,8 @@ func (m *model) updateActivePopup(msg tea.Msg) tea.Cmd {
 		m.connectionSwitcherPopup, cmd = m.connectionSwitcherPopup.Update(msg)
 	case PopupKind.Loading:
 		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
+	case PopupKind.ExportFormat:
+		m.exportFormatPopup, cmd = m.exportFormatPopup.Update(msg)
 	}
 	return cmd
 }
@@ -343,6 +351,8 @@ func (m model) activePopupView() string {
 		return m.connectionSwitcherPopup.View()
 	case PopupKind.Loading:
 		return m.loadingPopup.View()
+	case PopupKind.ExportFormat:
+		return m.exportFormatPopup.View()
 	}
 	return ""
 }
@@ -390,6 +400,7 @@ func (m *model) adjustSizes() {
 	m.connectionSwitcherPopup.SetSize(m.width/3, m.height/3)
 	m.passwordPopup.SetSize(m.width/3, 5)
 	m.helpPopup.SetSize(120, 5)
+	m.exportFormatPopup.SetSize(m.width/3, 3)
 }
 
 func (m model) getRightWidth(totalWidth int) int {

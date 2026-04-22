@@ -22,6 +22,7 @@ type resultsPanelKeymap struct {
 	viewRow key.Binding
 	filter  key.Binding
 	copyRow key.Binding
+	export  key.Binding
 }
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
@@ -30,6 +31,7 @@ type ResultsPanelModel struct {
 	width         int
 	height        int
 	table         table.Model
+	columns       []string
 	lastQueryTime time.Duration
 	help          help.Model
 	keymap        resultsPanelKeymap
@@ -52,6 +54,10 @@ func NewResultsPanelModel() ResultsPanelModel {
 			copyRow: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
 				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy row as json"),
+			),
+			export: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.ExportResults.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.ExportResults.Help().Key, "export"),
 			),
 		},
 	}
@@ -79,6 +85,8 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 	if data == nil {
 		return
 	}
+
+	m.columns = append([]string(nil), data.Columns...)
 
 	cols := []table.Column{}
 	rows := []table.Row{}
@@ -125,6 +133,24 @@ func (m ResultsPanelModel) GetSelectedRowJSON() string {
 	return string(j)
 }
 
+// GetColumns returns the column names in the order they were supplied by the
+// most recent SetData call.
+func (m ResultsPanelModel) GetColumns() []string {
+	return append([]string(nil), m.columns...)
+}
+
+// GetExportRows returns the rows currently visible in the table, honouring
+// any active filter and sort order. When no filter is active this is the
+// full result set in its current display order.
+func (m ResultsPanelModel) GetExportRows() []map[string]any {
+	src := m.table.GetVisibleRows()
+	out := make([]map[string]any, 0, len(src))
+	for _, r := range src {
+		out = append(out, r.Data)
+	}
+	return out
+}
+
 func newTable(cols []table.Column) table.Model {
 	return table.New(cols).
 		WithBaseStyle(style.TableColumn()).
@@ -141,6 +167,7 @@ func (m ResultsPanelModel) helpView() string {
 		m.keymap.viewRow,
 		m.keymap.filter,
 		m.keymap.copyRow,
+		m.keymap.export,
 	})
 }
 

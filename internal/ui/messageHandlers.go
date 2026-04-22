@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"time"
@@ -222,6 +224,8 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.dbConfig = conn
 		m.titleBar.SetConnectionName(connName)
 		m.titleBar.SetConn(conn)
+		// re-evaluate driver-dependent key bindings for the new connection
+		m.initKeyMap()
 		return tea.Batch(
 			commands.ConnectToDB(m.connectionName, m.dbConfig),
 			commands.ReadOrCreateQueryFile(connName),
@@ -254,6 +258,20 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.queryPanel.SetFilename(msg.FileName)
 		m.lastSavedQueryContents = msg.Contents
 		m.queryPanel.SetDirty(false)
+
+	case commands.ExportRequestedMsg:
+		rows := m.resultsPanel.GetExportRows()
+		cols := m.resultsPanel.GetColumns()
+		cwd, err := os.Getwd()
+		if err != nil {
+			m.handleError(err)
+			return nil
+		}
+		m.closePopup()
+		return commands.ExportResults(rows, cols, msg.Format, cwd)
+
+	case commands.ExportCompletedMsg:
+		m.statusBar.SetStatusInfo(fmt.Sprintf("exported %d rows to %s", msg.RowCount, filepath.Base(msg.Path)))
 	}
 
 	return nil
@@ -427,6 +445,13 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		if valueToCopy != "" {
 			return commands.CopyValue(valueToCopy, copiedTextInfo)
 		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.ExportResults):
+		if len(m.resultsPanel.GetExportRows()) == 0 {
+			m.statusBar.SetStatusInfo("nothing to export")
+			break
+		}
+		m.showPopup(PopupKind.ExportFormat)
 
 	case key.Matches(msg, keys.DefaultKeyMap.UpdatePassword):
 		m.showPopup(PopupKind.Password)

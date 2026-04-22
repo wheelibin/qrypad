@@ -10,6 +10,7 @@ type keyMap struct {
 	ClosePopup       key.Binding
 	CopyValue        key.Binding
 	ExecuteQuery     key.Binding
+	ExportResults    key.Binding
 	FilterTable      key.Binding
 	Help             key.Binding
 	NextPanel        key.Binding
@@ -130,5 +131,9 @@ var DefaultKeyMap = keyMap{
 	FilterTable: key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "filter table"),
+	),
+	ExportResults: key.NewBinding(
+		key.WithKeys("ctrl+x"),
+		key.WithHelp("ctrl+x", "export results"),
 	),
 }
