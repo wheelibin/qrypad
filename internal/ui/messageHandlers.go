@@ -381,6 +381,12 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		m.closePopup()
 
 	case key.Matches(msg, keys.DefaultKeyMap.Help):
+		// When the query panel is focused, "?" is a valid SQL character
+		// (parameter placeholder / JSONB operator) so only treat it as help
+		// from other panels. "f1" always opens help regardless of focus.
+		if m.activePanelIndex == PanelIndexQuery && msg.String() == "?" {
+			break
+		}
 		if !m.popupIsActive(PopupKind.Help) {
 			m.showPopup(PopupKind.Help)
 		} else {

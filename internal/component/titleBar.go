@@ -53,9 +53,10 @@ func (m TitleBarModel) View() string {
 		Background(theme.GetTheme().TitleBar.BG).
 		Foreground(theme.GetTheme().TitleBar.FG)
 
+	helpLabel := fmt.Sprintf("[%s] help", keys.DefaultKeyMap.Help.Help().Key)
 	helpText := baseStyle.
-		Width(16).
-		Render(fmt.Sprintf("[%s] Show help", keys.DefaultKeyMap.Help.Help().Key))
+		Width(lipgloss.Width(helpLabel) + 3).
+		Render(helpLabel)
 
 	barStyle := baseStyle.
 		Padding(0, 2).
