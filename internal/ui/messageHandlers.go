@@ -222,6 +222,8 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		m.dbConfig = conn
 		m.titleBar.SetConnectionName(connName)
 		m.titleBar.SetConn(conn)
+		// re-evaluate driver-dependent key bindings for the new connection
+		m.initKeyMap()
 		return tea.Batch(
 			commands.ConnectToDB(m.connectionName, m.dbConfig),
 			commands.ReadOrCreateQueryFile(connName),

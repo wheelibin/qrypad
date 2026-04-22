@@ -147,10 +147,9 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 }
 
 func (m model) initKeyMap() {
-	if m.dbConfig.Driver == db.DriverName.SQLite {
-		keys.DefaultKeyMap.SwitchDatabase.SetEnabled(false)
-		keys.DefaultKeyMap.UpdatePassword.SetEnabled(false)
-	}
+	isSQLite := m.dbConfig.Driver == db.DriverName.SQLite
+	keys.DefaultKeyMap.SwitchDatabase.SetEnabled(!isSQLite)
+	keys.DefaultKeyMap.UpdatePassword.SetEnabled(!isSQLite)
 }
 
 func (m model) Init() tea.Cmd {
