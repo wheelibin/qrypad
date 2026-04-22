@@ -65,3 +65,25 @@ type (
 	AutoCompleteEntrySelectedMsg string
 	AutoCompleteCloseMsg         struct{}
 )
+
+// ExportFormat selects the serialization format for exported results.
+type ExportFormat int
+
+const (
+	ExportFormatJSON ExportFormat = iota
+	ExportFormatCSV
+)
+
+// ExportRequestedMsg is emitted by the export format popup when the user picks
+// a format. The UI reacts by serializing the current result set and writing it
+// to disk.
+type ExportRequestedMsg struct {
+	Format ExportFormat
+}
+
+// ExportCompletedMsg is emitted by the export command after a file has been
+// successfully written.
+type ExportCompletedMsg struct {
+	Path     string
+	RowCount int
+}

@@ -22,5 +22,5 @@
 │├──────┴──────┴──────────────────┤                                              │
 ││1/1                             │                                              │
 │╰────────────────────────────────╯                                              │
-│              enter view row • / filter data • y copy row as json               │
+│      enter view row • / filter data • y copy row as json • ctrl+x export       │
 ╰────────────────────────────────────────────────────────────────────────────────╯
