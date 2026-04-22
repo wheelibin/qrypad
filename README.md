@@ -6,19 +6,20 @@ A terminal SQL client for Postgres, MySQL and SQLite.
 
 ## Features
 
-- Browse tables, views, columns, indexes and constraints
-- Postgres schema support — switch schemas on the fly
-- Switch between configured connections without restarting
-- Switch databases on the current connection (Postgres / MySQL)
 - Table / column autocomplete in the query pad
+- Run the statement under the cursor
 - Syntax highlighting
 - Filter tables, columns and result sets
 - View a snapshot of any table with a single keypress
-- Run the statement under the cursor
-- Save and reload a query pad per connection, or open it in `$EDITOR`
+- Browse tables, views, columns, indexes and constraints
+- Switch between configured connections without restarting
+- Switch databases on the current connection (Postgres / MySQL)
+- Postgres schema support — switch schemas on the fly
 - Inspect a full result row in a popup, with long values wrapped across lines
-- Passwords stored in the OS keychain
+- Save and reload a query pad per connection, or open it in `$EDITOR`
+- Export results to JSON or CSV
 - Configurable key bindings and themes
+- Passwords stored in the OS keychain
 
 <p align="center">
   <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" style="max-width:100%; height:auto;"/>
