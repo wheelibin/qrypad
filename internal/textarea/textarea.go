@@ -62,6 +62,12 @@ type KeyMap struct {
 
 	PageUp   key.Binding
 	PageDown key.Binding
+
+	// Undo and Redo are left unbound by default so the textarea package
+	// has no hard dependency on the application's keys package. Callers
+	// (e.g. QueryPanelModel) wire them explicitly after textarea.New().
+	Undo key.Binding
+	Redo key.Binding
 }
 
 // DefaultKeyMap is the default set of key bindings for navigating and acting
@@ -252,6 +258,12 @@ type Model struct {
 
 	// rune sanitizer for input.
 	rsan Sanitizer
+
+	// history tracks undo/redo snapshots. Initialised lazily by
+	// ensureHistory() on first mutation. Lazy because New() returns
+	// Model by value; binding a history to &m inside New would point
+	// at a soon-to-be-copied local.
+	history *history
 }
 
 // New creates a new model with default settings.
@@ -319,10 +331,40 @@ func DefaultStyles(isDark bool) (Style, Style) {
 	return focused, blurred
 }
 
-// SetValue sets the value of the text input.
+// SetValue sets the value of the text input and resets undo/redo history
+// so the newly-loaded buffer is the new baseline.
 func (m *Model) SetValue(s string) {
+	m.setValueInternal(s)
+	// Reset history to a clean baseline around the new value.
+	m.history = newHistory(m)
+}
+
+// ReplaceValue replaces the entire buffer contents as a single undoable
+// edit. Use this for programmatic replacements that the user should be
+// able to revert with Ctrl+Z (e.g. accepting an autocomplete suggestion),
+// in contrast to SetValue which resets history (used when the new value
+// is a fresh baseline from disk, $EDITOR, or a connection switch).
+func (m *Model) ReplaceValue(s string) {
+	m.ensureHistory()
+	m.history.recordPre(m, opOther)
+	m.setValueInternal(s)
+}
+
+// setValueInternal replaces the buffer contents without touching undo
+// history. Used both by SetValue (which then resets history) and by the
+// history restore path (which must preserve history).
+func (m *Model) setValueInternal(s string) {
 	m.Reset()
 	m.InsertString(s)
+}
+
+// ensureHistory initialises the undo/redo history lazily. Lazy because
+// New() returns Model by value; binding a history to &m inside New
+// would point at a soon-to-be-copied local.
+func (m *Model) ensureHistory() {
+	if m.history == nil {
+		m.history = newHistory(m)
+	}
 }
 
 // InsertString inserts a string at the cursor position.
@@ -968,10 +1010,20 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.PasteMsg:
+		m.ensureHistory()
+		m.history.recordPre(&m, opOther)
 		m.insertRunesFromUserInput([]rune(msg.Content))
 	case tea.KeyPressMsg:
+		// Hoisted: every branch below needs history initialised (either to
+		// call recordPre or to touch lastOp). Initialise once.
+		m.ensureHistory()
 		switch {
+		case key.Matches(msg, m.KeyMap.Undo):
+			m.history.undo(&m)
+		case key.Matches(msg, m.KeyMap.Redo):
+			m.history.redo(&m)
 		case key.Matches(msg, m.KeyMap.DeleteAfterCursor):
+			m.history.recordPre(&m, opOther)
 			m.Col = clamp(m.Col, 0, len(m.value[m.Row]))
 			if m.Col >= len(m.value[m.Row]) {
 				m.mergeLineBelow(m.Row)
@@ -979,6 +1031,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			m.deleteAfterCursor()
 		case key.Matches(msg, m.KeyMap.DeleteBeforeCursor):
+			m.history.recordPre(&m, opOther)
 			m.Col = clamp(m.Col, 0, len(m.value[m.Row]))
 			if m.Col <= 0 {
 				m.mergeLineAbove(m.Row)
@@ -986,6 +1039,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			m.deleteBeforeCursor()
 		case key.Matches(msg, m.KeyMap.DeleteCharacterBackward):
+			m.history.recordPre(&m, opDeleteChar)
 			m.Col = clamp(m.Col, 0, len(m.value[m.Row]))
 			if m.Col <= 0 {
 				m.mergeLineAbove(m.Row)
@@ -998,6 +1052,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				}
 			}
 		case key.Matches(msg, m.KeyMap.DeleteCharacterForward):
+			m.history.recordPre(&m, opDeleteChar)
 			if len(m.value[m.Row]) > 0 && m.Col < len(m.value[m.Row]) {
 				m.value[m.Row] = append(m.value[m.Row][:m.Col], m.value[m.Row][m.Col+1:]...)
 			}
@@ -1006,12 +1061,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				break
 			}
 		case key.Matches(msg, m.KeyMap.DeleteWordBackward):
+			m.history.recordPre(&m, opOther)
 			if m.Col <= 0 {
 				m.mergeLineAbove(m.Row)
 				break
 			}
 			m.deleteWordLeft()
 		case key.Matches(msg, m.KeyMap.DeleteWordForward):
+			m.history.recordPre(&m, opOther)
 			m.Col = clamp(m.Col, 0, len(m.value[m.Row]))
 			if m.Col >= len(m.value[m.Row]) {
 				m.mergeLineBelow(m.Row)
@@ -1019,51 +1076,77 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			m.deleteWordRight()
 		case key.Matches(msg, m.KeyMap.InsertNewline):
+			m.history.recordPre(&m, opOther)
 			if m.MaxHeight > 0 && len(m.value) >= m.MaxHeight {
 				return m, nil
 			}
 			m.Col = clamp(m.Col, 0, len(m.value[m.Row]))
 			m.splitLine(m.Row, m.Col)
 		case key.Matches(msg, m.KeyMap.LineEnd):
+			m.history.lastOp = opNone
 			m.CursorEnd()
 		case key.Matches(msg, m.KeyMap.LineStart):
+			m.history.lastOp = opNone
 			m.CursorStart()
 		case key.Matches(msg, m.KeyMap.CharacterForward):
+			m.history.lastOp = opNone
 			m.characterRight()
 		case key.Matches(msg, m.KeyMap.LineNext):
+			m.history.lastOp = opNone
 			m.CursorDown()
 		case key.Matches(msg, m.KeyMap.WordForward):
+			m.history.lastOp = opNone
 			m.wordRight()
 		case key.Matches(msg, m.KeyMap.Paste):
+			m.history.lastOp = opNone
 			return m, Paste
 		case key.Matches(msg, m.KeyMap.CharacterBackward):
+			m.history.lastOp = opNone
 			m.characterLeft(false /* insideLine */)
 		case key.Matches(msg, m.KeyMap.LinePrevious):
+			m.history.lastOp = opNone
 			m.CursorUp()
 		case key.Matches(msg, m.KeyMap.WordBackward):
+			m.history.lastOp = opNone
 			m.wordLeft()
 		case key.Matches(msg, m.KeyMap.InputBegin):
+			m.history.lastOp = opNone
 			m.moveToBegin()
 		case key.Matches(msg, m.KeyMap.InputEnd):
+			m.history.lastOp = opNone
 			m.moveToEnd()
 		case key.Matches(msg, m.KeyMap.LowercaseWordForward):
+			m.history.recordPre(&m, opOther)
 			m.lowercaseRight()
 		case key.Matches(msg, m.KeyMap.UppercaseWordForward):
+			m.history.recordPre(&m, opOther)
 			m.uppercaseRight()
 		case key.Matches(msg, m.KeyMap.CapitalizeWordForward):
+			m.history.recordPre(&m, opOther)
 			m.capitalizeRight()
 		case key.Matches(msg, m.KeyMap.TransposeCharacterBackward):
+			m.history.recordPre(&m, opOther)
 			m.transposeLeft()
 		case key.Matches(msg, m.KeyMap.PageUp):
+			m.history.lastOp = opNone
 			m.PageUp()
 		case key.Matches(msg, m.KeyMap.PageDown):
+			m.history.lastOp = opNone
 			m.PageDown()
 
 		default:
-			m.insertRunesFromUserInput([]rune(msg.Text))
+			runes := []rune(msg.Text)
+			op := opOther
+			if len(runes) == 1 && !isWhitespaceRune(runes[0]) {
+				op = opInsertChar
+			}
+			m.history.recordPre(&m, op)
+			m.insertRunesFromUserInput(runes)
 		}
 
 	case pasteMsg:
+		m.ensureHistory()
+		m.history.recordPre(&m, opOther)
 		m.insertRunesFromUserInput([]rune(msg))
 
 	case pasteErrMsg:
@@ -1437,4 +1520,55 @@ func clamp(v, low, high int) int {
 		low, high = high, low
 	}
 	return min(high, max(low, v))
+}
+
+// --- bufferState implementation for use by *history ---
+// Model satisfies bufferState in this package only. These helpers let
+// the history package mutate the buffer without going through SetValue
+// (which would reset history).
+
+// SetValueRaw is the bufferState counterpart of setValueInternal;
+// called only from history.restore.
+func (m *Model) SetValueRaw(s string) {
+	m.setValueInternal(s)
+}
+
+// CursorPos reports the current cursor position.
+func (m *Model) CursorPos() (row, col int) {
+	return m.Row, m.Col
+}
+
+// SetCursorPos places the cursor at (row, col), clamping col to the
+// length of the target row as a safety net.
+func (m *Model) SetCursorPos(row, col int) {
+	if row < 0 {
+		row = 0
+	}
+	if row >= len(m.value) {
+		row = len(m.value) - 1
+	}
+	m.Row = row
+	rowLen := len(m.value[m.Row])
+	if col < 0 {
+		col = 0
+	}
+	if col > rowLen {
+		col = rowLen
+	}
+	m.Col = col
+}
+
+// Compile-time assertion that *Model implements bufferState.
+var _ bufferState = (*Model)(nil)
+
+// isWhitespaceRune returns true for runes that should break a typing-run
+// coalesce. Newlines are normally handled by the InsertNewline case, but
+// we include them here as a safety net if any input sequence delivers one
+// through the default arm.
+func isWhitespaceRune(r rune) bool {
+	switch r {
+	case ' ', '\t', '\n', '\r':
+		return true
+	}
+	return false
 }

@@ -153,8 +153,9 @@ func replaceFuzzyPrefixInTextarea(t textarea.Model, selected string) textarea.Mo
 	newLine := line[:startCol] + selected + after
 	lines[targetRow] = newLine
 
-	// Set updated content
-	t.SetValue(strings.Join(lines, "\n"))
+	// ReplaceValue (not SetValue) so accepting an autocomplete suggestion
+	// remains undoable with Ctrl+Z.
+	t.ReplaceValue(strings.Join(lines, "\n"))
 
 	// Reset cursor row by navigating
 	for t.Row > targetRow {

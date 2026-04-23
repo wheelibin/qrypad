@@ -19,12 +19,14 @@ type keyMap struct {
 	PrevPanel        key.Binding
 	PrevTab          key.Binding
 	Quit             key.Binding
+	Redo             key.Binding
 	RefreshSchema    key.Binding
 	ReloadQuery      key.Binding
 	SaveQuery        key.Binding
 	SwitchDatabase   key.Binding
 	SwitchConnection key.Binding
 	ToggleLeftPanel  key.Binding
+	Undo             key.Binding
 	UpdatePassword   key.Binding
 	ViewData         key.Binding
 	ViewDataDesc     key.Binding
@@ -135,5 +137,13 @@ var DefaultKeyMap = keyMap{
 	ExportResults: key.NewBinding(
 		key.WithKeys("ctrl+x"),
 		key.WithHelp("ctrl+x", "export results"),
+	),
+	Undo: key.NewBinding(
+		key.WithKeys("ctrl+z"),
+		key.WithHelp("ctrl+z", "undo"),
+	),
+	Redo: key.NewBinding(
+		key.WithKeys("ctrl+y"),
+		key.WithHelp("ctrl+y", "redo"),
 	),
 }
