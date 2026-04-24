@@ -119,6 +119,8 @@ database = "db/orders.db"
 - `Ctrl+S` — save the query pad (per connection)
 - `Ctrl+R` — reload the saved query pad from disk
 - `Ctrl+E` — open the query pad in `$EDITOR`
+- `Ctrl+Z` — undo
+- `Ctrl+Y` — redo
 
 ### Results panel
 
@@ -144,12 +146,14 @@ NextTab          = ""
 OpenInEditor     = ""
 PrevPanel        = ""
 PrevTab          = ""
+Redo             = ""
 RefreshSchema    = ""
 ReloadQuery      = ""
 SaveQuery        = ""
 SwitchConnection = ""
 SwitchDatabase   = ""
 ToggleLeftPanel  = ""
+Undo             = ""
 UpdatePassword   = ""
 ViewData         = ""
 ViewDataDesc     = ""

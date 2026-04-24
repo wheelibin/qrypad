@@ -22,6 +22,7 @@ type queryPanelKeymap struct {
 	execute         key.Binding
 	openInEditor    key.Binding
 	saveReloadQuery key.Binding
+	undoRedo        key.Binding
 }
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
@@ -55,6 +56,8 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 	ta.BlurredStyle.CursorLine = lipgloss.NewStyle()
 	ta.BlurredStyle = ta.FocusedStyle
 	ta.ShowLineNumbers = false
+	ta.KeyMap.Undo = keys.DefaultKeyMap.Undo
+	ta.KeyMap.Redo = keys.DefaultKeyMap.Redo
 
 	ac := NewAutoCompletePopupModel()
 
@@ -82,6 +85,24 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 						keys.DefaultKeyMap.ReloadQuery.Help().Key,
 					),
 					"save/reload query",
+				),
+			),
+			undoRedo: key.NewBinding(
+				key.WithKeys(
+					fmt.Sprintf(
+						"%s/%s",
+						keys.DefaultKeyMap.Undo.Help().Key,
+						keys.DefaultKeyMap.Redo.Help().Key,
+					),
+					"undo/redo",
+				),
+				key.WithHelp(
+					fmt.Sprintf(
+						"%s/%s",
+						keys.DefaultKeyMap.Undo.Help().Key,
+						keys.DefaultKeyMap.Redo.Help().Key,
+					),
+					"undo/redo",
 				),
 			),
 		},
@@ -236,6 +257,7 @@ func (m QueryPanelModel) helpView() string {
 	km := []key.Binding{
 		m.keymap.execute,
 		m.keymap.openInEditor,
+		m.keymap.undoRedo,
 	}
 	if !m.autoSaveEnabled {
 		km = append(km, m.keymap.saveReloadQuery)
