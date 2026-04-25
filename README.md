@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/header.png" style="width:600px; height:auto;" />
+  <img src="assets/header.png" style="width:600px; height:auto;" />
 </p>
 
 A terminal SQL client for Postgres, MySQL and SQLite.
@@ -22,7 +22,7 @@ A terminal SQL client for Postgres, MySQL and SQLite.
 - Passwords stored in the OS keychain
 
 <p align="center">
-  <img src="https://github.com/wheelibin/qrypad/blob/main/ss.png" style="max-width:100%; height:auto;"/>
+  <img src="assets/ss.png" style="max-width:100%; height:auto;"/>
 </p>
 
 ## Installation
