@@ -22,27 +22,34 @@ import (
 //nolint:gochecknoglobals // performance cache - global by design
 var highlightCache = make(map[string]string)
 
-// HighlightText returns syntax-highlighted ANSI text for the given input.
-// Results are cached per unique input string.
-func HighlightText(txt string) string {
+func highlightANSI(txt, lexer, logName string) string {
 	if txt == "" {
 		return ""
 	}
 
+	themeName := theme.GetTheme().ThemeName
+	var sb strings.Builder
+
+	if err := quick.Highlight(&sb, txt, lexer, "terminal256", themeName); err != nil {
+		slog.Error("error highlighting "+logName, "error", err)
+		return txt
+	}
+
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// HighlightText returns syntax-highlighted ANSI text for the given input.
+// Results are cached per unique input string.
+func HighlightText(txt string) string {
 	if cached, ok := highlightCache[txt]; ok {
 		return cached
 	}
 
-	themeName := theme.GetTheme().ThemeName
-	var sb strings.Builder
-	err := quick.Highlight(&sb, txt, "sql", "terminal256", themeName)
-	if err != nil {
-		slog.Error("error highlighting text", "error", err)
-		return txt
+	result := highlightANSI(txt, "sql", "text")
+	if txt != "" {
+		highlightCache[txt] = result
 	}
 
-	result := strings.TrimRight(sb.String(), "\n")
-	highlightCache[txt] = result
 	return result
 }
 
@@ -50,6 +57,14 @@ func HighlightText(txt string) string {
 // Call this when the theme changes or as periodic cleanup.
 func ClearHighlightCache() {
 	highlightCache = make(map[string]string)
+}
+
+// HighlightJSON returns syntax-highlighted ANSI text for a JSON string.
+// Uses the current theme's registered Chroma style with the JSON lexer.
+// Background ANSI codes are stripped so the table's row-highlight background
+// is not overridden by Chroma's embedded escape sequences.
+func HighlightJSON(txt string) string {
+	return stripBackgroundANSI(highlightANSI(txt, "json", "JSON"))
 }
 
 // SplitStyledLine takes an ANSI-styled string and a character offset
@@ -184,6 +199,24 @@ func cutStyledLeft(s string, cutWidth int) string {
 		pos++
 	}
 	return b.String()
+}
+
+// bgPattern matches ANSI background-color escape sequences emitted by Chroma:
+//   - Standard backgrounds:   \x1b[4Xm  (X = 0–9, including 49 = default bg)
+//   - 256-color background:   \x1b[48;5;Nm
+//   - Truecolor background:   \x1b[48;2;R;G;Bm
+//
+// These are stripped from JSON-highlighted output so the table's row-highlight
+// background colour is not overridden by Chroma's embedded ANSI escapes.
+var bgPattern = regexp.MustCompile(`\x1b\[(?:4\d|48;5;\d+|48;2;\d+;\d+;\d+)m`)
+
+// stripBackgroundANSI removes background-color ANSI codes from s and converts
+// full resets (\x1b[0m) to foreground-only resets (\x1b[39m), so that an
+// outer background colour (e.g. a table row highlight) is not cleared.
+func stripBackgroundANSI(s string) string {
+	s = bgPattern.ReplaceAllString(s, "")
+	s = strings.ReplaceAll(s, "\x1b[0m", "\x1b[39m")
+	return s
 }
 
 // fgColorPattern matches ANSI 256-color and truecolor foreground escape sequences.

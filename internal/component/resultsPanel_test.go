@@ -12,7 +12,8 @@ func makeResultsPanelWithData() component.ResultsPanelModel {
 	m := component.NewResultsPanelModel()
 	m.SetSize(80, 20)
 	m.SetData(&db.Data{
-		Columns: []string{"id", "name"},
+		Columns:     []string{"id", "name"},
+		ColumnTypes: []string{"number", "string"},
 		Rows: []map[string]any{
 			{"id": 1, "name": "alice"},
 			{"id": 2, "name": "bob"},
@@ -56,6 +57,24 @@ func TestResultsPanel_GetExportRows_Empty(t *testing.T) {
 	rows := m.GetExportRows()
 	if len(rows) != 0 {
 		t.Fatalf("expected empty slice, got %d rows", len(rows))
+	}
+}
+
+func TestResultsPanel_GetExportRows_UnwrapsStyledCells(t *testing.T) {
+	m := makeResultsPanelWithData()
+	rows := m.GetExportRows()
+	if len(rows) != 2 {
+		t.Fatalf("len(rows) = %d, want 2", len(rows))
+	}
+	// Values should be unwrapped plain data, not StyledCell structs.
+	// After unwrapping, the original int/string values should be intact.
+	id, ok := rows[0]["id"]
+	if !ok {
+		t.Fatal("missing 'id' key in rows[0]")
+	}
+	// The original value was int 1 — verify it's still an int, not a StyledCell
+	if _, ok := id.(int); !ok {
+		t.Errorf("rows[0][\"id\"] type = %T, want int", id)
 	}
 }
 

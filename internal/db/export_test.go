@@ -2,7 +2,10 @@ package db
 
 // Exported wrappers for unexported functions and types, used only in tests.
 
-var TruncateToSize = truncateToSize //nolint:gochecknoglobals
+var (
+	TruncateToSize      = truncateToSize      //nolint:gochecknoglobals
+	NormalizeColumnType = normalizeColumnType //nolint:gochecknoglobals
+)
 
 // Test-only exports of private SQL builders on driver provider types.
 // These let external tests (package db_test) assert on the generated SQL

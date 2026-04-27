@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/help"
@@ -118,13 +119,20 @@ func (m ResultRowPopupModel) GetSelectedValue() string {
 	if !ok {
 		return ""
 	}
+	// Unwrap StyledCell if present
+	if sc, ok := val.(table.StyledCell); ok {
+		if jc, ok := sc.Data.(jsonCellData); ok {
+			return jc.Raw
+		}
+		val = sc.Data
+	}
 	if s, ok := val.(string); ok {
 		return s
 	}
 	return fmt.Sprintf("%v", val)
 }
 
-func (m *ResultRowPopupModel) SetData(data map[string]any) {
+func (m *ResultRowPopupModel) SetData(data map[string]any, columns []string, columnTypes []string) {
 	if data == nil {
 		return
 	}
@@ -135,7 +143,29 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 	}
 	rows := []table.Row{}
 
-	for k, v := range data {
+	// Build a column-name-to-type lookup
+	typeMap := make(map[string]string, len(columns))
+	for i, col := range columns {
+		if i < len(columnTypes) {
+			typeMap[col] = columnTypes[i]
+		}
+	}
+
+	// Use the provided column order; fall back to sorted keys when unavailable
+	// (e.g. table info panel, which passes nil columns).
+	keys := columns
+	if len(keys) == 0 {
+		for k := range data {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+	}
+
+	for _, k := range keys {
+		v, ok := data[k]
+		if !ok {
+			continue
+		}
 		val := fmt.Sprintf("%v", v)
 		// Pre-truncate long single-line values so word-wrap cannot create
 		// more than maxRowLines lines regardless of column width.
@@ -147,12 +177,25 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 			val = string([]rune(val)[:maxChars]) + "…"
 		}
 		val = clampToLines(val, maxRowLines)
-		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": val}})
+
+		// Determine style for value cell
+		category := typeMap[k]
+		var styledValue any
+		switch {
+		case fmt.Sprintf("%v", v) == "NULL":
+			styledValue = table.NewStyledCell(val, style.NullStyle())
+		case category == "json":
+			highlighted := style.HighlightJSON(val)
+			styledValue = table.NewStyledCell(jsonCellData{Raw: val, highlighted: highlighted}, style.JSONBaseStyle())
+		default:
+			styledValue = table.NewStyledCell(val, style.ResultCellStyle(category))
+		}
+
+		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": styledValue}})
 	}
 
 	m.table = m.table.WithRows(rows)
 	m.table = m.table.WithColumns(cols)
-	m.table = m.table.SortByAsc("field")
 }
 
 func (m *ResultRowPopupModel) SetSize(w, h int) {

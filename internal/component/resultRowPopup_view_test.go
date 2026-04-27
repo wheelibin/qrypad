@@ -16,7 +16,7 @@ func TestResultRowPopupView(t *testing.T) {
 			"id":    "1",
 			"name":  "Alice",
 			"email": "alice@example.com",
-		})
+		}, []string{"id", "name", "email"}, nil)
 		assertGolden(t, "ResultRowPopup_basic", m.View())
 	})
 
@@ -26,7 +26,7 @@ func TestResultRowPopupView(t *testing.T) {
 		m.SetData(map[string]any{
 			"id":   "42",
 			"data": `{"user":{"name":"Alice","email":"alice@example.com","role":"admin","preferences":{"theme":"dark","language":"en","notifications":true}}}`,
-		})
+		}, []string{"id", "data"}, nil)
 		assertGolden(t, "ResultRowPopup_multiline", m.View())
 	})
 }

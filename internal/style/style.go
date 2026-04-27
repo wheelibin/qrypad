@@ -87,3 +87,46 @@ func WindowTooSmall(w, h int) lipgloss.Style {
 		Align(lipgloss.Center, lipgloss.Center).
 		Foreground(theme.GetTheme().Error.FG)
 }
+
+// ResultCellStyle returns a lipgloss.Style with the foreground color for the
+// given abstract type category. Used by the results panel and row detail popup
+// to color-code cell values by their database column type.
+func ResultCellStyle(category string) lipgloss.Style {
+	t := theme.GetTheme()
+	var fg color.Color
+	switch category {
+	case "number":
+		fg = t.SyntaxNumber.FG
+	case "string":
+		fg = t.SyntaxString.FG
+	case "boolean":
+		fg = t.SyntaxKeyword.FG
+	case "datetime":
+		fg = t.SyntaxLiteral.FG
+	case "binary":
+		fg = t.SyntaxComment.FG
+	default:
+		fg = t.Text.FG
+	}
+	if fg == nil {
+		fg = t.Text.FG
+	}
+	return lipgloss.NewStyle().Foreground(fg)
+}
+
+// NullStyle returns the style used for SQL NULL values in the results grid.
+func NullStyle() lipgloss.Style {
+	t := theme.GetTheme()
+	fg := t.SyntaxComment.FG
+	if fg == nil {
+		fg = t.Text.FG
+	}
+	return lipgloss.NewStyle().Foreground(fg)
+}
+
+// JSONBaseStyle returns a minimal style for JSON cells that have been
+// pre-highlighted by Chroma. It deliberately does NOT set a foreground color
+// so that Chroma's embedded ANSI escapes are preserved.
+func JSONBaseStyle() lipgloss.Style {
+	return lipgloss.NewStyle()
+}

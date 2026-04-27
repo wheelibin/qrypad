@@ -378,12 +378,18 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			}
 		case PanelIndexResults:
 			if !m.popupIsActive(PopupKind.ResultRow) {
-				m.resultRowPopup.SetData(m.resultsPanel.GetSelectedRow())
+				m.resultRowPopup.SetData(
+					m.resultsPanel.GetSelectedRow(),
+					m.resultsPanel.GetColumns(),
+					m.resultsPanel.GetColumnTypes(),
+				)
 				m.showPopup(PopupKind.ResultRow)
 			}
 		case PanelIndexTableInfo:
 			if !m.popupIsActive(PopupKind.ResultRow) {
-				m.resultRowPopup.SetData(m.tableInfoPanel.GetSelectedRow())
+				row := m.tableInfoPanel.GetSelectedRow()
+				// Table info panel has no column types — pass nil
+				m.resultRowPopup.SetData(row, nil, nil)
 				m.showPopup(PopupKind.ResultRow)
 			}
 		}

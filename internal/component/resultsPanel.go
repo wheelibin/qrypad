@@ -32,6 +32,7 @@ type ResultsPanelModel struct {
 	height        int
 	table         table.Model
 	columns       []string
+	columnTypes   []string
 	lastQueryTime time.Duration
 	help          help.Model
 	keymap        resultsPanelKeymap
@@ -87,6 +88,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 	}
 
 	m.columns = append([]string(nil), data.Columns...)
+	m.columnTypes = append([]string(nil), data.ColumnTypes...)
 
 	cols := []table.Column{}
 	rows := []table.Row{}
@@ -97,7 +99,26 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 		cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
-		rows = append(rows, table.Row{Data: row})
+		styledRow := make(map[string]any, len(row))
+		for colIdx, colName := range data.Columns {
+			val := row[colName]
+			valStr := fmt.Sprintf("%v", val)
+			category := "unknown"
+			if colIdx < len(data.ColumnTypes) {
+				category = data.ColumnTypes[colIdx]
+			}
+
+			switch {
+			case valStr == "NULL":
+				styledRow[colName] = table.NewStyledCell(val, style.NullStyle())
+			case category == "json":
+				highlighted := style.HighlightJSON(valStr)
+				styledRow[colName] = table.NewStyledCell(jsonCellData{Raw: valStr, highlighted: highlighted}, style.JSONBaseStyle())
+			default:
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle(category))
+			}
+		}
+		rows = append(rows, table.Row{Data: styledRow})
 	}
 
 	m.table = newTable(cols).WithRows(rows)
@@ -121,12 +142,48 @@ func (m *ResultsPanelModel) SetActive(active bool) {
 	m.active = active
 }
 
+// jsonCellData holds a pre-highlighted JSON string for display while keeping
+// the raw JSON string for copy/export operations.
+//
+// bubble-table renders StyledCell.Data via fmt.Sprintf("%v", data), so
+// implementing fmt.Stringer here causes the highlighted string to be shown in
+// the table, while Raw is returned by unwrapCellData for data consumers.
+type jsonCellData struct {
+	Raw         string
+	highlighted string
+}
+
+func (j jsonCellData) String() string { return j.highlighted }
+
+// unwrapCellData extracts the underlying data from a StyledCell, or returns
+// the value as-is if it is not a StyledCell. Used by export/copy/popup
+// functions that need plain values without styling.
+func unwrapCellData(v any) any {
+	if sc, ok := v.(table.StyledCell); ok {
+		if jc, ok := sc.Data.(jsonCellData); ok {
+			return jc.Raw
+		}
+		return sc.Data
+	}
+	return v
+}
+
 func (m ResultsPanelModel) GetSelectedRow() map[string]any {
-	return m.table.HighlightedRow().Data
+	raw := m.table.HighlightedRow().Data
+	out := make(map[string]any, len(raw))
+	for k, v := range raw {
+		out[k] = unwrapCellData(v)
+	}
+	return out
 }
 
 func (m ResultsPanelModel) GetSelectedRowJSON() string {
-	j, err := json.Marshal(m.table.HighlightedRow().Data)
+	raw := m.table.HighlightedRow().Data
+	plain := make(map[string]any, len(raw))
+	for k, v := range raw {
+		plain[k] = unwrapCellData(v)
+	}
+	j, err := json.Marshal(plain)
 	if err != nil {
 		slog.Error("error converting row to json", "error", err)
 	}
@@ -139,6 +196,11 @@ func (m ResultsPanelModel) GetColumns() []string {
 	return append([]string(nil), m.columns...)
 }
 
+// GetColumnTypes returns the column type categories from the most recent SetData call.
+func (m ResultsPanelModel) GetColumnTypes() []string {
+	return append([]string(nil), m.columnTypes...)
+}
+
 // GetExportRows returns the rows currently visible in the table, honouring
 // any active filter and sort order. When no filter is active this is the
 // full result set in its current display order.
@@ -146,7 +208,11 @@ func (m ResultsPanelModel) GetExportRows() []map[string]any {
 	src := m.table.GetVisibleRows()
 	out := make([]map[string]any, 0, len(src))
 	for _, r := range src {
-		out = append(out, r.Data)
+		plain := make(map[string]any, len(r.Data))
+		for k, v := range r.Data {
+			plain[k] = unwrapCellData(v)
+		}
+		out = append(out, plain)
 	}
 	return out
 }
