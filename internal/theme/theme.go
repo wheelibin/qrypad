@@ -82,6 +82,14 @@ type Theme struct {
 	Text                    *TC    `json:"text,omitempty"                    mapstructure:"text,omitempty"`
 	TitleBar                *TC    `json:"titleBar,omitempty"                mapstructure:"titleBar,omitempty"`
 	TitleBarAlt             *TC    `json:"titleBarAlt,omitempty"             mapstructure:"titleBarAlt,omitempty"`
+	SyntaxKeyword           *TC    `json:"syntaxKeyword,omitempty"           mapstructure:"syntaxKeyword,omitempty"`
+	SyntaxString            *TC    `json:"syntaxString,omitempty"            mapstructure:"syntaxString,omitempty"`
+	SyntaxNumber            *TC    `json:"syntaxNumber,omitempty"            mapstructure:"syntaxNumber,omitempty"`
+	SyntaxComment           *TC    `json:"syntaxComment,omitempty"           mapstructure:"syntaxComment,omitempty"`
+	SyntaxOperator          *TC    `json:"syntaxOperator,omitempty"          mapstructure:"syntaxOperator,omitempty"`
+	SyntaxName              *TC    `json:"syntaxName,omitempty"              mapstructure:"syntaxName,omitempty"`
+	SyntaxLiteral           *TC    `json:"syntaxLiteral,omitempty"           mapstructure:"syntaxLiteral,omitempty"`
+	SyntaxPunctuation       *TC    `json:"syntaxPunctuation,omitempty"       mapstructure:"syntaxPunctuation,omitempty"`
 }
 
 func BlankTheme() Theme {
@@ -106,6 +114,14 @@ func BlankTheme() Theme {
 		Text:                    &TC{},
 		TitleBar:                &TC{},
 		TitleBarAlt:             &TC{},
+		SyntaxKeyword:           &TC{},
+		SyntaxString:            &TC{},
+		SyntaxNumber:            &TC{},
+		SyntaxComment:           &TC{},
+		SyntaxOperator:          &TC{},
+		SyntaxName:              &TC{},
+		SyntaxLiteral:           &TC{},
+		SyntaxPunctuation:       &TC{},
 	}
 }
 
@@ -174,19 +190,43 @@ func colorStr(c color.Color) string {
 	return fmt.Sprintf("#%02X%02X%02X", r>>8, g>>8, b>>8)
 }
 
+// syntaxColor returns the foreground color string for a syntax token,
+// preferring the dedicated syntax field if set, otherwise falling back.
+func syntaxColor(syntax *TC, fallback color.Color) string {
+	if syntax != nil && syntax.FG != nil {
+		return colorStr(syntax.FG)
+	}
+	return colorStr(fallback)
+}
+
 // registerChromaStyle builds and registers a chroma style using the
-// theme colors, if the theme doesn't already exist
+// theme colors, if the theme doesn't already exist.
+// Dedicated syntax* fields are preferred; UI element colors are used as fallbacks.
 func registerChromaStyle() {
 	if _, found := styles.Registry[theme.ThemeName]; !found {
+		// Build comment style: use syntaxComment if available, otherwise fall back to panelTitle
+		commentFG := syntaxColor(theme.SyntaxComment, theme.PanelTitle.FG)
+		commentStyle := commentFG
+		if theme.SyntaxComment != nil && theme.SyntaxComment.BG != nil {
+			commentStyle = fmt.Sprintf("%s bg:%s", commentFG, colorStr(theme.SyntaxComment.BG))
+		} else if theme.SyntaxComment == nil || theme.SyntaxComment.FG == nil {
+			// Legacy fallback: italic with panelTitle bg
+			commentStyle = fmt.Sprintf("italic %s bg:%s", colorStr(theme.PanelTitle.FG), colorStr(theme.PanelTitle.BG))
+		}
+
+		// Build keyword style: bold unless syntaxKeyword explicitly set (still bold)
+		keywordFG := syntaxColor(theme.SyntaxKeyword, theme.BorderActive.FG)
+		keywordStyle := fmt.Sprintf("bold %s", keywordFG)
+
 		styles.Register(chroma.MustNewStyle(theme.ThemeName, chroma.StyleEntries{
-			chroma.Literal:     colorStr(theme.Text.FG),
-			chroma.Name:        colorStr(theme.Text.FG),
-			chroma.Comment:     fmt.Sprintf("italic %s bg:%s", colorStr(theme.PanelTitle.FG), colorStr(theme.PanelTitle.BG)),
-			chroma.Keyword:     fmt.Sprintf("bold %s", colorStr(theme.BorderActive.FG)),
-			chroma.Operator:    colorStr(theme.Text.FG),
-			chroma.String:      colorStr(theme.DatabaseSwitcherPopup.BG),
-			chroma.Number:      colorStr(theme.HelpPopup.BG),
-			chroma.Punctuation: colorStr(theme.Text.FG),
+			chroma.Literal:     syntaxColor(theme.SyntaxLiteral, theme.Text.FG),
+			chroma.Name:        syntaxColor(theme.SyntaxName, theme.Text.FG),
+			chroma.Comment:     commentStyle,
+			chroma.Keyword:     keywordStyle,
+			chroma.Operator:    syntaxColor(theme.SyntaxOperator, theme.Text.FG),
+			chroma.String:      syntaxColor(theme.SyntaxString, theme.DatabaseSwitcherPopup.BG),
+			chroma.Number:      syntaxColor(theme.SyntaxNumber, theme.HelpPopup.BG),
+			chroma.Punctuation: syntaxColor(theme.SyntaxPunctuation, theme.Text.FG),
 		}))
 	}
 }

@@ -17,5 +17,13 @@
   "tableHeader": { "fg":"#cdd6f4"},
   "text": {"fg":"#bac2de" },
   "titleBar":{"bg":"#45475a", "fg":"#74c7ec"},
-  "titleBarAlt":{"fg":"#bac2de"}
+  "titleBarAlt":{"fg":"#bac2de"},
+  "syntaxKeyword": {"fg": "#cba6f7"},
+  "syntaxString": {"fg": "#a6e3a1"},
+  "syntaxNumber": {"fg": "#fab387"},
+  "syntaxComment": {"fg": "#6c7086"},
+  "syntaxOperator": {"fg": "#89dceb"},
+  "syntaxName": {"fg": "#89b4fa"},
+  "syntaxLiteral": {"fg": "#fab387"},
+  "syntaxPunctuation": {"fg": "#9399b2"}
 }
