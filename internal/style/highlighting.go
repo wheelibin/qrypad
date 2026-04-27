@@ -30,7 +30,7 @@ func highlightANSI(txt, lexer, logName string) string {
 	themeName := theme.GetTheme().ThemeName
 	var sb strings.Builder
 
-	if err := quick.Highlight(&sb, txt, lexer, "terminal256", themeName); err != nil {
+	if err := quick.Highlight(&sb, txt, lexer, "terminal16m", themeName); err != nil {
 		slog.Error("error highlighting "+logName, "error", err)
 		return txt
 	}
@@ -228,8 +228,8 @@ var fgColorPattern = regexp.MustCompile(`\x1b\[38;(?:5;(\d+)|2;(\d+);(\d+);(\d+)
 // (such as the output of ExtractStyledChar) and returns it as a color.Color.
 // Returns nil if no foreground color escape is found.
 //
-// Supports Chroma's terminal256 output (\x1b[38;5;Nm) and truecolor
-// (\x1b[38;2;R;G;Bm). This is used to read the syntax-highlight colour for a
+// Supports Chroma's terminal16m truecolor output (\x1b[38;2;R;G;Bm) and
+// terminal256 (\x1b[38;5;Nm). This is used to read the syntax-highlight colour for a
 // character so it can be applied to the cursor block rendering.
 func ParseFgColor(styled string) color.Color {
 	m := fgColorPattern.FindStringSubmatch(styled)
