@@ -197,11 +197,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
+	if m.connectionName == "" && !m.hasActivePopup() {
+		// if no connection then show connection switcher (once only)
+		m.connectionSwitcherPopup.SetIsFirstConnection(true)
+		m.showPopup(PopupKind.ConnectionSwitcher)
+		cmds = append(cmds, commands.GetConnectionList())
+	}
+
 	// update this now so the query text value is updated and can be used below
 	if !m.hasActivePopup() {
 		m.queryPanel, cmd = m.queryPanel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
+
+	// Dispatch to handlers — each handler does its own type switch and returns
+	// nil for messages it doesn't own, so new message types only need to be
+	// added in the relevant handler, not here.
+	cmds = append(cmds, m.handleDBMessages(msg))
+	cmds = append(cmds, m.handleErrorMessages(msg))
+	cmds = append(cmds, m.handleCommandMessages(msg))
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -211,40 +225,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.FocusMsg:
 		m.setPanelsActiveState(m.activePanelIndex)
+
 	case tea.BlurMsg:
 		m.setPanelsActiveState(-1)
-
-	case db.AutoCompleteDataFetchedMsg,
-		db.DataFetchedMsg,
-		db.DatabaseConnectedMsg,
-		db.DatabaseListFetchedMsg,
-		db.ConnectionListFetchedMsg,
-		db.SchemaEntitiesFetchedMsg,
-		db.TableInfoDataFetchedMsg,
-		db.QueryControlMsg:
-		cmds = append(cmds, m.handleDBMessages(msg))
-
-	case commands.DatabaseConnectError,
-		commands.ErrMsg:
-		cmds = append(cmds, m.handleErrorMessages(msg))
-
-	case commands.ActivePanelChangedMsg,
-		commands.CopyValueMsg,
-		commands.DatabaseSelectedMsg,
-		commands.ConnectionSelectedMsg,
-		commands.PasswordEnteredMsg,
-		commands.PasswordInputNeededMsg,
-		commands.PopupClosedMsg,
-		commands.PasswordSavedMsg,
-		commands.TableInfoTabChangedMsg,
-		commands.TablePanelTabChangedMsg,
-		commands.TableSelectedMsg,
-		commands.QueryFileReadMsg,
-		commands.LoadingMsg,
-		commands.CancelQueryMsg,
-		commands.ExportRequestedMsg,
-		commands.ExportCompletedMsg:
-		cmds = append(cmds, m.handleCommandMessages(msg))
 
 	case tea.MouseClickMsg:
 		cmds = append(cmds, m.handleMouseMessages(msg))

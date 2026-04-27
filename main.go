@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,19 +38,33 @@ func main() {
 		exitWithError("error unmarshalling config\n(for config format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", err)
 	}
 
-	if len(os.Args[1:]) == 0 {
+	connectionFlag := flag.String(
+		"connection",
+		"",
+		"The name of a database connection defined in your config",
+	)
+
+	flag.Usage = func() {
 		_, _ = fmt.Fprintf(
 			os.Stderr,
-			"\nUsage:  qrypad [connection]\n\n%s\n\n    [connection]  The name of a database connection defined in your config\n\n",
+			"\nUsage:  qrypad\n        qrypad --connection <connection>\n\n%s\n\n    --connection  The name of a database connection defined in your config\n                  If omitted, you will be prompted to choose a connection on startup.\n\n",
 			constants.AppDesc,
 		)
-		os.Exit(1)
 	}
+	flag.Parse()
 
-	connectionName := os.Args[1]
-	conn, ok := conns[connectionName]
-	if !ok {
-		exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
+	var (
+		connectionName string
+		conn           db.ConnectionConfig
+		connFound      bool
+	)
+
+	if connectionFlag != nil && *connectionFlag != "" {
+		connectionName = *connectionFlag
+		conn, connFound = conns[connectionName]
+		if !connFound {
+			exitWithError("no config found for the specified database\n(see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", nil)
+		}
 	}
 
 	dir, err := commands.GetOutputDir()

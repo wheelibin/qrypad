@@ -50,6 +50,9 @@ func SavePassword(connectionName, pass string) tea.Cmd {
 }
 
 func ConnectToDB(connectionName string, dbConfig db.ConnectionConfig) tea.Cmd {
+	if connectionName == "" {
+		return nil
+	}
 	return tea.Sequence(SetLoading(true), func() tea.Msg {
 		var pass string
 		if dbConfig.Driver != db.DriverName.SQLite {
@@ -277,6 +280,14 @@ func ClosePopup() tea.Cmd {
 	}
 }
 
+// QuitNoConnection is sent when the user closes the connection switcher on
+// first launch without choosing a connection.
+func QuitNoConnection() tea.Cmd {
+	return func() tea.Msg {
+		return NoConnectionChosenMsg{}
+	}
+}
+
 func CopyValue(value string, valueDesc string) tea.Cmd {
 	return func() tea.Msg {
 		return CopyValueMsg{Value: value, ValueDesc: valueDesc}
@@ -325,7 +336,10 @@ func SaveQueryFileToDisk(connectionName, contents string) error {
 		return err
 	}
 	filename := filepath.Join(dir, fmt.Sprintf("%s.sql", connectionName))
-	return os.WriteFile(filename, []byte(contents), 0o600)
+	if err := os.WriteFile(filename, []byte(contents), 0o600); err != nil {
+		return fmt.Errorf("writing query file %s: %w", filename, err)
+	}
+	return nil
 }
 
 // SaveQueryFile returns a tea.Cmd that writes contents to <outputDir>/<connectionName>.sql.

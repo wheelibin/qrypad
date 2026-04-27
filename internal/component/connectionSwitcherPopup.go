@@ -22,13 +22,14 @@ type connSwitcherKeymap struct {
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
 type ConnectionSwitcherPopupModel struct {
-	width   int
-	height  int
-	loading bool
-	spinner spinner.Model
-	table   table.Model
-	keymap  connSwitcherKeymap
-	help    help.Model
+	width             int
+	height            int
+	loading           bool
+	spinner           spinner.Model
+	table             table.Model
+	keymap            connSwitcherKeymap
+	help              help.Model
+	isFirstConnection bool
 }
 
 func NewConnectionSwitcherPopupModel() ConnectionSwitcherPopupModel {
@@ -88,7 +89,11 @@ func (m ConnectionSwitcherPopupModel) Update(msg tea.Msg) (ConnectionSwitcherPop
 			cmds = append(cmds, cmd)
 
 		case key.Matches(msg, m.keymap.cancel):
-			cmd = commands.ClosePopup()
+			if m.isFirstConnection {
+				cmd = commands.QuitNoConnection()
+			} else {
+				cmd = commands.ClosePopup()
+			}
 			cmds = append(cmds, cmd)
 		}
 	}
@@ -103,6 +108,10 @@ func (m ConnectionSwitcherPopupModel) Update(msg tea.Msg) (ConnectionSwitcherPop
 
 func (m *ConnectionSwitcherPopupModel) SetLoading(loading bool) {
 	m.loading = loading
+}
+
+func (m *ConnectionSwitcherPopupModel) SetIsFirstConnection(v bool) {
+	m.isFirstConnection = v
 }
 
 func (m ConnectionSwitcherPopupModel) GetSelectedConnection() string {
@@ -155,11 +164,15 @@ func (m ConnectionSwitcherPopupModel) View() string {
 		content = m.spinner.View()
 	}
 
+	text := "switch connection"
+	if m.isFirstConnection {
+		text = "choose connection"
+	}
 	title := style.Title(m.width-2, false).
 		Background(theme.GetTheme().ConnectionSwitcherPopup.BG).
 		Foreground(theme.GetTheme().ConnectionSwitcherPopup.FG).
 		Align(lipgloss.Center).
-		Render("switch connection")
+		Render(text)
 
 	return panelStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
 		title,

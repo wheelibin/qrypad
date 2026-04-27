@@ -18,6 +18,10 @@ import (
 
 const maxRowLines = 5
 
+// fallbackCharsPerLine is used as a fallback column width when the popup
+// width has not yet been set (i.e. width == 0).
+const fallbackCharsPerLine = 200
+
 // clampToLines returns s with at most n newline-separated lines.
 // If s has more than n lines, the excess is removed and "…" is appended.
 func clampToLines(s string, n int) string {
@@ -137,7 +141,7 @@ func (m *ResultRowPopupModel) SetData(data map[string]any) {
 		// more than maxRowLines lines regardless of column width.
 		maxChars := m.width * maxRowLines
 		if maxChars <= 0 {
-			maxChars = 200 * maxRowLines // fallback when width not yet set
+			maxChars = fallbackCharsPerLine * maxRowLines // fallback when width not yet set
 		}
 		if runeCount := len([]rune(val)); runeCount > maxChars {
 			val = string([]rune(val)[:maxChars]) + "…"

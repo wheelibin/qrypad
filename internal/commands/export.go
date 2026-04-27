@@ -59,7 +59,11 @@ func marshalJSON(rows []map[string]any) ([]byte, error) {
 	if rows == nil {
 		return []byte("[]"), nil
 	}
-	return json.Marshal(rows)
+	data, err := json.Marshal(rows)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling rows to JSON: %w", err)
+	}
+	return data, nil
 }
 
 func marshalCSV(rows []map[string]any, columns []string) ([]byte, error) {
@@ -67,7 +71,7 @@ func marshalCSV(rows []map[string]any, columns []string) ([]byte, error) {
 	w := csv.NewWriter(&buf)
 
 	if err := w.Write(columns); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("writing CSV header: %w", err)
 	}
 	for _, row := range rows {
 		record := make([]string, len(columns))
@@ -75,12 +79,12 @@ func marshalCSV(rows []map[string]any, columns []string) ([]byte, error) {
 			record[i] = csvCell(row[col])
 		}
 		if err := w.Write(record); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("writing CSV record: %w", err)
 		}
 	}
 	w.Flush()
 	if err := w.Error(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("flushing CSV writer: %w", err)
 	}
 	return buf.Bytes(), nil
 }

@@ -40,10 +40,13 @@ go install github.com/wheelibin/qrypad@latest
 ## Usage
 
 ```
-qrypad [connection name]
+qrypad
+qrypad --connection <connection name>
 ```
 
-`[connection name]` must match an entry in the config file. If the connection requires a password you will be prompted on first use; it is then stored in the OS keychain.
+`--connection` must match an entry in the config file. If omitted, you will be prompted to choose a connection on startup.
+
+If the connection requires a password you will be prompted on first use; it is then stored in the OS keychain.
 
 You can also switch connections from inside the app with `Ctrl+K`.
 

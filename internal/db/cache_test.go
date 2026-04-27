@@ -86,13 +86,13 @@ func TestSchemaCache_DifferentKindsStoredSeparately(t *testing.T) {
 	}
 }
 
-func TestSchemaCache_ConcurrentAccess(t *testing.T) {
+func TestSchemaCache_ConcurrentAccess(_ *testing.T) {
 	c := db.NewSchemaCache()
 	ref := db.TableReference{Name: "events"}
 	data := &db.Data{Columns: []string{"id"}}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
