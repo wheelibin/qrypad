@@ -8,9 +8,10 @@ import (
 )
 
 type Data struct {
-	Columns   []string
-	Rows      []map[string]any
-	QueryTime time.Duration
+	Columns     []string
+	ColumnTypes []string // abstract type category per column: "number", "string", "boolean", "json", "datetime", "binary", "unknown"
+	Rows        []map[string]any
+	QueryTime   time.Duration
 }
 
 type (

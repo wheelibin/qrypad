@@ -71,7 +71,7 @@ func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, dbCon
 
 		// One-part prefix: try alias/table map for column completion
 		if prefix != "" {
-			aliasMap := getAliasTableMap(sql)
+			aliasMap := GetAliasTableMap(sql)
 			if tableName, ok := aliasMap[strings.ToLower(prefix)]; ok {
 				return CompletionResult{
 					Kind:     CompletionColumn,
@@ -83,7 +83,7 @@ func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, dbCon
 	}
 
 	// Table completion: cursor is after a table keyword (FROM, JOIN, INTO, UPDATE)
-	textBeforeWord := getTextBeforeWord(sql, wordAtCursor)
+	textBeforeWord := GetTextBeforeWord(sql, wordAtCursor)
 	if tableKeywordPattern.MatchString(textBeforeWord) {
 		items := filterRefInserts(allRefs, wordAtCursor, dbConn)
 		if len(items) > 0 {
@@ -110,8 +110,8 @@ func GetCompletionsForced(sql, wordAtCursor string, allRefs []db.TableReference,
 	return CompletionResult{Kind: CompletionNone}
 }
 
-// getTextBeforeWord returns the SQL text up to (but not including) the wordAtCursor.
-func getTextBeforeWord(sql, word string) string {
+// GetTextBeforeWord returns the SQL text up to (but not including) the wordAtCursor.
+func GetTextBeforeWord(sql, word string) string {
 	if word == "" {
 		return sql
 	}
@@ -122,7 +122,7 @@ func getTextBeforeWord(sql, word string) string {
 	return sql[:idx]
 }
 
-func getAliasTableMap(sql string) map[string]string {
+func GetAliasTableMap(sql string) map[string]string {
 	aliasMap := make(map[string]string)
 	matches := tableRefPattern.FindAllStringSubmatch(sql, -1)
 	for _, match := range matches {

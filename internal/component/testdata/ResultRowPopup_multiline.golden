@@ -1,11 +1,11 @@
 ╭────────────────────────────────────────────────────────────╮
 │                       record details                       │
 │╭───────────────┬──────────────────────────────────────────╮│
+││id             │42                                        ││
 ││data           │{"user":{"name":"Alice","email":"alice@exa││
 ││               │mple.com","role":"admin","preferences":{"t││
 ││               │heme":"dark","language":"en","notification││
 ││               │s":true}}}                                ││
-││id             │42                                        ││
 ││               │                                          ││
 ││               │                                          ││
 ││               │                                          ││

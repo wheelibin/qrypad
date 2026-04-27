@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const columnTypeUnknown = "unknown"
+
 type Table struct {
 	Name     string
 	RowCount int
@@ -150,13 +152,25 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 		return nil, fmt.Errorf("error getting columns: %w", err)
 	}
 
+	// Extract column types for result cell styling
+	columnTypes := make([]string, len(columns))
+	if cts, err := rows.ColumnTypes(); err == nil {
+		for i, ct := range cts {
+			columnTypes[i] = normalizeColumnType(ct.DatabaseTypeName())
+		}
+	} else {
+		for i := range columns {
+			columnTypes[i] = columnTypeUnknown
+		}
+	}
+
 	values := make([]sql.RawBytes, len(columns))
 	scanArgs := make([]any, len(values))
 	for i := range values {
 		scanArgs[i] = &values[i]
 	}
 
-	data := &Data{Columns: columns, Rows: []map[string]any{}}
+	data := &Data{Columns: columns, ColumnTypes: columnTypes, Rows: []map[string]any{}}
 	for rows.Next() {
 		err = rows.Scan(scanArgs...)
 		if err != nil {
@@ -215,7 +229,8 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 			return nil, fmt.Errorf("error getting last insert ID: %w", err)
 		}
 		return &Data{
-			Columns: []string{"Rows Affected", "Last Inserted ID"},
+			Columns:     []string{"Rows Affected", "Last Inserted ID"},
+			ColumnTypes: []string{"number", "number"},
 			Rows: []map[string]any{{
 				"Rows Affected":    rowsAffected,
 				"Last Inserted ID": lastInsertID,
@@ -225,7 +240,8 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 
 	default:
 		return &Data{
-			Columns: []string{"Rows Affected"},
+			Columns:     []string{"Rows Affected"},
+			ColumnTypes: []string{"number"},
 			Rows: []map[string]any{{
 				"Rows Affected": rowsAffected,
 			}},
@@ -270,4 +286,66 @@ func truncateToSize(s string, maxBytes int) string {
 	// is len(s). If len(s) <= maxBytes we'd have returned above, so here
 	// len(s) > maxBytes and lastFit is the start of the final rune.
 	return s[:lastFit]
+}
+
+// columnTypeExact maps exact (uppercased) driver type names to abstract categories.
+//
+//nolint:gochecknoglobals // immutable lookup table
+var columnTypeExact = map[string]string{
+	// Numbers
+	"INT": "number", "INT2": "number", "INT4": "number", "INT8": "number",
+	"TINYINT": "number", "SMALLINT": "number", "MEDIUMINT": "number", "BIGINT": "number",
+	"INTEGER": "number", "REAL": "number",
+	"FLOAT": "number", "FLOAT4": "number", "FLOAT8": "number",
+	"DOUBLE": "number", "DECIMAL": "number", "NUMERIC": "number",
+	"BIT": "number",
+	// Strings
+	"TEXT": "string", "VARCHAR": "string", "CHAR": "string", "BPCHAR": "string", "NAME": "string",
+	"TINYTEXT": "string", "MEDIUMTEXT": "string", "LONGTEXT": "string",
+	"ENUM": "string", "SET": "string",
+	// Booleans
+	"BOOL": "boolean", "BOOLEAN": "boolean",
+	// JSON
+	"JSON": "json", "JSONB": "json",
+	// Date/time
+	"DATE": "datetime", "TIME": "datetime", "TIMESTAMP": "datetime",
+	"TIMESTAMPTZ": "datetime", "DATETIME": "datetime", "INTERVAL": "datetime", "YEAR": "datetime",
+	// Binary
+	"BYTEA": "binary", "BINARY": "binary", "VARBINARY": "binary",
+	"BLOB": "binary", "TINYBLOB": "binary", "MEDIUMBLOB": "binary", "LONGBLOB": "binary",
+}
+
+// columnTypePrefixes maps type-name prefixes to abstract categories.
+// Used for MySQL UNSIGNED variants and parameterised types (e.g. TIMESTAMP(6)).
+//
+//nolint:gochecknoglobals // immutable lookup table
+var columnTypePrefixes = []struct {
+	prefix   string
+	category string
+}{
+	{"UNSIGNED", "number"},
+	{"INT", "number"},
+	{"FLOAT", "number"},
+	{"TIMESTAMP", "datetime"},
+}
+
+// normalizeColumnType maps a driver-specific DatabaseTypeName() string to an
+// abstract category used for result cell styling.
+func normalizeColumnType(name string) string {
+	upper := strings.ToUpper(strings.TrimSpace(name))
+	if upper == "" {
+		return columnTypeUnknown
+	}
+
+	if cat, ok := columnTypeExact[upper]; ok {
+		return cat
+	}
+
+	for _, p := range columnTypePrefixes {
+		if strings.HasPrefix(upper, p.prefix) {
+			return p.category
+		}
+	}
+
+	return columnTypeUnknown
 }

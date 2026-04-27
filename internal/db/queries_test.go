@@ -423,3 +423,85 @@ func TestPrimaryKeyColumnsSQL_Builders(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeColumnType(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		// Postgres (pgx) types
+		{"INT2", "number"},
+		{"INT4", "number"},
+		{"INT8", "number"},
+		{"FLOAT4", "number"},
+		{"FLOAT8", "number"},
+		{"NUMERIC", "number"},
+		{"BOOL", "boolean"},
+		{"TEXT", "string"},
+		{"VARCHAR", "string"},
+		{"BPCHAR", "string"},
+		{"NAME", "string"},
+		{"JSON", "json"},
+		{"JSONB", "json"},
+		{"DATE", "datetime"},
+		{"TIME", "datetime"},
+		{"TIMESTAMP", "datetime"},
+		{"TIMESTAMPTZ", "datetime"},
+		{"INTERVAL", "datetime"},
+		{"BYTEA", "binary"},
+
+		// MySQL types
+		{"INT", "number"},
+		{"BIGINT", "number"},
+		{"SMALLINT", "number"},
+		{"TINYINT", "number"},
+		{"MEDIUMINT", "number"},
+		{"FLOAT", "number"},
+		{"DOUBLE", "number"},
+		{"DECIMAL", "number"},
+		{"BIT", "number"},
+		{"UNSIGNED INT", "number"},
+		{"UNSIGNED BIGINT", "number"},
+		{"UNSIGNED TINYINT", "number"},
+		{"UNSIGNED SMALLINT", "number"},
+		{"UNSIGNED MEDIUMINT", "number"},
+		{"CHAR", "string"},
+		{"TINYTEXT", "string"},
+		{"MEDIUMTEXT", "string"},
+		{"LONGTEXT", "string"},
+		{"ENUM", "string"},
+		{"SET", "string"},
+		{"DATETIME", "datetime"},
+		{"YEAR", "datetime"},
+		{"BINARY", "binary"},
+		{"VARBINARY", "binary"},
+		{"BLOB", "binary"},
+		{"TINYBLOB", "binary"},
+		{"MEDIUMBLOB", "binary"},
+		{"LONGBLOB", "binary"},
+
+		// SQLite types
+		{"INTEGER", "number"},
+		{"REAL", "number"},
+		{"BOOLEAN", "boolean"},
+
+		// Edge cases
+		{"", "unknown"},
+		{"GEOMETRY", "unknown"},
+		{"UUID", "unknown"},
+		{"INET", "unknown"},
+
+		// Case insensitivity
+		{"int4", "number"},
+		{"jsonb", "json"},
+		{"Text", "string"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := db.NormalizeColumnType(tt.input)
+			if got != tt.want {
+				t.Errorf("NormalizeColumnType(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}

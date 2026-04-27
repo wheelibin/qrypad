@@ -12,8 +12,8 @@ CREATE TABLE species (
 CREATE TABLE staff (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    role TEXT NOT NULL
-    -- You may omit this check if using older SQLite versions
+    role TEXT NOT NULL,
+    contact_info TEXT  -- stored as JSON
     -- CHECK (role IN ('adoption', 'veterinarian', 'caretaker'))
 );
 
@@ -24,6 +24,7 @@ CREATE TABLE animals (
     age INTEGER NOT NULL CHECK (age >= 0),
     arrived_on DATE NOT NULL,
     adopted BOOLEAN DEFAULT 0,
+    health_records TEXT,  -- stored as JSON
     FOREIGN KEY (species_id) REFERENCES species(id)
 );
 
@@ -43,11 +44,11 @@ INSERT INTO species (name) VALUES ('Cat');
 INSERT INTO species (name) VALUES ('Rabbit');
 INSERT INTO species (name) VALUES ('Parrot');
 
-INSERT INTO staff (name, role) VALUES ('Alice', 'adoption');
-INSERT INTO staff (name, role) VALUES ('Bob', 'veterinarian');
-INSERT INTO staff (name, role) VALUES ('Carol', 'caretaker');
-INSERT INTO staff (name, role) VALUES ('Dave', 'adoption');
-INSERT INTO staff (name, role) VALUES ('Eve', 'caretaker');
+INSERT INTO staff (name, role, contact_info) VALUES ('Alice', 'adoption',     '{"email": "alice@shelter.org", "phone": "555-0101", "slack": "@alice"}');
+INSERT INTO staff (name, role, contact_info) VALUES ('Bob', 'veterinarian',  '{"email": "bob@shelter.org",   "phone": "555-0202", "emergency": true, "speciality": "small animals"}');
+INSERT INTO staff (name, role, contact_info) VALUES ('Carol', 'caretaker',   '{"email": "carol@shelter.org", "phone": "555-0303", "shift": "morning"}');
+INSERT INTO staff (name, role, contact_info) VALUES ('Dave', 'adoption',     '{"email": "dave@shelter.org",  "phone": "555-0404", "slack": "@dave"}');
+INSERT INTO staff (name, role, contact_info) VALUES ('Eve', 'caretaker',     '{"email": "eve@shelter.org",   "phone": "555-0505", "shift": "evening"}');
 
 INSERT INTO animals (name, species_id, age, arrived_on, adopted) VALUES ('Nala', 2, 4, '2025-01-08', FALSE);
 INSERT INTO animals (name, species_id, age, arrived_on, adopted) VALUES ('Bella', 2, 4, '2025-04-28', FALSE);
@@ -466,6 +467,13 @@ INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (292,
 INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (294, 'Emily Davis', '2025-04-11', 1);
 INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (298, 'Michael Brown', '2025-05-04', 3);
 INSERT INTO adoptions (animal_id, adopted_by, adopted_on, staff_id) VALUES (299, 'Chris Johnson', '2025-03-07', 1);
+
+-- Populate health records for ~70% of animals (leave remainder NULL for contrast)
+UPDATE animals SET health_records = '{"vaccinated": true,  "neutered": true,  "weight_kg": 4.2, "last_checkup": "2025-03-15", "conditions": []}'                          WHERE id % 7 = 0;
+UPDATE animals SET health_records = '{"vaccinated": true,  "neutered": false, "weight_kg": 8.7, "last_checkup": "2025-01-20", "conditions": ["arthritis"]}'               WHERE id % 7 = 1;
+UPDATE animals SET health_records = '{"vaccinated": false, "neutered": true,  "weight_kg": 3.1, "last_checkup": "2024-12-10", "conditions": ["anxiety", "underweight"]}'  WHERE id % 7 = 2;
+UPDATE animals SET health_records = '{"vaccinated": true,  "neutered": true,  "weight_kg": 6.0, "last_checkup": "2025-02-28", "conditions": []}'                          WHERE id % 7 = 3;
+UPDATE animals SET health_records = '{"vaccinated": true,  "neutered": false, "weight_kg": 5.5, "last_checkup": "2025-04-01", "conditions": ["dental disease"]}'          WHERE id % 7 = 4;
 
 -- View for integration tests
 CREATE VIEW adopted_animals AS
