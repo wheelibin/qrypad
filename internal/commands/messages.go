@@ -66,6 +66,10 @@ type (
 	AutoCompleteCloseMsg         struct{}
 )
 
+// NoConnectionChosenMsg is sent when the user closes the connection switcher
+// without choosing a connection on first launch.
+type NoConnectionChosenMsg struct{}
+
 // ExportFormat selects the serialization format for exported results.
 type ExportFormat int
 

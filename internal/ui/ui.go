@@ -197,6 +197,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds []tea.Cmd
 	)
 
+	if m.connectionName == "" && !m.hasActivePopup() {
+		// if no connection then show connection switcher (once only)
+		m.connectionSwitcherPopup.SetIsFirstConnection(true)
+		m.showPopup(PopupKind.ConnectionSwitcher)
+		cmds = append(cmds, commands.GetConnectionList())
+	}
+
 	// update this now so the query text value is updated and can be used below
 	if !m.hasActivePopup() {
 		m.queryPanel, cmd = m.queryPanel.Update(msg)
@@ -235,6 +242,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		commands.PasswordEnteredMsg,
 		commands.PasswordInputNeededMsg,
 		commands.PopupClosedMsg,
+		commands.NoConnectionChosenMsg,
 		commands.PasswordSavedMsg,
 		commands.TableInfoTabChangedMsg,
 		commands.TablePanelTabChangedMsg,

@@ -240,6 +240,9 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	case commands.PopupClosedMsg:
 		m.closePopup()
 
+	case commands.NoConnectionChosenMsg:
+		return tea.Quit
+
 	case commands.PasswordInputNeededMsg:
 		m.passwordPopup.Clear()
 		m.showPopup(PopupKind.Password)
@@ -419,6 +422,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.SwitchConnection):
 		if !m.popupIsActive(PopupKind.ConnectionSwitcher) {
+			m.connectionSwitcherPopup.SetIsFirstConnection(false)
 			m.showPopup(PopupKind.ConnectionSwitcher)
 			return commands.GetConnectionList()
 		}
