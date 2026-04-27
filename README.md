@@ -209,7 +209,17 @@ tableHeader           = { bg = "", fg = "" }
 text                  = { bg = "", fg = "" }
 titleBar              = { bg = "", fg = "" }
 titleBarAlt           = { bg = "", fg = "" }
+syntaxKeyword         = { fg = "" }
+syntaxString          = { fg = "" }
+syntaxNumber          = { fg = "" }
+syntaxComment         = { fg = "" }
+syntaxOperator        = { fg = "" }
+syntaxName            = { fg = "" }
+syntaxLiteral         = { fg = "" }
+syntaxPunctuation     = { fg = "" }
 ```
+
+The `syntax*` keys control SQL syntax highlighting colours. If omitted, they fall back to colours derived from the UI theme.
 
 ## Contributing
 
