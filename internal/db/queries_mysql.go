@@ -5,6 +5,9 @@ import (
 	"fmt"
 )
 
+// mysqlDefaultSchemaFilter is the SQL predicate used when no explicit schema is specified.
+const mysqlDefaultSchemaFilter = "TABLE_SCHEMA = DATABASE()"
+
 // mysqlQueries implements QueryProvider for MySQL.
 type mysqlQueries struct{}
 
@@ -30,7 +33,7 @@ func (mysqlQueries) SchemaViews() string {
 }
 
 func (mysqlQueries) TableColumns(ref TableReference) string {
-	schemaFilter := "TABLE_SCHEMA = DATABASE()"
+	schemaFilter := mysqlDefaultSchemaFilter
 	if ref.Schema != "" {
 		schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
 	}
@@ -41,7 +44,7 @@ func (mysqlQueries) TableColumns(ref TableReference) string {
 }
 
 func (mysqlQueries) TableConstraints(ref TableReference) string {
-	schemaFilter := "TABLE_SCHEMA = DATABASE()"
+	schemaFilter := mysqlDefaultSchemaFilter
 	if ref.Schema != "" {
 		schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
 	}
@@ -63,8 +66,12 @@ func (m mysqlQueries) TableIndexes(ctx context.Context, dbConn DBConn, ref Table
 	return fetchRows(ctx, dbConn, m.tableIndexesSQL(ref))
 }
 
+func (m mysqlQueries) PrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
+	return fetchPrimaryKeyColumns(ctx, dbConn, m.primaryKeyColumnsSQL(ref))
+}
+
 func (mysqlQueries) tableIndexesSQL(ref TableReference) string {
-	schemaFilter := "TABLE_SCHEMA = DATABASE()"
+	schemaFilter := mysqlDefaultSchemaFilter
 	if ref.Schema != "" {
 		schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
 	}
@@ -81,12 +88,8 @@ func (mysqlQueries) tableIndexesSQL(ref TableReference) string {
                         order by index_name;`, schemaFilter, ref.Name)
 }
 
-func (m mysqlQueries) PrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
-	return fetchPrimaryKeyColumns(ctx, dbConn, m.primaryKeyColumnsSQL(ref))
-}
-
 func (mysqlQueries) primaryKeyColumnsSQL(ref TableReference) string {
-	schemaFilter := "TABLE_SCHEMA = DATABASE()"
+	schemaFilter := mysqlDefaultSchemaFilter
 	if ref.Schema != "" {
 		schemaFilter = fmt.Sprintf("TABLE_SCHEMA = '%s'", ref.Schema)
 	}

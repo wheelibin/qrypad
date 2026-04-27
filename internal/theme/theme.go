@@ -54,7 +54,11 @@ func (tc TC) MarshalJSON() ([]byte, error) {
 	if tc.BG != nil {
 		raw["bg"] = colorStr(tc.BG)
 	}
-	return json.Marshal(raw)
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return nil, fmt.Errorf("marshalling theme color: %w", err)
+	}
+	return data, nil
 }
 
 type Theme struct {

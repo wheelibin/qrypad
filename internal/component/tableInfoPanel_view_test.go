@@ -7,17 +7,17 @@ import (
 	"github.com/wheelibin/qrypad/internal/db"
 )
 
-var tableInfoData = &db.Data{
-	Columns: []string{"name", "type", "nullable"},
-	Rows: []map[string]any{
-		{"name": "id", "type": "integer", "nullable": "false"},
-		{"name": "email", "type": "text", "nullable": "false"},
-		{"name": "created_at", "type": "timestamp", "nullable": "true"},
-	},
-}
-
 func TestTableInfoPanelView(t *testing.T) {
 	setupViewTest(t)
+
+	tableInfoData := &db.Data{
+		Columns: []string{"name", "type", "nullable"},
+		Rows: []map[string]any{
+			{"name": "id", "type": "integer", "nullable": "false"},
+			{"name": "email", "type": "text", "nullable": "false"},
+			{"name": "created_at", "type": "timestamp", "nullable": "true"},
+		},
+	}
 
 	t.Run("inactive", func(t *testing.T) {
 		m := component.NewTableInfoPanelModel()

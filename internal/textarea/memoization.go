@@ -46,7 +46,11 @@ func (m *memoCache[H, T]) Get(h H) (T, bool) {
 	hashedKey := h.Hash()
 	if element, found := m.cache[hashedKey]; found {
 		m.evictionList.MoveToFront(element)
-		return element.Value.(*memoEntry[T]).value, true
+		entry, ok := element.Value.(*memoEntry[T])
+		if !ok {
+			panic("memoCache: list element has unexpected type")
+		}
+		return entry.value, true
 	}
 	var result T
 	return result, false
@@ -59,14 +63,22 @@ func (m *memoCache[H, T]) Set(h H, value T) {
 	hashedKey := h.Hash()
 	if element, found := m.cache[hashedKey]; found {
 		m.evictionList.MoveToFront(element)
-		element.Value.(*memoEntry[T]).value = value
+		entry, ok := element.Value.(*memoEntry[T])
+		if !ok {
+			panic("memoCache: list element has unexpected type")
+		}
+		entry.value = value
 		return
 	}
 
 	if m.evictionList.Len() >= m.capacity {
 		toEvict := m.evictionList.Back()
 		if toEvict != nil {
-			evictedEntry := m.evictionList.Remove(toEvict).(*memoEntry[T])
+			removed := m.evictionList.Remove(toEvict)
+			evictedEntry, ok := removed.(*memoEntry[T])
+			if !ok {
+				panic("memoCache: list element has unexpected type")
+			}
 			delete(m.cache, evictedEntry.key)
 			delete(m.hashableItems, evictedEntry.key)
 		}

@@ -1,4 +1,4 @@
-package textarea
+package textarea_test
 
 import (
 	"strings"
@@ -6,6 +6,8 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+
+	"github.com/wheelibin/qrypad/internal/textarea"
 )
 
 // keyPress synthesises a tea.KeyPressMsg for a single printable character.
@@ -31,38 +33,38 @@ func keyBindingCtrl(r, desc string) key.Binding {
 }
 
 func TestModel_SetValueResetsHistory(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 
 	// Simulate a mutation so history has something beyond baseline.
-	m.ensureHistory()
-	m.history.recordPre(&m, opOther)
-	m.setValueInternal("typed")
-	m.history.recordPre(&m, opOther)
+	textarea.ExportEnsureHistory(&m)
+	textarea.ExportRecordPre(&m, textarea.ExportOpOther)
+	textarea.ExportSetValueInternal(&m, "typed")
+	textarea.ExportRecordPre(&m, textarea.ExportOpOther)
 
-	if len(m.history.entries) < 2 {
-		t.Fatalf("precondition: expected >=2 entries, got %d", len(m.history.entries))
+	if textarea.ExportHistoryLen(&m) < 2 {
+		t.Fatalf("precondition: expected >=2 entries, got %d", textarea.ExportHistoryLen(&m))
 	}
 
 	// External load: SetValue resets history.
 	m.SetValue("loaded")
 
-	if len(m.history.entries) != 1 {
-		t.Fatalf("expected 1 entry after SetValue, got %d", len(m.history.entries))
+	if textarea.ExportHistoryLen(&m) != 1 {
+		t.Fatalf("expected 1 entry after SetValue, got %d", textarea.ExportHistoryLen(&m))
 	}
-	if m.history.cursor != 0 {
-		t.Fatalf("expected cursor=0, got %d", m.history.cursor)
+	if textarea.ExportHistoryCursor(&m) != 0 {
+		t.Fatalf("expected cursor=0, got %d", textarea.ExportHistoryCursor(&m))
 	}
-	if m.history.entries[0].value != "loaded" {
-		t.Fatalf("baseline mismatch: got %q", m.history.entries[0].value)
+	if textarea.ExportHistoryEntryValue(&m, 0) != "loaded" {
+		t.Fatalf("baseline mismatch: got %q", textarea.ExportHistoryEntryValue(&m, 0))
 	}
-	if m.history.undo(&m) {
+	if textarea.ExportHistoryUndo(&m) {
 		t.Fatal("undo immediately after SetValue should return false")
 	}
 }
 
 func TestModel_UndoRedoBasicRoundTrip(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	// Wire Undo/Redo bindings locally so the test exercises the real
 	// key-matching path without depending on the keys package.
@@ -90,7 +92,7 @@ func TestModel_UndoRedoBasicRoundTrip(t *testing.T) {
 }
 
 func TestModel_CursorMoveBreaksCoalescing(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 
@@ -117,7 +119,7 @@ func TestModel_CursorMoveBreaksCoalescing(t *testing.T) {
 }
 
 func TestModel_SpaceBreaksCoalescing(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 
@@ -144,7 +146,7 @@ func TestModel_SpaceBreaksCoalescing(t *testing.T) {
 }
 
 func TestModel_EditAfterUndoTruncatesRedo(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 	m.KeyMap.Redo = keyBindingCtrl("y", "redo")
@@ -169,13 +171,13 @@ func TestModel_EditAfterUndoTruncatesRedo(t *testing.T) {
 }
 
 func TestModel_PasteIsSingleUndoStep(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 
 	// Synthesise a 500-line paste.
 	var sb strings.Builder
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		sb.WriteString("line\n")
 	}
 	m, _ = m.Update(tea.PasteMsg{Content: sb.String()})
@@ -191,7 +193,7 @@ func TestModel_PasteIsSingleUndoStep(t *testing.T) {
 }
 
 func TestModel_SetValueResetsHistoryViaKeys(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 
@@ -210,7 +212,7 @@ func TestModel_SetValueResetsHistoryViaKeys(t *testing.T) {
 // from disk / editor — ReplaceValue records the pre-state so undo returns to
 // what the user had before the replacement.
 func TestModel_ReplaceValueIsUndoable(t *testing.T) {
-	m := New()
+	m := textarea.New()
 	m.Focus()
 	m.KeyMap.Undo = keyBindingCtrl("z", "undo")
 

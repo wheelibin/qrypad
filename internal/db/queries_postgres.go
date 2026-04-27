@@ -69,6 +69,10 @@ func (p postgresQueries) TableIndexes(ctx context.Context, dbConn DBConn, ref Ta
 	return fetchRows(ctx, dbConn, p.tableIndexesSQL(ref))
 }
 
+func (p postgresQueries) PrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
+	return fetchPrimaryKeyColumns(ctx, dbConn, p.primaryKeyColumnsSQL(ref))
+}
+
 func (postgresQueries) tableIndexesSQL(ref TableReference) string {
 	tableFilter := fmt.Sprintf("t.relname like '%s'", ref.Name)
 	if ref.Schema != "" {
@@ -101,10 +105,6 @@ func (postgresQueries) tableIndexesSQL(ref TableReference) string {
                       order by
                           t.relname,
                           i.relname;`, tableFilter)
-}
-
-func (p postgresQueries) PrimaryKeyColumns(ctx context.Context, dbConn DBConn, ref TableReference) ([]string, error) {
-	return fetchPrimaryKeyColumns(ctx, dbConn, p.primaryKeyColumnsSQL(ref))
 }
 
 func (postgresQueries) primaryKeyColumnsSQL(ref TableReference) string {

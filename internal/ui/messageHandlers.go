@@ -133,6 +133,19 @@ func (m *model) handleErrorMessages(msg tea.Msg) tea.Cmd {
 }
 
 func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
+	if cmd := m.handlePopupMessages(msg); cmd != nil {
+		return cmd
+	}
+	if cmd := m.handleNavigationMessages(msg); cmd != nil {
+		return cmd
+	}
+	if cmd := m.handleQueryMessages(msg); cmd != nil {
+		return cmd
+	}
+	return nil
+}
+
+func (m *model) handlePopupMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case commands.LoadingMsg:
 		if m.popupIsActive(PopupKind.DatabaseSwitcher) || m.popupIsActive(PopupKind.ConnectionSwitcher) {
@@ -144,11 +157,44 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			// loading finished
 			m.closePopup()
 		}
+		return nil
 
+	case commands.PopupClosedMsg:
+		m.closePopup()
+		return nil
+
+	case commands.NoConnectionChosenMsg:
+		return tea.Quit
+
+	case commands.PasswordInputNeededMsg:
+		m.passwordPopup.Clear()
+		m.showPopup(PopupKind.Password)
+		return nil
+
+	case commands.CopyValueMsg:
+		if msg.ValueDesc != "" {
+			m.statusBar.SetCopiedTextInfo(msg.ValueDesc)
+		} else {
+			m.statusBar.SetCopiedTextInfo(msg.Value)
+		}
+		_ = clipboard.WriteAll(msg.Value)
+		return nil
+
+	case commands.ExportCompletedMsg:
+		m.statusBar.SetStatusInfo(fmt.Sprintf("exported %d rows to %s", msg.RowCount, filepath.Base(msg.Path)))
+		return nil
+	}
+
+	return nil
+}
+
+func (m *model) handleNavigationMessages(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
 	case commands.CancelQueryMsg:
 		if m.cancelQuery != nil {
 			m.cancelQuery()
 		}
+		return nil
 
 	case commands.ActivePanelChangedMsg:
 		m.activePanelIndex = int(msg)
@@ -158,6 +204,27 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 			m.queryPanel, cmd = m.queryPanel.Update(msg)
 			return cmd
 		}
+		return nil
+
+	case commands.TablePanelTabChangedMsg:
+		switch msg {
+		case component.TablePanelTabIndexTables:
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
+		case component.TableInfoTabIndexIndexes:
+			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
+		}
+		return nil
+
+	case commands.TableInfoTabChangedMsg:
+		switch msg {
+		case component.TableInfoTabIndexColumns:
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
+		case component.TableInfoTabIndexIndexes:
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
+		case component.TableInfoTabIndexConstraints:
+			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
+		}
+		return nil
 
 	case commands.TableSelectedMsg:
 		m.currentTableRef = db.TableReference(msg)
@@ -169,25 +236,14 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		case component.TableInfoTabIndexConstraints:
 			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
 		}
+		return nil
+	}
 
-	case commands.TablePanelTabChangedMsg:
-		switch msg {
-		case component.TablePanelTabIndexTables:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
-		case component.TableInfoTabIndexIndexes:
-			return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Views, m.schemaCache)
-		}
+	return nil
+}
 
-	case commands.TableInfoTabChangedMsg:
-		switch msg {
-		case component.TableInfoTabIndexColumns:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Columns, m.schemaCache)
-		case component.TableInfoTabIndexIndexes:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Indexes, m.schemaCache)
-		case component.TableInfoTabIndexConstraints:
-			return commands.GetTableInfo(m.db, m.currentTableRef, commands.TableInfoKind.Constraints, m.schemaCache)
-		}
-
+func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
 	case commands.DatabaseSelectedMsg:
 		m.selectedDatabase = string(msg)
 		m.dbConfig.Database = string(msg)
@@ -237,30 +293,12 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 	case commands.PasswordSavedMsg:
 		return commands.ConnectToDB(m.connectionName, m.dbConfig)
 
-	case commands.PopupClosedMsg:
-		m.closePopup()
-
-	case commands.NoConnectionChosenMsg:
-		return tea.Quit
-
-	case commands.PasswordInputNeededMsg:
-		m.passwordPopup.Clear()
-		m.showPopup(PopupKind.Password)
-
-	case commands.CopyValueMsg:
-		if msg.ValueDesc != "" {
-			m.statusBar.SetCopiedTextInfo(msg.ValueDesc)
-		} else {
-			m.statusBar.SetCopiedTextInfo(msg.Value)
-		}
-
-		_ = clipboard.WriteAll(msg.Value)
-
 	case commands.QueryFileReadMsg:
 		m.queryPanel.SetValue(msg.Contents)
 		m.queryPanel.SetFilename(msg.FileName)
 		m.lastSavedQueryContents = msg.Contents
 		m.queryPanel.SetDirty(false)
+		return nil
 
 	case commands.ExportRequestedMsg:
 		rows := m.resultsPanel.GetExportRows()
@@ -272,9 +310,6 @@ func (m *model) handleCommandMessages(msg tea.Msg) tea.Cmd {
 		}
 		m.closePopup()
 		return commands.ExportResults(rows, cols, msg.Format, cwd)
-
-	case commands.ExportCompletedMsg:
-		m.statusBar.SetStatusInfo(fmt.Sprintf("exported %d rows to %s", msg.RowCount, filepath.Base(msg.Path)))
 	}
 
 	return nil

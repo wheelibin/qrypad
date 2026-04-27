@@ -13,6 +13,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
+//nolint:gochecknoglobals // test flag must be a package-level var for flag.Bool
 var update = flag.Bool("update", false, "update golden files")
 
 // setupViewTest resets the theme singleton and clears caches so View() output
@@ -35,10 +36,10 @@ func assertGolden(t *testing.T, name, got string) {
 	path := filepath.Join("testdata", name+".golden")
 
 	if *update {
-		if err := os.MkdirAll("testdata", 0o755); err != nil {
+		if err := os.MkdirAll("testdata", 0o750); err != nil {
 			t.Fatalf("assertGolden: mkdir testdata: %v", err)
 		}
-		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(got), 0o600); err != nil {
 			t.Fatalf("assertGolden: write %s: %v", path, err)
 		}
 		return
@@ -57,11 +58,11 @@ func assertGolden(t *testing.T, name, got string) {
 		gotLines := strings.Split(got, "\n")
 		wantLines := strings.Split(want, "\n")
 		var sb strings.Builder
-		max := len(gotLines)
-		if len(wantLines) > max {
-			max = len(wantLines)
+		maxLines := len(gotLines)
+		if len(wantLines) > maxLines {
+			maxLines = len(wantLines)
 		}
-		for i := 0; i < max; i++ {
+		for i := range maxLines {
 			g, w := "", ""
 			if i < len(gotLines) {
 				g = gotLines[i]

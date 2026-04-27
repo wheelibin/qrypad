@@ -57,7 +57,13 @@ func TestTableReferenceAutocompleteInsert(t *testing.T) {
 		want        string
 	}{
 		{"default schema inserts name only", db.TableReference{Schema: "public", Name: "users"}, db.DriverName.Postgres, "mydb", "users"},
-		{"non-default schema inserts qualified name", db.TableReference{Schema: "myschema", Name: "orders"}, db.DriverName.Postgres, "mydb", "myschema.orders"},
+		{
+			"non-default schema inserts qualified name",
+			db.TableReference{Schema: "myschema", Name: "orders"},
+			db.DriverName.Postgres,
+			"mydb",
+			"myschema.orders",
+		},
 		{"mysql default schema inserts name only", db.TableReference{Schema: "mydb", Name: "users"}, db.DriverName.MySQL, "mydb", "users"},
 		{"mysql non-default inserts qualified", db.TableReference{Schema: "other", Name: "users"}, db.DriverName.MySQL, "mydb", "other.users"},
 		{"sqlite no schema inserts name only", db.TableReference{Schema: "", Name: "items"}, db.DriverName.SQLite, "", "items"},

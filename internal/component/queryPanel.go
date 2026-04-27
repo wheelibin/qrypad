@@ -45,7 +45,7 @@ type QueryPanelModel struct {
 
 func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelModel {
 	ta := textarea.New()
-	ta.MaxHeight=0
+	ta.MaxHeight = 0
 	ta.Placeholder = "sql statement(s)..."
 	ta.Cursor.SetMode(cursor.CursorBlink)
 	ta.Cursor.Style = lipgloss.NewStyle().Foreground(theme.GetTheme().Text.FG)
