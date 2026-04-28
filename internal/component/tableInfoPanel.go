@@ -130,8 +130,26 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 		}
 		cols = append(cols, table.NewFlexColumn(c, c, 12).WithFiltered(true))
 	}
+
 	for _, row := range data.Rows {
-		rows = append(rows, table.Row{Data: row})
+		styledRow := make(map[string]any, len(row))
+
+		for _, colName := range data.Columns {
+			val := row[colName]
+			switch colName {
+			//nolint: goconst
+			case "name", "nullable":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("string"))
+			case "type":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("binary"))
+			case "unique", "primary":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("bool"))
+			default:
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("unknown"))
+			}
+		}
+
+		rows = append(rows, table.Row{Data: styledRow})
 	}
 
 	m.table = m.table.WithRows(rows)
@@ -158,7 +176,12 @@ func (m TableInfoPanelModel) GetActiveTabIndex() int {
 }
 
 func (m TableInfoPanelModel) GetSelectedRow() map[string]any {
-	return m.table.HighlightedRow().Data
+	raw := m.table.HighlightedRow().Data
+	out := make(map[string]any, len(raw))
+	for k, v := range raw {
+		out[k] = unwrapCellData(v)
+	}
+	return out
 }
 
 func (m TableInfoPanelModel) helpView() string {
