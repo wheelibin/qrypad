@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
@@ -138,13 +139,7 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 	refs := make([]db.TableReference, 0, len(data.Rows))
 
 	// Check whether this dataset includes a schema column
-	hasSchema := false
-	for _, col := range data.Columns {
-		if col == "schema" {
-			hasSchema = true
-			break
-		}
-	}
+	hasSchema := slices.Contains(data.Columns, "schema")
 
 	// Build columns: schema (fixed 16 chars, if present), name (flex), other columns (fixed 12)
 	if hasSchema {
@@ -158,7 +153,22 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 	}
 
 	for _, row := range data.Rows {
-		rows = append(rows, table.Row{Data: row})
+		styledRow := make(map[string]any, len(row))
+
+		for _, colName := range data.Columns {
+			val := row[colName]
+			switch colName {
+			case "schema":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("binary"))
+			case "name":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("string"))
+			case "rows":
+				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("number"))
+			}
+		}
+
+		rows = append(rows, table.Row{Data: styledRow})
+
 		name := ""
 		if n, ok := row["name"]; ok {
 			name = fmt.Sprintf("%v", n)
@@ -187,12 +197,13 @@ func (m TablePanelModel) GetAllTableRefs() []db.TableReference {
 }
 
 func (m TablePanelModel) highlightedRef() db.TableReference {
-	row := m.table.HighlightedRow()
-	if len(row.Data) == 0 {
+	raw := m.table.HighlightedRow().Data
+
+	if len(raw) == 0 {
 		return db.TableReference{}
 	}
-	name, _ := row.Data["name"].(string)
-	schema, _ := row.Data["schema"].(string)
+	schema, _ := unwrapCellData(raw["schema"]).(string)
+	name, _ := unwrapCellData(raw["name"]).(string)
 	return db.TableReference{Schema: schema, Name: name}
 }
 

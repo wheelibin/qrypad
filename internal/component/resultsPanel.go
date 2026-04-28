@@ -142,32 +142,6 @@ func (m *ResultsPanelModel) SetActive(active bool) {
 	m.active = active
 }
 
-// jsonCellData holds a pre-highlighted JSON string for display while keeping
-// the raw JSON string for copy/export operations.
-//
-// bubble-table renders StyledCell.Data via fmt.Sprintf("%v", data), so
-// implementing fmt.Stringer here causes the highlighted string to be shown in
-// the table, while Raw is returned by unwrapCellData for data consumers.
-type jsonCellData struct {
-	Raw         string
-	highlighted string
-}
-
-func (j jsonCellData) String() string { return j.highlighted }
-
-// unwrapCellData extracts the underlying data from a StyledCell, or returns
-// the value as-is if it is not a StyledCell. Used by export/copy/popup
-// functions that need plain values without styling.
-func unwrapCellData(v any) any {
-	if sc, ok := v.(table.StyledCell); ok {
-		if jc, ok := sc.Data.(jsonCellData); ok {
-			return jc.Raw
-		}
-		return sc.Data
-	}
-	return v
-}
-
 func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 	raw := m.table.HighlightedRow().Data
 	out := make(map[string]any, len(raw))
