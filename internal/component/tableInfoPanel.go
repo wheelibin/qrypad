@@ -137,7 +137,6 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 		for _, colName := range data.Columns {
 			val := row[colName]
 			switch colName {
-			//nolint: goconst
 			case "name", "nullable":
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("string"))
 			case "type":

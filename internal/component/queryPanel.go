@@ -65,11 +65,11 @@ func NewQueryPanelModel(connectionName, databaseName string, singleQueryFile, au
 	ac := NewAutoCompletePopupModel()
 
 	return QueryPanelModel{
-		connectionName:  connectionName,
-		databaseName:    databaseName,
-		singleQueryFile: singleQueryFile,
-		queryBuffer:     ta,
-		help:            makeHelp(),
+		connectionName:    connectionName,
+		databaseName:      databaseName,
+		singleQueryFile:   singleQueryFile,
+		queryBuffer:       ta,
+		help:              makeHelp(),
 		autoCompletePopup: ac,
 		keymap: queryPanelKeymap{
 			execute:      keys.DefaultKeyMap.ExecuteQuery,

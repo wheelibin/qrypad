@@ -1,6 +1,6 @@
 module github.com/wheelibin/qrypad
 
-go 1.25.0
+go 1.26.2
 
 require (
 	charm.land/bubbles/v2 v2.1.0

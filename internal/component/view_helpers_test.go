@@ -71,7 +71,7 @@ func assertGolden(t *testing.T, name, got string) {
 				w = wantLines[i]
 			}
 			if g != w {
-				sb.WriteString(fmt.Sprintf("line %d:\n  want: %q\n   got: %q\n", i+1, w, g))
+				fmt.Fprintf(&sb, "line %d:\n  want: %q\n   got: %q\n", i+1, w, g)
 			}
 		}
 		t.Errorf("view output mismatch for %s:\n%s", name, sb.String())

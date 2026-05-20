@@ -89,7 +89,7 @@ func TestReadOrCreateQueryFile_EmptyDatabaseName(t *testing.T) {
 		}
 		// Clean up the file that may have been created
 		if readMsg, ok := msg.(commands.QueryFileReadMsg); ok {
-			os.Remove(readMsg.FileName)
+			_ = os.Remove(readMsg.FileName)
 		}
 	})
 }
@@ -104,7 +104,7 @@ func TestSaveQueryFileToDisk_EmptyDatabaseName(t *testing.T) {
 		dir, _ := commands.GetOutputDir()
 		badFile := filepath.Join(dir, "myconn..sql")
 		if _, err := os.Stat(badFile); err == nil {
-			os.Remove(badFile)
+			_ = os.Remove(badFile)
 			t.Error("file with double-dot name was created, but should not have been")
 		}
 	})
@@ -119,7 +119,7 @@ func TestSaveQueryFileToDisk_EmptyDatabaseName(t *testing.T) {
 		}
 		// Clean up
 		outputDir, _ := commands.GetOutputDir()
-		os.Remove(filepath.Join(outputDir, "test_save_single.sql"))
+		_ = os.Remove(filepath.Join(outputDir, "test_save_single.sql"))
 		_ = dir // suppress unused
 	})
 }
@@ -128,7 +128,9 @@ func TestMigrateQueryFileIfNeeded(t *testing.T) {
 	t.Run("renames legacy file to per-database name", func(t *testing.T) {
 		dir := t.TempDir()
 		legacyFile := filepath.Join(dir, "myconn.sql")
-		os.WriteFile(legacyFile, []byte("SELECT 1;"), 0o600)
+		if err := os.WriteFile(legacyFile, []byte("SELECT 1;"), 0o600); err != nil {
+			t.Fatal(err)
+		}
 
 		newFile := filepath.Join(dir, "myconn.mydb.sql")
 
@@ -151,10 +153,14 @@ func TestMigrateQueryFileIfNeeded(t *testing.T) {
 	t.Run("does nothing if per-database file already exists", func(t *testing.T) {
 		dir := t.TempDir()
 		legacyFile := filepath.Join(dir, "myconn.sql")
-		os.WriteFile(legacyFile, []byte("old query"), 0o600)
+		if err := os.WriteFile(legacyFile, []byte("old query"), 0o600); err != nil {
+			t.Fatal(err)
+		}
 
 		newFile := filepath.Join(dir, "myconn.mydb.sql")
-		os.WriteFile(newFile, []byte("new query"), 0o600)
+		if err := os.WriteFile(newFile, []byte("new query"), 0o600); err != nil {
+			t.Fatal(err)
+		}
 
 		commands.MigrateQueryFileIfNeeded(dir, "myconn", "mydb")
 

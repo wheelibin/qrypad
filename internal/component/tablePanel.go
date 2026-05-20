@@ -22,6 +22,9 @@ const (
 	TablePanelTabIndexTables = 0
 	TablePanelTabIndexViews  = 1
 	HelpShownMinWidth        = 55
+
+	colNameName   = "name"
+	colNameSchema = "schema"
 )
 
 type tablePanelKeymap struct {
@@ -139,15 +142,15 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 	refs := make([]db.TableReference, 0, len(data.Rows))
 
 	// Check whether this dataset includes a schema column
-	hasSchema := slices.Contains(data.Columns, "schema")
+	hasSchema := slices.Contains(data.Columns, colNameSchema)
 
 	// Build columns: schema (fixed 16 chars, if present), name (flex), other columns (fixed 12)
 	if hasSchema {
-		cols = append(cols, table.NewColumn("schema", "schema", 16).WithFiltered(true))
+		cols = append(cols, table.NewColumn(colNameSchema, colNameSchema, 16).WithFiltered(true))
 	}
-	cols = append(cols, table.NewFlexColumn("name", "name", 1).WithFiltered(true))
+	cols = append(cols, table.NewFlexColumn(colNameName, colNameName, 1).WithFiltered(true))
 	for _, col := range data.Columns {
-		if col != "schema" && col != "name" {
+		if col != colNameSchema && col != colNameName {
 			cols = append(cols, table.NewColumn(col, col, 12).WithFiltered(true))
 		}
 	}
@@ -158,9 +161,9 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 		for _, colName := range data.Columns {
 			val := row[colName]
 			switch colName {
-			case "schema":
+			case colNameSchema:
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("binary"))
-			case "name":
+			case colNameName:
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("string"))
 			case "rows":
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle("number"))
@@ -170,12 +173,12 @@ func (m *TablePanelModel) SetData(data *db.Data) {
 		rows = append(rows, table.Row{Data: styledRow})
 
 		name := ""
-		if n, ok := row["name"]; ok {
+		if n, ok := row[colNameName]; ok {
 			name = fmt.Sprintf("%v", n)
 		}
 		schema := ""
 		if hasSchema {
-			if s, ok := row["schema"]; ok {
+			if s, ok := row[colNameSchema]; ok {
 				schema = fmt.Sprintf("%v", s)
 			}
 		}
@@ -202,8 +205,8 @@ func (m TablePanelModel) highlightedRef() db.TableReference {
 	if len(raw) == 0 {
 		return db.TableReference{}
 	}
-	schema, _ := unwrapCellData(raw["schema"]).(string)
-	name, _ := unwrapCellData(raw["name"]).(string)
+	schema, _ := unwrapCellData(raw[colNameSchema]).(string)
+	name, _ := unwrapCellData(raw[colNameName]).(string)
 	return db.TableReference{Schema: schema, Name: name}
 }
 

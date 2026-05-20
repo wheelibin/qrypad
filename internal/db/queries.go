@@ -12,7 +12,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-const columnTypeUnknown = "unknown"
+const (
+	columnTypeUnknown  = "unknown"
+	columnTypeNumber   = "number"
+	columnTypeString   = "string"
+	columnTypeDatetime = "datetime"
+	columnTypeBinary   = "binary"
+	columnTypeBoolean  = "boolean"
+	columnTypeJSON     = "json"
+
+	colRowsAffected   = "Rows Affected"
+	colLastInsertedID = "Last Inserted ID"
+)
 
 type Table struct {
 	Name     string
@@ -229,21 +240,21 @@ func execStatement(ctx context.Context, dbConn DBConn, query string) (*Data, err
 			return nil, fmt.Errorf("error getting last insert ID: %w", err)
 		}
 		return &Data{
-			Columns:     []string{"Rows Affected", "Last Inserted ID"},
-			ColumnTypes: []string{"number", "number"},
+			Columns:     []string{colRowsAffected, colLastInsertedID},
+			ColumnTypes: []string{columnTypeNumber, columnTypeNumber},
 			Rows: []map[string]any{{
-				"Rows Affected":    rowsAffected,
-				"Last Inserted ID": lastInsertID,
+				colRowsAffected:   rowsAffected,
+				colLastInsertedID: lastInsertID,
 			}},
 			QueryTime: end.Sub(start),
 		}, nil
 
 	default:
 		return &Data{
-			Columns:     []string{"Rows Affected"},
-			ColumnTypes: []string{"number"},
+			Columns:     []string{colRowsAffected},
+			ColumnTypes: []string{columnTypeNumber},
 			Rows: []map[string]any{{
-				"Rows Affected": rowsAffected,
+				colRowsAffected: rowsAffected,
 			}},
 			QueryTime: end.Sub(start),
 		}, nil
@@ -293,26 +304,26 @@ func truncateToSize(s string, maxBytes int) string {
 //nolint:gochecknoglobals // immutable lookup table
 var columnTypeExact = map[string]string{
 	// Numbers
-	"INT": "number", "INT2": "number", "INT4": "number", "INT8": "number",
-	"TINYINT": "number", "SMALLINT": "number", "MEDIUMINT": "number", "BIGINT": "number",
-	"INTEGER": "number", "REAL": "number",
-	"FLOAT": "number", "FLOAT4": "number", "FLOAT8": "number",
-	"DOUBLE": "number", "DECIMAL": "number", "NUMERIC": "number",
-	"BIT": "number",
+	"INT": columnTypeNumber, "INT2": columnTypeNumber, "INT4": columnTypeNumber, "INT8": columnTypeNumber,
+	"TINYINT": columnTypeNumber, "SMALLINT": columnTypeNumber, "MEDIUMINT": columnTypeNumber, "BIGINT": columnTypeNumber,
+	"INTEGER": columnTypeNumber, "REAL": columnTypeNumber,
+	"FLOAT": columnTypeNumber, "FLOAT4": columnTypeNumber, "FLOAT8": columnTypeNumber,
+	"DOUBLE": columnTypeNumber, "DECIMAL": columnTypeNumber, "NUMERIC": columnTypeNumber,
+	"BIT": columnTypeNumber,
 	// Strings
-	"TEXT": "string", "VARCHAR": "string", "CHAR": "string", "BPCHAR": "string", "NAME": "string",
-	"TINYTEXT": "string", "MEDIUMTEXT": "string", "LONGTEXT": "string",
-	"ENUM": "string", "SET": "string",
+	"TEXT": columnTypeString, "VARCHAR": columnTypeString, "CHAR": columnTypeString, "BPCHAR": columnTypeString, "NAME": columnTypeString,
+	"TINYTEXT": columnTypeString, "MEDIUMTEXT": columnTypeString, "LONGTEXT": columnTypeString,
+	"ENUM": columnTypeString, "SET": columnTypeString,
 	// Booleans
-	"BOOL": "boolean", "BOOLEAN": "boolean",
+	"BOOL": columnTypeBoolean, "BOOLEAN": columnTypeBoolean,
 	// JSON
-	"JSON": "json", "JSONB": "json",
+	"JSON": columnTypeJSON, "JSONB": columnTypeJSON,
 	// Date/time
-	"DATE": "datetime", "TIME": "datetime", "TIMESTAMP": "datetime",
-	"TIMESTAMPTZ": "datetime", "DATETIME": "datetime", "INTERVAL": "datetime", "YEAR": "datetime",
+	"DATE": columnTypeDatetime, "TIME": columnTypeDatetime, "TIMESTAMP": columnTypeDatetime,
+	"TIMESTAMPTZ": columnTypeDatetime, "DATETIME": columnTypeDatetime, "INTERVAL": columnTypeDatetime, "YEAR": columnTypeDatetime,
 	// Binary
-	"BYTEA": "binary", "BINARY": "binary", "VARBINARY": "binary",
-	"BLOB": "binary", "TINYBLOB": "binary", "MEDIUMBLOB": "binary", "LONGBLOB": "binary",
+	"BYTEA": columnTypeBinary, "BINARY": columnTypeBinary, "VARBINARY": columnTypeBinary,
+	"BLOB": columnTypeBinary, "TINYBLOB": columnTypeBinary, "MEDIUMBLOB": columnTypeBinary, "LONGBLOB": columnTypeBinary,
 }
 
 // columnTypePrefixes maps type-name prefixes to abstract categories.
@@ -323,10 +334,10 @@ var columnTypePrefixes = []struct {
 	prefix   string
 	category string
 }{
-	{"UNSIGNED", "number"},
-	{"INT", "number"},
-	{"FLOAT", "number"},
-	{"TIMESTAMP", "datetime"},
+	{"UNSIGNED", columnTypeNumber},
+	{"INT", columnTypeNumber},
+	{"FLOAT", columnTypeNumber},
+	{"TIMESTAMP", columnTypeDatetime},
 }
 
 // normalizeColumnType maps a driver-specific DatabaseTypeName() string to an

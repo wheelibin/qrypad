@@ -94,7 +94,7 @@ func GetTableRows(dbConn db.DBConn, ref db.TableReference, sortOrder string) tea
 
 		query := dbConn.Queries.TableRows(ref, primaryKeyColumns, sortOrder)
 		timeout := db.GetTimeoutSecs()
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout) //nolint:gosec // cancel is returned via QueryControlMsg
 
 		resultCh := make(chan tea.Msg, 1)
 		go func() {
@@ -211,7 +211,7 @@ type queryResultBuilder func(*db.Data, error) tea.Msg
 func ExecuteQuery(dbConn db.DBConn, query string, resultBuilder queryResultBuilder) tea.Cmd {
 	timeout := db.GetTimeoutSecs()
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout) //nolint:gosec // cancel is returned via QueryControlMsg
 
 		// Send cancel control back
 		resultCh := make(chan tea.Msg, 1)
@@ -320,17 +320,17 @@ func QueryFileName(connectionName, databaseName string, singleFile bool) string 
 // and renames it to the per-database format if the per-database file doesn't
 // already exist.
 func MigrateQueryFileIfNeeded(dir, connectionName, databaseName string) {
-	perDbFile := filepath.Join(dir, QueryFileName(connectionName, databaseName, false))
+	perDBFile := filepath.Join(dir, QueryFileName(connectionName, databaseName, false))
 	legacyFile := filepath.Join(dir, QueryFileName(connectionName, "", true))
 
 	// If per-database file already exists, nothing to do
-	if _, err := os.Stat(perDbFile); err == nil {
+	if _, err := os.Stat(perDBFile); err == nil {
 		return
 	}
 
 	// If legacy file exists, rename it
 	if _, err := os.Stat(legacyFile); err == nil {
-		_ = os.Rename(legacyFile, perDbFile)
+		_ = os.Rename(legacyFile, perDBFile)
 	}
 }
 
@@ -415,8 +415,8 @@ func GetOutputDir() (string, error) {
 	}
 
 	// Ensure the directory exists
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
-		err = os.MkdirAll(outputDir, 0o750)
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) { //nolint:gosec // path constructed from trusted sources
+		err = os.MkdirAll(outputDir, 0o750) //nolint:gosec // path constructed from trusted sources
 		if err != nil {
 			return "", fmt.Errorf("error creating folder to hold query files: %w", err)
 		}
@@ -430,7 +430,7 @@ func OpenEditor(file string) tea.Cmd {
 	if editor == "" {
 		editor = "vim"
 	}
-	c := exec.CommandContext(context.Background(), editor, file)
+	c := exec.CommandContext(context.Background(), editor, file) //nolint:gosec // editor from $EDITOR env var is intentional
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return EditorFinishedMsg{Err: err}
 	})
