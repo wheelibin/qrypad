@@ -32,6 +32,8 @@ type QueryPanelModel struct {
 	height              int
 	queryBuffer         textarea.Model
 	connectionName      string
+	databaseName        string
+	singleQueryFile     bool
 	CurrentStatement    *Statement
 	dirty               bool
 	filename            string
@@ -43,7 +45,7 @@ type QueryPanelModel struct {
 	autoCompletePopup   AutoCompletePopupModel
 }
 
-func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelModel {
+func NewQueryPanelModel(connectionName, databaseName string, singleQueryFile, autoSaveEnabled bool) QueryPanelModel {
 	ta := textarea.New()
 	ta.MaxHeight = 0
 	ta.Placeholder = "sql statement(s)..."
@@ -63,9 +65,11 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 	ac := NewAutoCompletePopupModel()
 
 	return QueryPanelModel{
-		connectionName:    connectionName,
-		queryBuffer:       ta,
-		help:              makeHelp(),
+		connectionName:  connectionName,
+		databaseName:    databaseName,
+		singleQueryFile: singleQueryFile,
+		queryBuffer:     ta,
+		help:            makeHelp(),
 		autoCompletePopup: ac,
 		keymap: queryPanelKeymap{
 			execute:      keys.DefaultKeyMap.ExecuteQuery,
@@ -112,7 +116,12 @@ func NewQueryPanelModel(connectionName string, autoSaveEnabled bool) QueryPanelM
 }
 
 func (m QueryPanelModel) Init() tea.Cmd {
-	return tea.Batch(commands.ReadOrCreateQueryFile(m.connectionName))
+	// If in per-database mode and database name is not yet known (resolved at
+	// connect time), defer the file read until DatabaseConnectedMsg arrives.
+	if !m.singleQueryFile && m.databaseName == "" {
+		return nil
+	}
+	return tea.Batch(commands.ReadOrCreateQueryFile(m.connectionName, m.databaseName, m.singleQueryFile))
 }
 
 func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
@@ -139,7 +148,7 @@ func (m QueryPanelModel) Update(msg tea.Msg) (QueryPanelModel, tea.Cmd) {
 		cmds = append(cmds, m.queryBuffer.Focus())
 
 	case commands.EditorFinishedMsg:
-		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName))
+		cmds = append(cmds, commands.ReadOrCreateQueryFile(m.connectionName, m.databaseName, m.singleQueryFile))
 
 	case commands.AutoCompleteEntrySelectedMsg:
 		m.queryBuffer = replaceFuzzyPrefixInTextarea(m.queryBuffer, string(msg))
@@ -209,6 +218,14 @@ func (m *QueryPanelModel) SetDirty(dirty bool) {
 
 func (m *QueryPanelModel) SetConnectionName(name string) {
 	m.connectionName = name
+}
+
+func (m *QueryPanelModel) SetDatabaseName(name string) {
+	m.databaseName = name
+}
+
+func (m *QueryPanelModel) SetSingleQueryFile(single bool) {
+	m.singleQueryFile = single
 }
 
 func (m *QueryPanelModel) SetSize(w, h int) {

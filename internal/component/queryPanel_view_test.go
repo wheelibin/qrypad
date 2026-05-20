@@ -11,14 +11,14 @@ import (
 func TestQueryPanelView(t *testing.T) {
 	t.Run("inactive", func(t *testing.T) {
 		setupViewTest(t)
-		m := component.NewQueryPanelModel("test-conn", false)
+		m := component.NewQueryPanelModel("test-conn", "", true, false)
 		m.SetSize(80, 24)
 		assertGolden(t, "QueryPanel_inactive", m.View())
 	})
 
 	t.Run("active", func(t *testing.T) {
 		setupViewTest(t)
-		m := component.NewQueryPanelModel("test-conn", false)
+		m := component.NewQueryPanelModel("test-conn", "", true, false)
 		m.SetActive(true)
 		m.SetValue("SELECT id FROM users;")
 		m.SetSize(80, 24)
@@ -27,7 +27,7 @@ func TestQueryPanelView(t *testing.T) {
 
 	t.Run("dirty", func(t *testing.T) {
 		setupViewTest(t)
-		m := component.NewQueryPanelModel("test-conn", false)
+		m := component.NewQueryPanelModel("test-conn", "", true, false)
 		m.SetActive(true)
 		m.SetDirty(true)
 		m.SetValue("SELECT 1;")
@@ -38,7 +38,7 @@ func TestQueryPanelView(t *testing.T) {
 	t.Run("with_filename", func(t *testing.T) {
 		setupViewTest(t)
 		home, _ := os.UserHomeDir()
-		m := component.NewQueryPanelModel("test-conn", false)
+		m := component.NewQueryPanelModel("test-conn", "", true, false)
 		m.SetActive(true)
 		m.SetFilename(filepath.Join(home, ".local", "share", "qrypad", "test-conn.sql"))
 		m.SetSize(80, 24)
@@ -47,7 +47,7 @@ func TestQueryPanelView(t *testing.T) {
 
 	t.Run("without_filename", func(t *testing.T) {
 		setupViewTest(t)
-		m := component.NewQueryPanelModel("test-conn", false)
+		m := component.NewQueryPanelModel("test-conn", "", true, false)
 		m.SetActive(true)
 		m.SetSize(80, 24)
 		assertGolden(t, "QueryPanel_without_filename", m.View())
