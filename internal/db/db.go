@@ -23,6 +23,16 @@ type ConnectionConfig struct {
 	User             string         `mapstructure:"user"`
 	InsecurePassword string         `mapstructure:"insecurePassword"`
 	Database         string         `mapstructure:"database"`
+	SingleQueryFile  bool           `mapstructure:"singleQueryFile"`
+}
+
+// UseSingleQueryFile returns true if this connection should use a single query
+// file rather than per-database files. SQLite always uses a single file.
+func (c ConnectionConfig) UseSingleQueryFile() bool {
+	if c.Driver == DriverName.SQLite {
+		return true
+	}
+	return c.SingleQueryFile
 }
 
 func Connect(conn ConnectionConfig, password string) (DBConn, error) {

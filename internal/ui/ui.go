@@ -115,7 +115,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 
 	tablePanel := component.NewTablePanelModel()
 	tableInfoPanel := component.NewTableInfoPanelModel()
-	queryPanel := component.NewQueryPanelModel(connectionName, autoSave)
+	queryPanel := component.NewQueryPanelModel(connectionName, dbConfig.Database, dbConfig.UseSingleQueryFile(), autoSave)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(connectionName)
 	titleBar := component.NewTitleBarModel(connectionName, dbConfig)
@@ -131,6 +131,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 	return model{
 		connectionName:          connectionName,
 		dbConfig:                dbConfig,
+		selectedDatabase:        dbConfig.Database,
 		tablePanel:              tablePanel,
 		tableInfoPanel:          tableInfoPanel,
 		queryPanel:              queryPanel,

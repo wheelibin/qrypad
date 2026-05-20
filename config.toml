@@ -16,6 +16,7 @@ port             = 3306
 user             = "qrypad"
 insecurePassword = "qrypad"
 database         = "qrypad"
+# singleQueryFile = true  # use one query file for this connection (default: per-database)
 
 [connections.animals_pg]
 driver           = "postgres"
@@ -24,6 +25,7 @@ port             = 50403
 user             = "qrypad"
 insecurePassword = "qrypad"
 database         = "qrypad"
+# singleQueryFile = true  # use one query file for this connection (default: per-database)
 
 [connections.animals_sqlite]
 driver           = "sqlite"
