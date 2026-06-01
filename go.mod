@@ -9,7 +9,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.18.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/x/ansi v0.11.7
-	github.com/evertras/bubble-table v0.19.2
+	github.com/evertras/bubble-table v0.20.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/mattn/go-runewidth v0.0.23
@@ -68,5 +68,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/evertras/bubble-table => github.com/wheelibin/bubble-table v0.0.0-20260415214505-bb52eb08b777
