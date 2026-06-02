@@ -12,7 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
-	rw "github.com/mattn/go-runewidth"
+	xansi "github.com/charmbracelet/x/ansi"
 	"github.com/rivo/uniseg"
 	qpStyle "github.com/wheelibin/qrypad/internal/style"
 )
@@ -424,7 +424,7 @@ func (m *Model) CursorDown() {
 		if m.Row >= len(m.value) || m.Col >= len(m.value[m.Row]) || offset >= nli.CharWidth-1 {
 			break
 		}
-		offset += rw.RuneWidth(m.value[m.Row][m.Col])
+		offset += xansi.StringWidth(string(m.value[m.Row][m.Col]))
 		m.Col++
 	}
 }
@@ -458,7 +458,7 @@ func (m *Model) CursorUp() {
 		if m.Col >= len(m.value[m.Row]) || offset >= nli.CharWidth-1 {
 			break
 		}
-		offset += rw.RuneWidth(m.value[m.Row][m.Col])
+		offset += xansi.StringWidth(string(m.value[m.Row][m.Col]))
 		m.Col++
 	}
 }
@@ -1003,7 +1003,7 @@ func wrap(runes []rune, width int) [][]rune {
 		} else {
 			// If the last character is a double-width rune, then we may not be able to add it to this line
 			// as it might cause us to go past the width.
-			lastCharLen := rw.RuneWidth(word[len(word)-1])
+			lastCharLen := xansi.StringWidth(string(word[len(word)-1]))
 			if uniseg.StringWidth(string(word))+lastCharLen > width {
 				// If the current line has any content, let's move to the next
 				// line because the current word fills up the entire line.
@@ -1439,7 +1439,7 @@ func (m Model) getPromptString(displayLine int) string {
 func (m Model) placeholderView() string {
 	var (
 		s     strings.Builder
-		p     = rw.Truncate(m.Placeholder, m.width, "...")
+		p     = xansi.Truncate(m.Placeholder, m.width, "...")
 		style = m.style.Placeholder.Inline(true)
 	)
 

@@ -4,13 +4,10 @@
 package style
 
 import (
-	"bytes"
 	"strings"
 
-	"github.com/mattn/go-runewidth"
-	"github.com/muesli/ansi"
-	"github.com/muesli/reflow/truncate"
-	"github.com/muesli/termenv"
+	"charm.land/lipgloss/v2"
+	xansi "github.com/charmbracelet/x/ansi"
 )
 
 // PlaceOverlay places fg on top of bg.
@@ -45,8 +42,8 @@ func PlaceOverlay(x, y int, fg, bg string, opts ...WhitespaceOption) string {
 
 		pos := 0
 		if x > 0 {
-			left := truncate.String(bgLine, uint(x))
-			pos = ansi.PrintableRuneWidth(left)
+			left := xansi.Truncate(bgLine, x, "")
+			pos = xansi.StringWidth(left)
 			b.WriteString(left)
 			if pos < x {
 				b.WriteString(ws.render(x - pos))
@@ -56,11 +53,11 @@ func PlaceOverlay(x, y int, fg, bg string, opts ...WhitespaceOption) string {
 
 		fgLine := fgLines[i-y]
 		b.WriteString(fgLine)
-		pos += ansi.PrintableRuneWidth(fgLine)
+		pos += xansi.StringWidth(fgLine)
 
-		right := cutLeft(bgLine, pos)
-		bgWidth := ansi.PrintableRuneWidth(bgLine)
-		rightWidth := ansi.PrintableRuneWidth(right)
+		right := xansi.TruncateLeft(bgLine, pos, "")
+		bgWidth := xansi.StringWidth(bgLine)
+		rightWidth := xansi.StringWidth(right)
 		if rightWidth <= bgWidth-pos {
 			b.WriteString(ws.render(bgWidth - rightWidth - pos))
 		}
@@ -68,47 +65,6 @@ func PlaceOverlay(x, y int, fg, bg string, opts ...WhitespaceOption) string {
 		b.WriteString(right)
 	}
 
-	return b.String()
-}
-
-// cutLeft cuts printable characters from the left.
-// This function is heavily based on muesli's ansi and truncate packages.
-func cutLeft(s string, cutWidth int) string {
-	var (
-		pos    int
-		isAnsi bool
-		ab     bytes.Buffer
-		b      bytes.Buffer
-	)
-	for _, c := range s {
-		var w int
-		if c == ansi.Marker || isAnsi {
-			isAnsi = true
-			ab.WriteRune(c)
-			if ansi.IsTerminator(c) {
-				isAnsi = false
-				if bytes.HasSuffix(ab.Bytes(), []byte("[0m")) {
-					ab.Reset()
-				}
-			}
-		} else {
-			w = runewidth.RuneWidth(c)
-		}
-
-		if pos >= cutWidth {
-			if b.Len() == 0 {
-				if ab.Len() > 0 {
-					b.Write(ab.Bytes())
-				}
-				if pos-cutWidth > 1 {
-					b.WriteByte(' ')
-					continue
-				}
-			}
-			b.WriteRune(c)
-		}
-		pos += w
-	}
 	return b.String()
 }
 
@@ -123,7 +79,7 @@ func getLines(s string) ([]string, int) {
 	var widest int
 
 	for _, l := range lines {
-		w := ansi.PrintableRuneWidth(l)
+		w := xansi.StringWidth(l)
 		if widest < w {
 			widest = w
 		}
@@ -134,7 +90,7 @@ func getLines(s string) ([]string, int) {
 
 // whitespace is a whitespace renderer.
 type whitespace struct {
-	style termenv.Style
+	style lipgloss.Style
 	chars string
 }
 
@@ -155,17 +111,17 @@ func (w whitespace) render(width int) string {
 		if j >= len(r) {
 			j = 0
 		}
-		i += ansi.PrintableRuneWidth(string(r[j]))
+		i += xansi.StringWidth(string(r[j]))
 	}
 
 	// Fill any extra gaps white spaces. This might be necessary if any runes
 	// are more than one cell wide, which could leave a one-rune gap.
-	short := width - ansi.PrintableRuneWidth(b.String())
+	short := width - xansi.StringWidth(b.String())
 	if short > 0 {
 		b.WriteString(strings.Repeat(" ", short))
 	}
 
-	return w.style.Styled(b.String())
+	return w.style.Render(b.String())
 }
 
 // WhitespaceOption sets a styling rule for rendering whitespace.

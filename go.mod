@@ -9,13 +9,10 @@ require (
 	github.com/alecthomas/chroma/v2 v2.18.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/x/ansi v0.11.7
-	github.com/evertras/bubble-table v0.20.0
+	github.com/evertras/bubble-table v0.21.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
-	github.com/mattn/go-runewidth v0.0.23
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
-	github.com/muesli/reflow v0.3.0
-	github.com/muesli/termenv v0.16.0
 	github.com/ncruces/go-sqlite3 v0.26.3
 	github.com/rivo/uniseg v0.4.7
 	github.com/spf13/viper v1.19.0
@@ -25,7 +22,6 @@ require (
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260413211237-bd52878bcec2 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
@@ -43,7 +39,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/ncruces/julianday v1.0.0 // indirect
