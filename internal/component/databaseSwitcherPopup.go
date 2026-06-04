@@ -1,8 +1,6 @@
 package component
 
 import (
-	"math"
-
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
@@ -137,9 +135,9 @@ func (m *DatabaseSwitcherPopupModel) SetData(data *db.Data) {
 func (m *DatabaseSwitcherPopupModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Max(float64(h-6), 1)
-	m.table = m.table.WithPageSize(int(rowsInTable))
-	m.table = m.table.WithMinimumHeight(h - 1)
+	tableHeight := max(h-1, 1)
+	m.table = m.table.WithTargetHeight(tableHeight)
+	m.table = m.table.WithMinimumHeight(tableHeight)
 	m.table = m.table.WithTargetWidth(w)
 }
 

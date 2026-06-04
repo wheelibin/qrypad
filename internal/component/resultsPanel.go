@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math"
 	"time"
 
 	"charm.land/bubbles/v2/help"
@@ -130,10 +129,10 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 func (m *ResultsPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Ceil(math.Max(float64(h-9), 1))
+	tableHeight := max(h-2, 1)
 	m.table = m.table.
-		WithPageSize(int(rowsInTable)).
-		WithMinimumHeight(h - 2).
+		WithTargetHeight(tableHeight).
+		WithMinimumHeight(tableHeight).
 		WithMaxTotalWidth(w - 1)
 }
 

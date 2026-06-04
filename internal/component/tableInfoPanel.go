@@ -1,7 +1,6 @@
 package component
 
 import (
-	"math"
 	"slices"
 
 	"charm.land/bubbles/v2/help"
@@ -163,9 +162,9 @@ func (m *TableInfoPanelModel) SetActive(active bool) {
 func (m *TableInfoPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h
-	rowsInTable := math.Max(float64(h-9), 1)
-	m.table = m.table.WithPageSize(int(rowsInTable))
-	m.table = m.table.WithMinimumHeight(h - 2)
+	tableHeight := max(h-2, 1)
+	m.table = m.table.WithTargetHeight(tableHeight)
+	m.table = m.table.WithMinimumHeight(tableHeight)
 	m.table = m.table.WithMaxTotalWidth(w)
 	m.table = m.table.WithTargetWidth(w)
 }
