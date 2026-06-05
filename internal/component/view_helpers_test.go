@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/spf13/viper"
 
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
@@ -77,4 +78,14 @@ func assertGolden(t *testing.T, name, got string) {
 		}
 		t.Errorf("view output mismatch for %s:\n%s", name, sb.String())
 	}
+}
+
+// setRowBorders sets the rowBorders viper config and returns a cleanup function
+// that resets it. Use with t.Cleanup or defer.
+func setRowBorders(t *testing.T) {
+	t.Helper()
+	viper.Set("rowBorders", true)
+	t.Cleanup(func() {
+		viper.Set("rowBorders", false)
+	})
 }

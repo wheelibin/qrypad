@@ -192,7 +192,7 @@ func (m ResultsPanelModel) GetExportRows() []map[string]any {
 }
 
 func newTable(cols []table.Column) table.Model {
-	return table.New(cols).
+	t := table.New(cols).
 		WithBaseStyle(style.TableColumn()).
 		HeaderStyle(style.GetTableHeaderStyle()).
 		HighlightStyle(style.GetTableHighlightStyle()).
@@ -200,6 +200,7 @@ func newTable(cols []table.Column) table.Model {
 		BorderRounded().
 		WithHorizontalFreezeColumnCount(1).
 		Filtered(true)
+	return withRowBorders(t)
 }
 
 func (m ResultsPanelModel) helpView() string {

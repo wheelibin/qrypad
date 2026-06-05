@@ -50,4 +50,14 @@ func TestTableInfoPanelView(t *testing.T) {
 		m.SetSize(80, 24)
 		assertGolden(t, "TableInfoPanel_active_cons", m.View())
 	})
+
+	t.Run("active_cols_row_borders", func(t *testing.T) {
+		setRowBorders(t)
+		m := component.NewTableInfoPanelModel()
+		m.SetActive(true)
+		m.SetActiveTabIndex(component.TableInfoTabIndexColumns)
+		m.SetData(tableInfoData)
+		m.SetSize(80, 24)
+		assertGolden(t, "TableInfoPanel_active_cols_row_borders", m.View())
+	})
 }

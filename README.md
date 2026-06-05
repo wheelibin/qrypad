@@ -63,6 +63,9 @@ queryTimeout = 60
 # max rows fetched when viewing table data (does not apply to ad-hoc queries)
 tableDataRowLimit = 100
 
+# show horizontal borders between table rows
+rowBorders = true
+
 [theme]
 name = "catppuccin"
 

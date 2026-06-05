@@ -29,4 +29,16 @@ func TestResultRowPopupView(t *testing.T) {
 		}, []string{"id", "data"}, nil)
 		assertGolden(t, "ResultRowPopup_multiline", m.View())
 	})
+
+	t.Run("basic_row_borders", func(t *testing.T) {
+		setRowBorders(t)
+		m := component.NewResultRowPopupModel()
+		m.SetSize(60, 15)
+		m.SetData(map[string]any{
+			"id":    "1",
+			"name":  "Alice",
+			"email": "alice@example.com",
+		}, []string{"id", "name", "email"}, nil)
+		assertGolden(t, "ResultRowPopup_basic_row_borders", m.View())
+	})
 }

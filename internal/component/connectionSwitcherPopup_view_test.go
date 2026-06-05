@@ -23,4 +23,19 @@ func TestConnectionSwitcherPopupView(t *testing.T) {
 		})
 		assertGolden(t, "ConnectionSwitcherPopup_basic", m.View())
 	})
+
+	t.Run("row_borders", func(t *testing.T) {
+		setRowBorders(t)
+		m := component.NewConnectionSwitcherPopupModel()
+		m.SetSize(50, 15)
+		m.SetData(&db.Data{
+			Columns: []string{"name", "driver", "host"},
+			Rows: []map[string]any{
+				{"name": "local", "driver": "postgres", "host": "localhost"},
+				{"name": "staging", "driver": "postgres", "host": "staging.example.com"},
+				{"name": "production", "driver": "postgres", "host": "prod.example.com"},
+			},
+		})
+		assertGolden(t, "ConnectionSwitcherPopup_row_borders", m.View())
+	})
 }

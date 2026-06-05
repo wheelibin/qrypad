@@ -58,6 +58,7 @@ func NewResultRowPopupModel() ResultRowPopupModel {
 		Filtered(true).
 		Focused(true).
 		WithMultiline(true)
+	t = withRowBorders(t)
 
 	return ResultRowPopupModel{
 		table: t,
