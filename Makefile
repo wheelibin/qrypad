@@ -52,8 +52,24 @@ format: ## Applies standard formatting (spaces, indents, etc.)
 	goimports -local github.com/wheelibin/qrypad -w $$(go list -f '{{.Dir}}' ./... | xargs -I {} find {} -maxdepth 1 -name "*.go") && \
 	go mod tidy
 
-lint:
-	golangci-lint run ./...
+# ===============================
+# LINTING COMMANDS
+# ===============================
+GOLANGCI_LINT_VERSION := 2.12.2
+
+install-golangci-lint: # Check and install golangci-lint at specified version
+	@if command -v golangci-lint > /dev/null 2>&1 && \
+		test "$$(golangci-lint version --short)" = "$(GOLANGCI_LINT_VERSION)"; then \
+		echo "  >  golangci-lint@v$(GOLANGCI_LINT_VERSION) is already installed"; \
+	else \
+		echo "  >  Installing golangci-lint@v$(GOLANGCI_LINT_VERSION)"; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $$(go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION); \
+		echo "  >  golangci-lint@v$(GOLANGCI_LINT_VERSION) installed successfully"; \
+	fi
+	
+lint: install-golangci-lint 
+	@echo "  >  Linting source code"
+	golangci-lint run -v ./...
 
 update-golden:
 	go test ./internal/component/... -update
