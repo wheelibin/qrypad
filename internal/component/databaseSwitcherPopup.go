@@ -39,6 +39,7 @@ func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
 		WithHeaderVisibility(false).
 		Filtered(true).
 		Focused(true)
+	t = withRowBorders(t)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points

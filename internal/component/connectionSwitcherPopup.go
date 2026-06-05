@@ -40,6 +40,7 @@ func NewConnectionSwitcherPopupModel() ConnectionSwitcherPopupModel {
 		HeaderStyle(style.GetTableHeaderStyle()).
 		Filtered(true).
 		Focused(true)
+	t = withRowBorders(t)
 
 	s := spinner.New()
 	s.Spinner = spinner.Points

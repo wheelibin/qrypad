@@ -7,6 +7,9 @@ tableDataRowLimit = 100
 # auto save the query pad
 autoSave = true
 
+# show horizontal borders between table rows
+# rowBorders = true
+
 [connections]
 
 [connections.animals_mysql]

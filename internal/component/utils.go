@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/help"
 	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
+	"github.com/spf13/viper"
 
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/textarea"
@@ -197,4 +198,12 @@ func unwrapCellData(v any) any {
 		return sc.Data
 	}
 	return v
+}
+
+// withRowBorders applies the rowBorders config option to a table model.
+func withRowBorders(t table.Model) table.Model {
+	if viper.GetBool("rowBorders") {
+		return t.WithRowBorder(true)
+	}
+	return t
 }

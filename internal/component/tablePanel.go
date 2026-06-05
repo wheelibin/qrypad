@@ -57,6 +57,7 @@ func NewTablePanelModel() TablePanelModel {
 		BorderRounded().
 		Filtered(true).
 		Focused(true)
+	t = withRowBorders(t)
 
 	return TablePanelModel{
 		table:  t,

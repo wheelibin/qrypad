@@ -9,7 +9,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.18.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/x/ansi v0.11.7
-	github.com/evertras/bubble-table v0.22.2
+	github.com/evertras/bubble-table v0.22.3
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
