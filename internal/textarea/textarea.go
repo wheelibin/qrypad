@@ -14,6 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 	xansi "github.com/charmbracelet/x/ansi"
 	"github.com/rivo/uniseg"
+
 	qpStyle "github.com/wheelibin/qrypad/internal/style"
 )
 

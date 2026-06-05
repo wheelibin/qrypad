@@ -12,6 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/muesli/ansi"
+
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 

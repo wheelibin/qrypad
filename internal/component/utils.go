@@ -8,6 +8,7 @@ import (
 	"charm.land/bubbles/v2/help"
 	"charm.land/lipgloss/v2"
 	"github.com/evertras/bubble-table/table"
+
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/textarea"
 	"github.com/wheelibin/qrypad/internal/theme"

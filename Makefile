@@ -43,9 +43,14 @@ integration-down:
 	@(cd test-db/postgres && docker compose down -v)
 	@(cd test-db/mysql && docker compose down -v)
 
-format:
-	go install github.com/segmentio/golines@latest
-	find . -name '*.go' | xargs golines --max-len=150 -w
+format: ## Applies standard formatting (spaces, indents, etc.)
+	@echo "  >  Formatting source code"
+	@go install tool github.com/segmentio/golines
+	@go install tool golang.org/x/tools/cmd/goimports
+	go fmt ./...; \
+	find . -path './.go' -prune -o -path './.cache' -prune -o -path './.go-tools' -prune -o -name '*.go' -print | xargs golines --max-len=150 -w; \
+	goimports -local github.com/wheelibin/qrypad -w $$(go list -f '{{.Dir}}' ./... | xargs -I {} find {} -maxdepth 1 -name "*.go") && \
+	go mod tidy
 
 lint:
 	golangci-lint run ./...
