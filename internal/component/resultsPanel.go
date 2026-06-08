@@ -93,9 +93,11 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 	cols := []table.Column{}
 	rows := []table.Row{}
 
+	maxColWidth := m.width / 2
+
 	// get cols
 	for _, c := range data.Columns {
-		w := getColumnWidth(c, *data, m.width/2)
+		w := getColumnWidth(c, *data, maxColWidth)
 		cols = append(cols, table.NewColumn(c, c, w).WithFiltered(true))
 	}
 	for _, row := range data.Rows {
@@ -112,7 +114,14 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 			case valStr == "NULL":
 				styledRow[colName] = table.NewStyledCell(val, style.NullStyle())
 			case category == "json":
-				highlighted := style.HighlightJSON(valStr)
+				// Truncate before highlighting to avoid expensive Chroma
+				// processing and ANSI manipulation on very long strings that
+				// would be truncated during rendering anyway.
+				displayStr := valStr
+				if len(displayStr) > maxColWidth {
+					displayStr = displayStr[:maxColWidth]
+				}
+				highlighted := style.HighlightJSON(displayStr)
 				styledRow[colName] = table.NewStyledCell(jsonCellData{Raw: valStr, highlighted: highlighted}, style.JSONBaseStyle())
 			default:
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle(category))

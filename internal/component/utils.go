@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"charm.land/bubbles/v2/help"
@@ -78,6 +77,7 @@ func makeHelp() help.Model {
 }
 
 func getColumnWidth(col string, data db.Data, maxWidth int) int {
+	// Start with the longest column header as a minimum width.
 	maxNeededLen := 0
 	for _, c := range data.Columns {
 		if len(c) > maxNeededLen {
@@ -89,9 +89,13 @@ func getColumnWidth(col string, data db.Data, maxWidth int) int {
 		if l > maxNeededLen {
 			maxNeededLen = l
 		}
+		// Short-circuit: already at max, no need to check more rows.
+		if maxNeededLen >= maxWidth {
+			return maxWidth + 1 // +1 for padding
+		}
 	}
 	padding := 1
-	return int(math.Min(float64(maxNeededLen), float64(maxWidth))) + padding
+	return maxNeededLen + padding
 }
 
 func getWordAtCursor(text string, row, col int) string {

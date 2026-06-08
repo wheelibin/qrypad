@@ -170,26 +170,27 @@ func (m *ResultRowPopupModel) SetData(data map[string]any, columns []string, col
 		val := fmt.Sprintf("%v", v)
 		// Pre-truncate long single-line values so word-wrap cannot create
 		// more than maxRowLines lines regardless of column width.
+		displayVal := val
 		maxChars := m.width * maxRowLines
 		if maxChars <= 0 {
 			maxChars = fallbackCharsPerLine * maxRowLines // fallback when width not yet set
 		}
-		if runeCount := len([]rune(val)); runeCount > maxChars {
-			val = string([]rune(val)[:maxChars]) + "…"
+		if runeCount := len([]rune(displayVal)); runeCount > maxChars {
+			displayVal = string([]rune(displayVal)[:maxChars]) + "…"
 		}
-		val = clampToLines(val, maxRowLines)
+		displayVal = clampToLines(displayVal, maxRowLines)
 
 		// Determine style for value cell
 		category := typeMap[k]
 		var styledValue any
 		switch {
 		case fmt.Sprintf("%v", v) == "NULL":
-			styledValue = table.NewStyledCell(val, style.NullStyle())
+			styledValue = table.NewStyledCell(displayVal, style.NullStyle())
 		case category == "json":
-			highlighted := style.HighlightJSON(val)
+			highlighted := style.HighlightJSON(displayVal)
 			styledValue = table.NewStyledCell(jsonCellData{Raw: val, highlighted: highlighted}, style.JSONBaseStyle())
 		default:
-			styledValue = table.NewStyledCell(val, style.ResultCellStyle(category))
+			styledValue = table.NewStyledCell(displayVal, style.ResultCellStyle(category))
 		}
 
 		rows = append(rows, table.Row{Data: map[string]any{"field": k, "value": styledValue}})
