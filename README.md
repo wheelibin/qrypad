@@ -2,28 +2,38 @@
   <img src="assets/header.png" style="width:600px; height:auto;" />
 </p>
 
-A terminal SQL client for Postgres, MySQL and SQLite.
-
-## Features
-
-- Table / column autocomplete in the query pad
-- Run the statement under the cursor
-- Syntax highlighting
-- Filter tables, columns and result sets
-- View a snapshot of any table with a single keypress
-- Browse tables, views, columns, indexes and constraints
-- Switch between configured connections without restarting
-- Switch databases on the current connection (Postgres / MySQL)
-- Postgres schema support — switch schemas on the fly
-- Inspect a full result row in a popup, with long values wrapped across lines
-- Save and reload a query pad per connection, or open it in `$EDITOR`
-- Export results to JSON or CSV
-- Configurable key bindings and themes
-- Passwords stored in the OS keychain
+<p align="center">A terminal SQL client for Postgres, MySQL and SQLite.</p>
 
 <p align="center">
   <img src="assets/ss.png" style="max-width:100%; height:auto;"/>
 </p>
+
+## Features
+
+**Write queries**
+- Autocomplete tables and columns in the query pad
+- SQL syntax highlighting
+- Run only the statement under the cursor — no selection needed
+- Save and reload a query pad per connection, or open it in `$EDITOR`
+
+**Explore your schema**
+- Browse tables, views, columns, indexes, and constraints
+- View any table's data with a single keypress
+- Filter tables and columns instantly
+
+**Work with results**
+- Filter result sets on the fly
+- Inspect any row in a popup, with long values wrapped across lines
+- Export to JSON or CSV
+
+**Manage connections**
+- Switch connections without restarting
+- Switch databases on the current connection (Postgres / MySQL)
+- Passwords stored securely in the OS keychain
+
+**Customise**
+- Configurable key bindings
+- Built-in themes (kanagawa, catppuccin, rose-pine) with full colour customisation
 
 ## Installation
 
