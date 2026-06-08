@@ -424,6 +424,30 @@ func TestPrimaryKeyColumnsSQL_Builders(t *testing.T) {
 	}
 }
 
+func TestAllTableColumns(t *testing.T) {
+	tests := []struct {
+		name        string
+		driver      db.DriverNameType
+		wantEmpty   bool
+		wantContain string
+	}{
+		{name: "Postgres returns bulk columns SQL", driver: db.DriverName.Postgres, wantContain: "INFORMATION_SCHEMA.COLUMNS"},
+		{name: "MySQL returns bulk columns SQL", driver: db.DriverName.MySQL, wantContain: "INFORMATION_SCHEMA.COLUMNS"},
+		{name: "SQLite returns empty string", driver: db.DriverName.SQLite, wantEmpty: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := makeConn(tt.driver).Queries.AllTableColumns()
+			if tt.wantEmpty && got != "" {
+				t.Errorf("expected empty string, got %q", got)
+			}
+			if !tt.wantEmpty && !strings.Contains(got, tt.wantContain) {
+				t.Errorf("expected SQL to contain %q, got %q", tt.wantContain, got)
+			}
+		})
+	}
+}
+
 func TestNormalizeColumnType(t *testing.T) {
 	tests := []struct {
 		input string

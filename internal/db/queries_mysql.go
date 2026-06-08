@@ -62,6 +62,16 @@ func (mysqlQueries) TableRows(ref TableReference, primaryKeyColumns []string, so
 	return buildTableRowsSQL(quotedTableRefForDriver(DriverName.MySQL, ref), primaryKeyColumns, sortOrder)
 }
 
+func (mysqlQueries) AllTableColumns() string {
+	return `SELECT CONCAT(TABLE_SCHEMA, '.', TABLE_NAME) AS table_name,
+	               COLUMN_NAME AS name,
+	               DATA_TYPE AS type,
+	               CASE WHEN IS_NULLABLE = 'NO' THEN 'NOT NULL' ELSE 'NULL' END AS nullable
+	        FROM INFORMATION_SCHEMA.COLUMNS
+	        WHERE TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'sys', 'information_schema')
+	        ORDER BY table_name, COLUMN_NAME;`
+}
+
 func (m mysqlQueries) TableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error) {
 	return fetchRows(ctx, dbConn, m.tableIndexesSQL(ref))
 }

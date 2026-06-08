@@ -105,8 +105,29 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		} else {
 			m.tablePanel.SetData(msg.Data)
 			m.adjustSizes()
+
+			// Trigger eager column preload if table count is within threshold
+			refs := m.tablePanel.GetAllTableRefs()
+			if len(refs) > 0 && len(refs) <= commands.PreloadTableThreshold {
+				m.schemaPreloading = true
+				m.statusBar.SetStatusInfo("loading schema...")
+				return tea.Batch(
+					commands.SetLoading(false),
+					commands.PreloadColumns(m.db, refs, m.schemaCache),
+				)
+			}
 		}
 		return commands.SetLoading(false)
+
+	case commands.SchemaPreloadCompleteMsg:
+		m.schemaPreloading = false
+		m.statusBar.SetStatusInfo("")
+		return nil
+
+	case commands.SchemaPreloadErrorMsg:
+		m.schemaPreloading = false
+		m.statusBar.SetStatusInfo("")
+		return nil
 
 	case db.DatabaseListFetchedMsg:
 		if msg.Err != nil {

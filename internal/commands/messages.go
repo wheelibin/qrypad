@@ -91,3 +91,10 @@ type ExportCompletedMsg struct {
 	Path     string
 	RowCount int
 }
+
+// SchemaPreloadCompleteMsg is sent when background column preloading finishes.
+type SchemaPreloadCompleteMsg struct{}
+
+// SchemaPreloadErrorMsg is sent when background column preloading fails.
+// This is non-fatal; the app continues with lazy loading.
+type SchemaPreloadErrorMsg struct{ Err error }

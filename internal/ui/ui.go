@@ -94,6 +94,7 @@ type model struct {
 	activePopup      PopupKindType
 	cancelQuery      context.CancelFunc
 	schemaCache      *db.SchemaCache
+	schemaPreloading bool
 
 	windowTooSmall         bool
 	width                  int
