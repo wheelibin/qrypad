@@ -50,6 +50,11 @@ type QueryProvider interface {
 	// TableConstraints returns SQL listing the constraints of the given table.
 	// SQLite returns only foreign keys (pragma_foreign_key_list shape).
 	TableConstraints(ref TableReference) string
+	// AllTableColumns returns SQL that fetches columns for ALL user tables
+	// in a single query. Returns "" if the driver doesn't support bulk column
+	// fetching (e.g. SQLite). Result columns must include: table_name, name,
+	// type, nullable. Rows are ordered by table_name, then column_name.
+	AllTableColumns() string
 	// TableRows returns SQL selecting rows from the given table, ordered
 	// by primaryKeyColumns (if any) in the given sortOrder ("ASC"/"DESC"),
 	// limited to a configured row count.

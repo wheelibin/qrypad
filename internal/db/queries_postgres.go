@@ -65,6 +65,16 @@ func (postgresQueries) TableRows(ref TableReference, primaryKeyColumns []string,
 	return buildTableRowsSQL(quotedTableRefForDriver(DriverName.Postgres, ref), primaryKeyColumns, sortOrder)
 }
 
+func (postgresQueries) AllTableColumns() string {
+	return `SELECT table_schema || '.' || table_name AS table_name,
+	               column_name AS name,
+	               data_type AS type,
+	               CASE WHEN is_nullable = 'NO' THEN 'NOT NULL' ELSE 'NULL' END AS nullable
+	        FROM INFORMATION_SCHEMA.COLUMNS
+	        WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+	        ORDER BY table_name, column_name;`
+}
+
 func (p postgresQueries) TableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error) {
 	return fetchRows(ctx, dbConn, p.tableIndexesSQL(ref))
 }

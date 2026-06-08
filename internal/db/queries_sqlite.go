@@ -38,6 +38,10 @@ func (sqliteQueries) TableRows(ref TableReference, primaryKeyColumns []string, s
 	return buildTableRowsSQL(quotedTableRefForDriver(DriverName.SQLite, ref), primaryKeyColumns, sortOrder)
 }
 
+func (sqliteQueries) AllTableColumns() string {
+	return ""
+}
+
 func (sqliteQueries) TableIndexes(ctx context.Context, dbConn DBConn, ref TableReference) (*Data, error) {
 	inds, err := fetchRows(ctx, dbConn, fmt.Sprintf("PRAGMA index_list('%s')", ref.Name))
 	if err != nil {

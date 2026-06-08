@@ -153,6 +153,57 @@ func TestIntegration_SQLite_PrimaryKeyColumns(t *testing.T) {
 	}
 }
 
+func TestIntegration_SQLite_AllTableColumns(t *testing.T) {
+	conn := openSQLiteConn(t)
+	sql := conn.Queries.AllTableColumns()
+	if sql != "" {
+		t.Fatalf("SQLite AllTableColumns should return empty string, got %q", sql)
+	}
+}
+
+func TestIntegration_SQLite_SequentialColumnPreload(t *testing.T) {
+	conn := openSQLiteConn(t)
+
+	// Get table list
+	data, err := db.ExecuteQuery(context.Background(), conn, conn.Queries.SchemaTables())
+	if err != nil {
+		t.Fatalf("SchemaTables: %v", err)
+	}
+
+	refs := make([]db.TableReference, 0, len(data.Rows))
+	for _, row := range data.Rows {
+		name, _ := row["name"].(string)
+		refs = append(refs, db.TableReference{Name: name})
+	}
+
+	if len(refs) == 0 {
+		t.Fatal("no tables in test SQLite database")
+	}
+
+	// Simulate sequential preload: fetch columns for each table
+	cache := db.NewSchemaCache()
+	for _, ref := range refs {
+		query := conn.Queries.TableColumns(ref)
+		colData, err := db.ExecuteQuery(context.Background(), conn, query)
+		if err != nil {
+			t.Fatalf("TableColumns(%s): %v", ref.Name, err)
+		}
+		cache.SetTableInfo(ref, "cols", colData)
+	}
+
+	// Verify cache is populated for all tables
+	for _, ref := range refs {
+		cached, ok := cache.GetTableInfo(ref, "cols")
+		if !ok {
+			t.Errorf("expected cache hit for table %q after preload", ref.Name)
+			continue
+		}
+		if len(cached.Rows) == 0 {
+			t.Errorf("table %q has no columns in cache", ref.Name)
+		}
+	}
+}
+
 func TestIntegration_SQLite_ConnectPopulatesQueries(t *testing.T) {
 	conn := openSQLiteConn(t)
 	if conn.Queries == nil {

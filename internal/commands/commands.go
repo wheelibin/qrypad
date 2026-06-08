@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -451,7 +452,7 @@ func AutoCompleteClose() tea.Cmd {
 
 func connectionsToDataResponse(conns map[string]db.ConnectionConfig) *db.Data {
 	d := db.Data{
-		Columns: []string{"name", "driver", "host"},
+		Columns: []string{"name", "driver", "host"}, //nolint:goconst
 		Rows:    make([]map[string]any, 0, len(conns)),
 	}
 	keys := make([]string, 0, len(conns))
@@ -464,4 +465,81 @@ func connectionsToDataResponse(conns map[string]db.ConnectionConfig) *db.Data {
 		d.Rows = append(d.Rows, map[string]any{"name": name, "driver": c.Driver, "host": c.Host})
 	}
 	return &d
+}
+
+// PreloadTableThreshold is the max number of tables for which eager column
+// preloading is performed.
+const PreloadTableThreshold = 100
+
+// PreloadColumns fetches column metadata for all tables in bulk and populates
+// the schema cache. For Postgres/MySQL this uses a single bulk query; for
+// SQLite it iterates per-table PRAGMAs. Returns SchemaPreloadCompleteMsg on
+// success or SchemaPreloadErrorMsg on failure (non-fatal).
+func PreloadColumns(dbConn db.DBConn, refs []db.TableReference, cache *db.SchemaCache) tea.Cmd {
+	if len(refs) == 0 || len(refs) > PreloadTableThreshold || cache == nil {
+		return nil
+	}
+
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		bulkSQL := dbConn.Queries.AllTableColumns()
+		if bulkSQL != "" {
+			return preloadColumnsBulk(ctx, dbConn, refs, cache, bulkSQL)
+		}
+		return preloadColumnsSequential(ctx, dbConn, refs, cache)
+	}
+}
+
+func preloadColumnsBulk(ctx context.Context, dbConn db.DBConn, refs []db.TableReference, cache *db.SchemaCache, query string) tea.Msg {
+	data, err := db.ExecuteQuery(ctx, dbConn, query)
+	if err != nil {
+		return SchemaPreloadErrorMsg{Err: err}
+	}
+
+	// Build a lookup of expected refs keyed by "schema.name"
+	refLookup := make(map[string]db.TableReference, len(refs))
+	for _, ref := range refs {
+		key := ref.Schema + "." + ref.Name
+		refLookup[key] = ref
+	}
+
+	// Partition rows by table_name
+	grouped := make(map[string][]map[string]any)
+	for _, row := range data.Rows {
+		tableName, _ := row["table_name"].(string)
+		grouped[tableName] = append(grouped[tableName], row)
+	}
+
+	// Store each table's columns in cache
+	for tableName, rows := range grouped {
+		ref, ok := refLookup[tableName]
+		if !ok {
+			continue
+		}
+		colData := &db.Data{
+			Columns: []string{"name", "type", "nullable"},
+			Rows:    rows,
+		}
+		cache.SetTableInfo(ref, string(TableInfoKind.Columns), colData)
+	}
+
+	return SchemaPreloadCompleteMsg{}
+}
+
+func preloadColumnsSequential(ctx context.Context, dbConn db.DBConn, refs []db.TableReference, cache *db.SchemaCache) tea.Msg {
+	for _, ref := range refs {
+		// Skip if already cached (e.g. user navigated before preload reached this table)
+		if _, ok := cache.GetTableInfo(ref, string(TableInfoKind.Columns)); ok {
+			continue
+		}
+		query := dbConn.Queries.TableColumns(ref)
+		data, err := db.ExecuteQuery(ctx, dbConn, query)
+		if err != nil {
+			return SchemaPreloadErrorMsg{Err: err}
+		}
+		cache.SetTableInfo(ref, string(TableInfoKind.Columns), data)
+	}
+	return SchemaPreloadCompleteMsg{}
 }
