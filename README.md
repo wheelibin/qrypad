@@ -237,3 +237,7 @@ The `syntax*` keys control SQL syntax highlighting colours. If omitted, they fal
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+Released under the [MIT License](LICENSE).

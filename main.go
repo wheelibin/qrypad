@@ -22,6 +22,32 @@ import (
 )
 
 func main() {
+	connectionFlag := flag.String(
+		"connection",
+		"",
+		"The name of a database connection defined in your config",
+	)
+
+	versionFlag := flag.Bool(
+		"version",
+		false,
+		"Print the version and exit",
+	)
+
+	flag.Usage = func() {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"\nUsage:  qrypad\n        qrypad --connection <connection>\n\n%s\n\n    --connection  The name of a database connection defined in your config\n                  If omitted, you will be prompted to choose a connection on startup.\n    --version     Print the version and exit.\n\n",
+			constants.AppDesc,
+		)
+	}
+	flag.Parse()
+
+	if versionFlag != nil && *versionFlag {
+		fmt.Fprintf(os.Stdout, "qrypad %s\n", constants.Version)
+		os.Exit(0)
+	}
+
 	viper.SetConfigName("config")               // name of config file (without extension)
 	viper.AddConfigPath("$HOME/.config/qrypad") // call multiple times to add many search paths
 	viper.AddConfigPath(".")                    // optionally look for config in the working directory
@@ -38,21 +64,6 @@ func main() {
 	if err != nil {
 		exitWithError("error unmarshalling config\n(for config format see https://github.com/wheelibin/qrypad/blob/main/README.md)\n\n", err)
 	}
-
-	connectionFlag := flag.String(
-		"connection",
-		"",
-		"The name of a database connection defined in your config",
-	)
-
-	flag.Usage = func() {
-		_, _ = fmt.Fprintf(
-			os.Stderr,
-			"\nUsage:  qrypad\n        qrypad --connection <connection>\n\n%s\n\n    --connection  The name of a database connection defined in your config\n                  If omitted, you will be prompted to choose a connection on startup.\n\n",
-			constants.AppDesc,
-		)
-	}
-	flag.Parse()
 
 	var (
 		connectionName string

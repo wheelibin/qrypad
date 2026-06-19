@@ -3,6 +3,8 @@ builds:
   - main: ./
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/wheelibin/qrypad/internal/constants.Version={{ .Version }}
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
