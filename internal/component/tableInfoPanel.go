@@ -47,7 +47,6 @@ func NewTableInfoPanelModel() TableInfoPanelModel {
 		WithBorderForeground(style.GetTableBorderForeground()).
 		BorderRounded().
 		Filtered(true)
-	t = withRowBorders(t)
 
 	return TableInfoPanelModel{
 		table: t,
