@@ -1,4 +1,4 @@
-.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover update-golden integration-test integration-down
+.PHONY: testdb-pg-up testdb-pg-down testdb-mysql-up testdb-mysql-down format lint test test-cover update-golden integration-test integration-down release
 
 # Default test target: runs fast unit tests, no Docker required.
 # For integration tests, run `make integration-test`.
@@ -73,3 +73,20 @@ lint: install-golangci-lint
 
 update-golden:
 	go test ./internal/component/... -update
+
+release: ## Tag and release a new version (usage: make release VERSION=x.y.z)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=x.y.z"; exit 1; fi
+	@echo "Updating flake.nix to v$(VERSION)..."
+	@perl -i -pe 's/version = "[^"]+"/version = "$(VERSION)"/' flake.nix
+	@perl -i -pe 's/vendorHash = "[^"]+"/vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/' flake.nix
+	@echo "Computing vendorHash..."
+	@hash=$$(nix build 2>&1 | grep "got:" | awk '{print $$2}'); \
+		[ -n "$$hash" ] || (git checkout flake.nix && echo "Error: failed to compute vendorHash" && exit 1); \
+		perl -i -pe "s|vendorHash = \"[^\"]+\"|vendorHash = \"$$hash\"|" flake.nix
+	@echo "Verifying build..."
+	@nix build
+	@git add flake.nix flake.lock
+	@git commit -m "chore: release v$(VERSION)"
+	@git tag v$(VERSION)
+	@git push origin main
+	@git push origin v$(VERSION)

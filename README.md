@@ -47,6 +47,29 @@ https://github.com/wheelibin/qrypad/releases
 go install github.com/wheelibin/qrypad@latest
 ```
 
+### Nix
+
+Run without installing:
+
+```bash
+nix run github:wheelibin/qrypad
+```
+
+Install into your profile:
+
+```bash
+nix profile install github:wheelibin/qrypad
+```
+
+Or add to your `flake.nix`:
+
+```nix
+inputs.qrypad.url = "github:wheelibin/qrypad";
+
+# then reference the package as:
+inputs.qrypad.packages.${system}.default
+```
+
 ## Usage
 
 ```
