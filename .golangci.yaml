@@ -259,14 +259,14 @@ linters:
       - text: 'unexported method ".+" for struct ".+" should be placed after the exported method "View"'
         linters: [funcorder]
       # Magic numbers in UI layout, timeouts, and file permissions are acceptable with comments
-      - text: 'Magic number: (0o600|0o750|10|13|30|100|100_000|2|3|4|5|6|7|8|9|12|16|20|120|150|500), in'
+      - text: "Magic number: (0o600|0o750|10|13|30|100|100_000|2|3|4|5|6|7|8|9|12|16|20|120|150|500), in"
         linters: [mnd]
       # Bubble Tea model cognitive complexity is inherently high due to message handling
-      - text: 'cognitive complexity .+ of func .+ is high'
+      - text: "cognitive complexity .+ of func .+ is high"
         linters: [gocognit]
       # Large switch-based message handlers are a Bubble Tea pattern
-      - text: 'Function .+ has too many statements'
+      - text: "Function .+ has too many statements"
         linters: [funlen]
       # Nested ifs in complex UI message handling are acceptable
-      - text: 'has complex nested blocks'
+      - text: "has complex nested blocks"
         linters: [nestif]

@@ -19,6 +19,7 @@ make integration-test
 This starts Postgres and MySQL via Docker Compose (using the files in `test-db/`), seeds SQLite, runs all integration tests, and tears down on success. On test failure, containers are left running for debugging — run `make integration-down` to clean up.
 
 Local ports used:
+
 - Postgres: `50403`
 - MySQL: `50306` (non-standard to avoid conflicts with locally-installed MySQL)
 - SQLite: `test-db/sqlite/sqlite.db` (file-based)

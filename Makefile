@@ -49,6 +49,7 @@ format: ## Applies standard formatting (spaces, indents, etc.)
 	@go install tool golang.org/x/tools/cmd/goimports
 	go fmt ./...; \
 	find . -path './.go' -prune -o -path './.cache' -prune -o -path './.go-tools' -prune -o -name '*.go' -print | xargs golines --max-len=150 -w; \
+	npx prettier . --write; \
 	goimports -local github.com/wheelibin/qrypad -w $$(go list -f '{{.Dir}}' ./... | xargs -I {} find {} -maxdepth 1 -name "*.go") && \
 	go mod tidy
 

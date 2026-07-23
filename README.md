@@ -11,27 +11,32 @@
 ## Features
 
 **Write queries**
+
 - Autocomplete tables and columns in the query pad
 - SQL syntax highlighting
 - Run only the statement under the cursor — no selection needed
 - Save and reload a query pad per connection, or open it in `$EDITOR`
 
 **Explore your schema**
+
 - Browse tables, views, columns, indexes, and constraints
 - View any table's data with a single keypress
 - Filter tables and columns instantly
 
 **Work with results**
+
 - Filter result sets on the fly
 - Inspect any row in a popup, with long values wrapped across lines
 - Export to JSON or CSV
 
 **Manage connections**
+
 - Switch connections without restarting
 - Switch databases on the current connection (Postgres / MySQL)
 - Passwords stored securely in the OS keychain
 
 **Customise**
+
 - Configurable key bindings
 - Built-in themes (kanagawa, catppuccin, rose-pine) with full colour customisation
 

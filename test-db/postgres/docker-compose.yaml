@@ -7,8 +7,8 @@ services:
       - POSTGRES_PASSWORD=qrypad
       - POSTGRES_DB=qrypad
     ports:
-      - '50403:5432'
-    volumes: 
+      - "50403:5432"
+    volumes:
       - ${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db:/var/lib/postgresql
     healthcheck:
