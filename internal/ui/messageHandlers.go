@@ -569,6 +569,14 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		m.showPopup(PopupKind.ExportFormat)
 
+	case key.Matches(msg, keys.DefaultKeyMap.CopyResults):
+		rows := m.resultsPanel.GetExportRows()
+		if len(rows) == 0 {
+			m.statusBar.SetStatusInfo("nothing to copy")
+			break
+		}
+		return commands.CopyResultsJSON(rows)
+
 	case key.Matches(msg, keys.DefaultKeyMap.UpdatePassword):
 		m.showPopup(PopupKind.Password)
 

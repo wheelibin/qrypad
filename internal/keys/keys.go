@@ -11,6 +11,7 @@ type keyMap struct {
 	CopyValue        key.Binding
 	ExecuteQuery     key.Binding
 	ExportResults    key.Binding
+	CopyResults      key.Binding
 	FilterTable      key.Binding
 	Help             key.Binding
 	NextPanel        key.Binding
@@ -137,6 +138,10 @@ var DefaultKeyMap = keyMap{
 	ExportResults: key.NewBinding(
 		key.WithKeys("ctrl+x"),
 		key.WithHelp("ctrl+x", "export results"),
+	),
+	CopyResults: key.NewBinding(
+		key.WithKeys("ctrl+y"),
+		key.WithHelp("ctrl+y", "copy results"),
 	),
 	Undo: key.NewBinding(
 		key.WithKeys("ctrl+z"),

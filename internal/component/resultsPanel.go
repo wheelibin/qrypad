@@ -19,10 +19,11 @@ import (
 )
 
 type resultsPanelKeymap struct {
-	viewRow key.Binding
-	filter  key.Binding
-	copyRow key.Binding
-	export  key.Binding
+	viewRow     key.Binding
+	filter      key.Binding
+	copyRow     key.Binding
+	copyResults key.Binding
+	export      key.Binding
 }
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
@@ -54,7 +55,11 @@ func NewResultsPanelModel() ResultsPanelModel {
 			),
 			copyRow: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
-				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy row as json"),
+				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy row"),
+			),
+			copyResults: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.CopyResults.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.CopyResults.Help().Key, "copy results"),
 			),
 			export: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.ExportResults.Keys()...),
@@ -217,6 +222,7 @@ func (m ResultsPanelModel) helpView() string {
 		m.keymap.viewRow,
 		m.keymap.filter,
 		m.keymap.copyRow,
+		m.keymap.copyResults,
 		m.keymap.export,
 	})
 }
