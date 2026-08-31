@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +19,22 @@ import (
 func ExportRequested(f ExportFormat) tea.Cmd {
 	return func() tea.Msg {
 		return ExportRequestedMsg{Format: f}
+	}
+}
+
+// CopyResultsJSON serializes rows to JSON and returns a CopyValueMsg so the
+// result is written to the clipboard (mirrors ExportResults but without saving
+// a file).
+func CopyResultsJSON(rows []map[string]any) tea.Cmd {
+	return func() tea.Msg {
+		if len(rows) == 0 {
+			return ErrMsg{Err: errors.New("nothing to copy")}
+		}
+		data, err := marshalJSON(rows)
+		if err != nil {
+			return ErrMsg{Err: err}
+		}
+		return CopyValueMsg{Value: string(data), ValueDesc: fmt.Sprintf("<results as json (%d rows)>", len(rows))}
 	}
 }
 

@@ -94,9 +94,9 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 		case key.Matches(msg, m.keymap.copy):
 			var valDesc string
 			val := m.GetSelectedValue()
-			maxLength := 30
-			if len(val) > maxLength {
-				valDesc = val[0:maxLength-3] + "..."
+			maxLengthForDesc := 30
+			if len(val) > maxLengthForDesc {
+				valDesc = val[0:maxLengthForDesc-3] + "..."
 			}
 			cmds = append(cmds, commands.CopyValue(val, valDesc))
 

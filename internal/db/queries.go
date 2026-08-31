@@ -159,7 +159,8 @@ func fetchRows(ctx context.Context, dbConn DBConn, query string) (*Data, error) 
 	start := time.Now()
 	rows, err := dbConn.DB.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database: %w", err)
+		//nolint:wrapcheck // we want the unwrapped db error
+		return nil, err
 	}
 	defer rows.Close()
 

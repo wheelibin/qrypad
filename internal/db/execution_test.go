@@ -57,6 +57,7 @@ func TestSQLiteTableIndexes_MultiPragmaWalk(t *testing.T) {
 	}
 	if data == nil {
 		t.Fatalf("TableIndexes: nil data")
+		return
 	}
 
 	wantCols := []string{"name", "cols"}
