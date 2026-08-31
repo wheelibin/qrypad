@@ -18,6 +18,7 @@ import (
 type errorKeymap struct {
 	updatePassword key.Binding
 	close          key.Binding
+	copy           key.Binding
 }
 
 //nolint:recvcheck // Bubble Tea model: Init/View use value receiver, mutating methods use pointer receiver
@@ -35,6 +36,10 @@ func NewErrorPopupModel() ErrorPopupModel {
 		help: makeHelp(),
 		keymap: errorKeymap{
 			updatePassword: keys.DefaultKeyMap.UpdatePassword,
+			copy: key.NewBinding(
+				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
+				key.WithHelp(keys.DefaultKeyMap.CopyValue.Help().Key, "copy error"),
+			),
 			close: key.NewBinding(
 				key.WithKeys("esc"),
 				key.WithHelp("esc", "close"),
@@ -61,6 +66,15 @@ func (m ErrorPopupModel) Update(msg tea.Msg) (ErrorPopupModel, tea.Cmd) {
 				return m, tea.Quit
 			}
 			return m, commands.ClosePopup()
+
+		case key.Matches(msg, m.keymap.copy):
+			var valDesc string
+			val := m.text
+			maxLengthForDesc := 30
+			if len(val) > maxLengthForDesc {
+				valDesc = val[0:maxLengthForDesc-3] + "..."
+			}
+			return m, commands.CopyValue(val, valDesc)
 		}
 	}
 
@@ -71,10 +85,12 @@ func (m ErrorPopupModel) helpView() string {
 	if m.isConnectionError {
 		return "\n" + m.help.ShortHelpView([]key.Binding{
 			m.keymap.updatePassword,
+			m.keymap.copy,
 			m.keymap.close,
 		})
 	}
 	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.copy,
 		m.keymap.close,
 	})
 }
