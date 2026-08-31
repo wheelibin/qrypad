@@ -124,6 +124,7 @@ func TestGetStatementAtCursor(t *testing.T) {
 			}
 			if got == nil {
 				t.Fatalf("getStatementAtCursor: expected non-nil result, got nil")
+				return
 			}
 			if got.Text != tt.wantText {
 				t.Errorf("Text: expected %q, got %q", tt.wantText, got.Text)
