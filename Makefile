@@ -82,7 +82,11 @@ release: ## Tag and release a new version (usage: make release VERSION=x.y.z)
 	@perl -i -pe 's/vendorHash = "[^"]+"/vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/' flake.nix
 	@echo "Computing vendorHash..."
 	@hash=$$(nix build 2>&1 | grep "got:" | awk '{print $$2}'); \
-		[ -n "$$hash" ] || (git checkout flake.nix && echo "Error: failed to compute vendorHash" && exit 1); \
+		if [ -z "$$hash" ]; then \
+			git checkout flake.nix; \
+			echo "Error: failed to compute vendorHash"; \
+			exit 1; \
+		fi; \
 		perl -i -pe "s|vendorHash = \"[^\"]+\"|vendorHash = \"$$hash\"|" flake.nix
 	@echo "Verifying build..."
 	@nix build
