@@ -43,9 +43,10 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.Help, k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.FilterTable, k.ToggleLeftPanel, k.RefreshSchema},
-		{k.ExecuteQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor},
-		{k.ViewData, k.NextTab, k.PrevTab, k.CopyValue, k.Quit},
+		{k.NextPanel, k.PrevPanel, k.NextTab, k.PrevTab, k.FilterTable, k.ToggleLeftPanel},
+		{k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.RefreshSchema, k.Help, k.Quit},
+		{k.ExecuteQuery, k.AutoComplete, k.CancelQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor, k.Undo, k.Redo},
+		{k.ViewData, k.ViewDataDesc, k.CopyValue, k.CopyResults, k.ExportResults},
 	}
 }
 
@@ -85,15 +86,15 @@ var DefaultKeyMap = keyMap{
 	),
 	ExecuteQuery: key.NewBinding(
 		key.WithKeys("f5"),
-		key.WithHelp("F5", "execute statement at cursor"),
+		key.WithHelp("F5", "execute statement"),
 	),
 	ViewData: key.NewBinding(
 		key.WithKeys("enter"),
-		key.WithHelp("enter", "view table data / view result row"),
+		key.WithHelp("enter", "view data"),
 	),
 	ViewDataDesc: key.NewBinding(
 		key.WithKeys("D"),
-		key.WithHelp("D", "view table data (desc)"),
+		key.WithHelp("D", "view desc"),
 	),
 	ToggleLeftPanel: key.NewBinding(
 		key.WithKeys("ctrl+b"),
@@ -140,8 +141,8 @@ var DefaultKeyMap = keyMap{
 		key.WithHelp("ctrl+x", "export results"),
 	),
 	CopyResults: key.NewBinding(
-		key.WithKeys("ctrl+y"),
-		key.WithHelp("ctrl+y", "copy results"),
+		key.WithKeys("Y"),
+		key.WithHelp("Y", "copy results"),
 	),
 	Undo: key.NewBinding(
 		key.WithKeys("ctrl+z"),

@@ -126,6 +126,17 @@ database = "music-store"
 [connections.orders]
 driver = "sqlite"
 database = "db/orders.db"
+
+[connections.warehouse]
+driver = "postgres"
+host = "localhost"
+port = 5432
+user = "postgres"
+database = "warehouse"
+# share a single query pad across every database on this connection,
+# instead of one query pad per database (SQLite connections always
+# behave this way, regardless of this setting)
+singleQueryFile = true
 ```
 
 ## Key bindings
@@ -136,7 +147,8 @@ database = "db/orders.db"
 ### General
 
 - `Tab` / `Shift+Tab` — switch panels
-- `?` — show help
+- `?` / `F1` — show help
+- `Ctrl+C` — quit
 - `Ctrl+D` — switch database
 - `Ctrl+K` — switch connection
 - `Ctrl+P` — update stored password
@@ -147,6 +159,7 @@ database = "db/orders.db"
 ### Tables panel
 
 - `Enter` — fetch first N rows (`tableDataRowLimit`)
+- `D` — fetch first N rows, descending
 - `]` / `[` — switch tabs
 - `y` — copy the selected table name
 
@@ -160,6 +173,7 @@ database = "db/orders.db"
 
 - `F5` — run the statement at the cursor
 - `Ctrl+Space` — autocomplete table / column
+- `Esc` — cancel a running query
 - `Ctrl+S` — save the query pad (per connection)
 - `Ctrl+R` — reload the saved query pad from disk
 - `Ctrl+E` — open the query pad in `$EDITOR`
@@ -171,6 +185,8 @@ database = "db/orders.db"
 - `Enter` — open the selected row in a popup
   - `y` — copy the selected value
 - `y` — copy the selected row as JSON
+- `Y` — copy all results as JSON
+- `Ctrl+X` — export results to a file
 - `/` — filter results (`esc` to cancel)
 
 </details>
@@ -182,14 +198,19 @@ Any of the keys below can be overridden in the config file.
 ```toml
 [keys]
 AutoComplete     = ""
+CancelQuery      = ""
+CopyResults      = ""
 CopyValue        = ""
 ExecuteQuery     = ""
+ExportResults    = ""
+FilterTable      = ""
 Help             = ""
 NextPanel        = ""
 NextTab          = ""
 OpenInEditor     = ""
 PrevPanel        = ""
 PrevTab          = ""
+Quit             = ""
 Redo             = ""
 RefreshSchema    = ""
 ReloadQuery      = ""

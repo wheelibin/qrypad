@@ -1,17 +1,17 @@
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                          help                                                          │
+│                                                       help · vdev                                                      │
 │                                                                                                                        │
-│      tab       next panel           F5     execute statement at cursor    enter  view table data / view result row     │
-│      shift+tab previous panel       ctrl+s save query                     ]      next tab                              │
-│      ?/F1      show help            ctrl+r reload query                   [      previous tab                          │
-│      ctrl+d    switch database      ctrl+e open query in editor           y      copy value                            │
-│      ctrl+k    switch connection                                          ctrl+c quit                                  │
-│      ctrl+p    update password                                                                                         │
-│      /         filter table                                                                                            │
-│      ctrl+b    toggle left panel                                                                                       │
-│      R         refresh schema                                                                                          │
+│   tab       next panel           ctrl+d switch database      F5         execute statement       enter  view data       │
+│   shift+tab previous panel       ctrl+k switch connection    ctrl+space autocomplete            D      view desc       │
+│   ]         next tab             ctrl+p update password      esc        cancel query            y      copy value      │
+│   [         previous tab         R      refresh schema       ctrl+s     save query              Y      copy results    │
+│   /         filter table         ?/F1   show help            ctrl+r     reload query            ctrl+x export results  │
+│   ctrl+b    toggle left panel    ctrl+c quit                 ctrl+e     open query in editor                           │
+│                                                              ctrl+z     undo                                           │
+│                                                              ctrl+y     redo                                           │
 │                                                                                                                        │
 │                                                       esc close                                                        │
+│                                                                                                                        │
 │                                                                                                                        │
 │                                                                                                                        │
 │                                                                                                                        │
