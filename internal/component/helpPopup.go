@@ -1,12 +1,15 @@
 package component
 
 import (
+	"fmt"
+
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"github.com/wheelibin/qrypad/internal/commands"
+	"github.com/wheelibin/qrypad/internal/constants"
 	"github.com/wheelibin/qrypad/internal/keys"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
@@ -77,7 +80,7 @@ func (m HelpPopupModel) View() string {
 		MarginBottom(1).
 		MarginRight(1).
 		Align(lipgloss.Center).
-		Render("help")
+		Render(fmt.Sprintf("help · v%s", constants.Version))
 
 	return popupStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
 		title,

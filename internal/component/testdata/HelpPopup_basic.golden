@@ -1,5 +1,5 @@
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                          help                                                          │
+│                                                       help · vdev                                                      │
 │                                                                                                                        │
 │      tab       next panel           F5     execute statement at cursor    enter  view table data / view result row     │
 │      shift+tab previous panel       ctrl+s save query                     ]      next tab                              │
