@@ -22,6 +22,6 @@
 │┃                                                                               │
 │┃                                                                               │
 │┃                                                                               │
-│  F5 execute statement at cursor • ctrl+e open query in editor • ctrl+z/ctrl+y  │
-│                  undo/redo • ctrl+s/ctrl+r save/reload query                   │
+│ F5 execute statement • ctrl+e open query in editor • ctrl+z/ctrl+y undo/redo • │
+│                        ctrl+s/ctrl+r save/reload query                         │
 ╰────────────────────────────────────────────────────────────────────────────────╯
