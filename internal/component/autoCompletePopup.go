@@ -60,13 +60,21 @@ func NewAutoCompletePopupModel() AutoCompletePopupModel {
 	l.SetShowHelp(false)
 	l.SetShowTitle(false)
 	l.SetShowPagination(false)
-	// Disable default key bindings -- we handle keys ourselves
-	l.KeyMap.Quit.SetEnabled(false)
-	l.KeyMap.ForceQuit.SetEnabled(false)
+	// Disable default key bindings -- we handle keys ourselves.
+	// Use DisableQuitKeybindings() so the flag persists across updateKeybindings() calls.
+	l.DisableQuitKeybindings()
 	l.KeyMap.Filter.SetEnabled(false)
 	l.KeyMap.ClearFilter.SetEnabled(false)
 	l.KeyMap.ShowFullHelp.SetEnabled(false)
 	l.KeyMap.CloseFullHelp.SetEnabled(false)
+	// Remove vim-style letter keys from navigation bindings so they don't
+	// swallow characters the user types into the autocomplete filter.
+	l.KeyMap.CursorUp.SetKeys("up")
+	l.KeyMap.CursorDown.SetKeys("down")
+	l.KeyMap.NextPage.SetKeys("right", "pgdown")
+	l.KeyMap.PrevPage.SetKeys("left", "pgup")
+	l.KeyMap.GoToStart.SetKeys("home")
+	l.KeyMap.GoToEnd.SetKeys("end")
 	return AutoCompletePopupModel{
 		list: l,
 	}
