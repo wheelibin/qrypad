@@ -90,7 +90,7 @@ func main() {
 	defer f.Close()
 
 	keys.MapCustomKeys()
-	m := ui.NewModel(connectionName, conn)
+	m := ui.NewModel(connectionName, conn, dir)
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
