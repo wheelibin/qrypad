@@ -17,6 +17,14 @@ const (
 	CompletionSchema                // schema. -> suggest tables within that schema (no DB hit needed)
 )
 
+// ConnCtx carries the connection fields needed to format autocomplete insert strings.
+// It contains only the two fields from db.DBConn that autocomplete actually uses,
+// so callers don't need to pass a live database connection.
+type ConnCtx struct {
+	Driver      db.DriverNameType
+	ConnectedDB string
+}
+
 // CompletionResult is returned by GetCompletions and GetCompletionsForced.
 type CompletionResult struct {
 	Kind     CompletionKind
@@ -41,7 +49,7 @@ var tableKeywordPattern = regexp.MustCompile(
 
 // GetCompletions determines what kind of autocomplete to offer based on
 // the current SQL statement, the word at cursor, and the available table references.
-func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, dbConn db.DBConn) CompletionResult {
+func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, conn ConnCtx) CompletionResult {
 	if sql == "" {
 		return CompletionResult{Kind: CompletionNone}
 	}
@@ -85,7 +93,7 @@ func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, dbCon
 	// Table completion: cursor is after a table keyword (FROM, JOIN, INTO, UPDATE)
 	textBeforeWord := GetTextBeforeWord(sql, wordAtCursor)
 	if tableKeywordPattern.MatchString(textBeforeWord) {
-		items := filterRefInserts(allRefs, wordAtCursor, dbConn)
+		items := filterRefInserts(allRefs, wordAtCursor, conn)
 		if len(items) > 0 {
 			return CompletionResult{Kind: CompletionTable, Items: items}
 		}
@@ -96,13 +104,13 @@ func GetCompletions(sql, wordAtCursor string, allRefs []db.TableReference, dbCon
 
 // GetCompletionsForced is used by ctrl+space to force completion regardless of context.
 // It tries context-aware completion first, then falls back to all table names.
-func GetCompletionsForced(sql, wordAtCursor string, allRefs []db.TableReference, dbConn db.DBConn) CompletionResult {
-	result := GetCompletions(sql, wordAtCursor, allRefs, dbConn)
+func GetCompletionsForced(sql, wordAtCursor string, allRefs []db.TableReference, conn ConnCtx) CompletionResult {
+	result := GetCompletions(sql, wordAtCursor, allRefs, conn)
 	if result.Kind != CompletionNone {
 		return result
 	}
 
-	items := filterRefInserts(allRefs, wordAtCursor, dbConn)
+	items := filterRefInserts(allRefs, wordAtCursor, conn)
 	if len(items) > 0 {
 		return CompletionResult{Kind: CompletionTable, Items: items}
 	}
@@ -138,11 +146,11 @@ func GetAliasTableMap(sql string) map[string]string {
 
 // filterRefInserts returns autocomplete insert strings for all refs whose
 // AutocompleteInsert value contains the prefix (case-insensitive substring match).
-func filterRefInserts(refs []db.TableReference, prefix string, dbConn db.DBConn) []string {
+func filterRefInserts(refs []db.TableReference, prefix string, conn ConnCtx) []string {
 	lower := strings.ToLower(prefix)
 	results := make([]string, 0)
 	for _, ref := range refs {
-		insert := ref.AutocompleteInsert(dbConn.DriverName, dbConn.ConnectedDatabase)
+		insert := ref.AutocompleteInsert(conn.Driver, conn.ConnectedDB)
 		if prefix == "" || strings.Contains(strings.ToLower(insert), lower) {
 			results = append(results, insert)
 		}

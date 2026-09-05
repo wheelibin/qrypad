@@ -23,8 +23,8 @@ func makeMixedRefs() []db.TableReference {
 	}
 }
 
-func postgresConn() db.DBConn {
-	return db.DBConn{DriverName: db.DriverName.Postgres, ConnectedDatabase: "mydb"}
+func postgresConn() autocomplete.ConnCtx {
+	return autocomplete.ConnCtx{Driver: db.DriverName.Postgres, ConnectedDB: "mydb"}
 }
 
 func TestGetAliasTableMap(t *testing.T) {
