@@ -19,19 +19,17 @@ type memoEntry[T any] struct {
 
 // memoCache is a simple LRU cache.
 type memoCache[H memoHasher, T any] struct {
-	capacity      int
-	mutex         sync.Mutex
-	cache         map[string]*list.Element
-	evictionList  *list.List
-	hashableItems map[string]T
+	capacity     int
+	mutex        sync.Mutex
+	cache        map[string]*list.Element
+	evictionList *list.List
 }
 
 func newMemoCache[H memoHasher, T any](capacity int) *memoCache[H, T] {
 	return &memoCache[H, T]{
-		capacity:      capacity,
-		cache:         make(map[string]*list.Element),
-		evictionList:  list.New(),
-		hashableItems: make(map[string]T),
+		capacity:     capacity,
+		cache:        make(map[string]*list.Element),
+		evictionList: list.New(),
 	}
 }
 
@@ -80,7 +78,6 @@ func (m *memoCache[H, T]) Set(h H, value T) {
 				panic("memoCache: list element has unexpected type")
 			}
 			delete(m.cache, evictedEntry.key)
-			delete(m.hashableItems, evictedEntry.key)
 		}
 	}
 
@@ -90,5 +87,4 @@ func (m *memoCache[H, T]) Set(h H, value T) {
 	}
 	element := m.evictionList.PushFront(newEntry)
 	m.cache[hashedKey] = element
-	m.hashableItems[hashedKey] = value
 }

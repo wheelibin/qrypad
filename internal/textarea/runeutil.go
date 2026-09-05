@@ -5,21 +5,8 @@ import (
 	"unicode/utf8"
 )
 
-// Sanitizer is a helper for bubble widgets that want to process
-// Runes from input key messages.
-type Sanitizer interface {
-	// Sanitize removes control characters from runes in a KeyRunes
-	// message, and optionally replaces newline/carriage return/tabs by a
-	// specified character.
-	//
-	// The rune array is modified in-place if possible. In that case, the
-	// returned slice is the original slice shortened after the control
-	// characters have been removed/translated.
-	Sanitize(runes []rune) []rune
-}
-
 // NewSanitizer constructs a rune sanitizer.
-func NewSanitizer(opts ...Option) Sanitizer {
+func NewSanitizer(opts ...Option) *sanitizer {
 	s := sanitizer{
 		replaceNewLine: []rune("\n"),
 		replaceTab:     []rune("    "),

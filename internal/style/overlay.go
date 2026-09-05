@@ -6,12 +6,11 @@ package style
 import (
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	xansi "github.com/charmbracelet/x/ansi"
 )
 
 // PlaceOverlay places fg on top of bg.
-func PlaceOverlay(x, y int, fg, bg string, opts ...WhitespaceOption) string {
+func PlaceOverlay(x, y int, fg, bg string) string {
 	fgLines, fgWidth := getLines(fg)
 	bgLines, bgWidth := getLines(bg)
 	bgHeight := len(bgLines)
@@ -26,10 +25,6 @@ func PlaceOverlay(x, y int, fg, bg string, opts ...WhitespaceOption) string {
 	y = clamp(y, 0, bgHeight-fgHeight)
 
 	ws := &whitespace{}
-	for _, opt := range opts {
-		opt(ws)
-	}
-
 	var b strings.Builder
 	for i, bgLine := range bgLines {
 		if i > 0 {
@@ -90,7 +85,6 @@ func getLines(s string) ([]string, int) {
 
 // whitespace is a whitespace renderer.
 type whitespace struct {
-	style lipgloss.Style
 	chars string
 }
 
@@ -121,8 +115,5 @@ func (w whitespace) render(width int) string {
 		b.WriteString(strings.Repeat(" ", short))
 	}
 
-	return w.style.Render(b.String())
+	return b.String()
 }
-
-// WhitespaceOption sets a styling rule for rendering whitespace.
-type WhitespaceOption func(*whitespace)

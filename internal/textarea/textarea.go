@@ -258,7 +258,7 @@ type Model struct {
 	viewport *viewport.Model
 
 	// rune sanitizer for input.
-	rsan Sanitizer
+	rsan *sanitizer
 
 	// history tracks undo/redo snapshots. Initialised lazily by
 	// ensureHistory() on first mutation. Lazy because New() returns
@@ -1191,7 +1191,7 @@ func (m *Model) insertRunesFromUserInput(runes []rune) {
 }
 
 // san initializes or retrieves the rune sanitizer.
-func (m *Model) san() Sanitizer {
+func (m *Model) san() *sanitizer {
 	if m.rsan == nil {
 		// Textinput has all its input on a single line so collapse
 		// newlines/tabs to single spaces.

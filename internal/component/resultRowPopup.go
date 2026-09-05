@@ -188,7 +188,7 @@ func (m *ResultRowPopupModel) SetData(data map[string]any, columns []string, col
 			styledValue = table.NewStyledCell(displayVal, style.NullStyle())
 		case category == "json":
 			highlighted := style.HighlightJSON(displayVal)
-			styledValue = table.NewStyledCell(jsonCellData{Raw: val, highlighted: highlighted}, style.JSONBaseStyle())
+			styledValue = table.NewStyledCell(jsonCellData{Raw: val, highlighted: highlighted}, lipgloss.NewStyle())
 		default:
 			styledValue = table.NewStyledCell(displayVal, style.ResultCellStyle(category))
 		}

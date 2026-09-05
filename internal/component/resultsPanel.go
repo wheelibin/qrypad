@@ -127,7 +127,7 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 					displayStr = displayStr[:maxColWidth]
 				}
 				highlighted := style.HighlightJSON(displayStr)
-				styledRow[colName] = table.NewStyledCell(jsonCellData{Raw: valStr, highlighted: highlighted}, style.JSONBaseStyle())
+				styledRow[colName] = table.NewStyledCell(jsonCellData{Raw: valStr, highlighted: highlighted}, lipgloss.NewStyle())
 			default:
 				styledRow[colName] = table.NewStyledCell(val, style.ResultCellStyle(category))
 			}
