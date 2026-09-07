@@ -15,6 +15,7 @@ import (
 
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/password"
+	"github.com/wheelibin/qrypad/internal/querybuffer"
 )
 
 type TablePanelKindType string
@@ -308,92 +309,26 @@ func PasswordEntered(pwd string) tea.Cmd {
 	}
 }
 
-// QueryFileName returns the filename for a query file.
-// In per-database mode (singleFile=false), returns "<connectionName>.<databaseName>.sql".
-// In single-file mode (singleFile=true), returns "<connectionName>.sql".
-func QueryFileName(connectionName, databaseName string, singleFile bool) string {
-	if singleFile {
-		return fmt.Sprintf("%s.sql", connectionName)
-	}
-	return fmt.Sprintf("%s.%s.sql", connectionName, databaseName)
-}
-
-// MigrateQueryFileIfNeeded checks if a legacy <connectionName>.sql file exists
-// and renames it to the per-database format if the per-database file doesn't
-// already exist.
-func MigrateQueryFileIfNeeded(dir, connectionName, databaseName string) {
-	perDBFile := filepath.Join(dir, QueryFileName(connectionName, databaseName, false))
-	legacyFile := filepath.Join(dir, QueryFileName(connectionName, "", true))
-
-	// If per-database file already exists, nothing to do
-	if _, err := os.Stat(perDBFile); err == nil {
-		return
-	}
-
-	// If legacy file exists, rename it
-	if _, err := os.Stat(legacyFile); err == nil {
-		_ = os.Rename(legacyFile, perDBFile)
-	}
-}
-
-func ReadOrCreateQueryFile(connectionName, databaseName string, singleFile bool) tea.Cmd {
+// ReadOrCreateQueryFile returns a tea.Cmd that loads the query file for the given
+// connection/database from dir, creating it if it does not exist.
+func ReadOrCreateQueryFile(dir, connectionName, databaseName string, singleFile bool) tea.Cmd {
 	return func() tea.Msg {
-		// In per-database mode, we need a database name to construct the filename.
-		// If it's not yet known (resolved after connecting), skip file operations.
-		if !singleFile && databaseName == "" {
-			return nil
-		}
-
-		dir, err := GetOutputDir()
+		contents, filename, err := querybuffer.Load(dir, connectionName, databaseName, singleFile)
 		if err != nil {
 			return ErrMsg{err}
 		}
-
-		// Migrate legacy file if in per-database mode
-		if !singleFile {
-			MigrateQueryFileIfNeeded(dir, connectionName, databaseName)
+		if filename == "" {
+			return nil // per-database mode, database not yet known
 		}
-
-		filename := filepath.Join(dir, QueryFileName(connectionName, databaseName, singleFile))
-
-		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-			_, err := os.Create(filename)
-			if err != nil {
-				return ErrMsg{err}
-			}
-		}
-
-		contents, err := os.ReadFile(filename)
-		if err != nil {
-			return ErrMsg{err}
-		}
-		return QueryFileReadMsg{Contents: string(contents), FileName: filename}
+		return QueryFileReadMsg{Contents: contents, FileName: filename}
 	}
 }
 
-// SaveQueryFileToDisk writes contents to the appropriate query file synchronously.
-func SaveQueryFileToDisk(connectionName, databaseName, contents string, singleFile bool) error {
-	// In per-database mode, refuse to save if database name is unknown.
-	if !singleFile && databaseName == "" {
-		return nil
-	}
-
-	dir, err := GetOutputDir()
-	if err != nil {
-		return err
-	}
-	filename := filepath.Join(dir, QueryFileName(connectionName, databaseName, singleFile))
-	if err := os.WriteFile(filename, []byte(contents), 0o600); err != nil {
-		return fmt.Errorf("writing query file %s: %w", filename, err)
-	}
-	return nil
-}
-
-// SaveQueryFile returns a tea.Cmd that writes contents to the appropriate query file.
-func SaveQueryFile(connectionName, databaseName, contents string, singleFile bool) tea.Cmd {
+// SaveQueryFile returns a tea.Cmd that calls buf.SaveIfChanged with the given contents.
+func SaveQueryFile(buf *querybuffer.Buffer, conn, db, current string, single bool) tea.Cmd {
 	return func() tea.Msg {
-		if err := SaveQueryFileToDisk(connectionName, databaseName, contents, singleFile); err != nil {
-			return ErrMsg{err}
+		if _, err := buf.SaveIfChanged(current, conn, db, single); err != nil {
+			return ErrMsg{Err: err}
 		}
 		return QueryFileSavedMsg{}
 	}

@@ -124,10 +124,3 @@ func NullStyle() lipgloss.Style {
 	}
 	return lipgloss.NewStyle().Foreground(fg)
 }
-
-// JSONBaseStyle returns a minimal style for JSON cells that have been
-// pre-highlighted by Chroma. It deliberately does NOT set a foreground color
-// so that Chroma's embedded ANSI escapes are preserved.
-func JSONBaseStyle() lipgloss.Style {
-	return lipgloss.NewStyle()
-}

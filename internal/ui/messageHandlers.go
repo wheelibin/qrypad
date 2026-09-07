@@ -60,7 +60,7 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 			m.selectedDatabase = m.db.ConnectedDatabase
 			m.queryPanel.SetDatabaseName(m.db.ConnectedDatabase)
 			cmds = append(cmds, commands.ReadOrCreateQueryFile(
-				m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile(),
+				m.dir, m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile(),
 			))
 		}
 
@@ -288,14 +288,10 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 
 		// Save current buffer before switching (if in per-database mode)
 		if !m.dbConfig.UseSingleQueryFile() {
-			if m.queryPanel.GetValue() != m.lastSavedQueryContents {
-				if saveErr := commands.SaveQueryFileToDisk(
-					m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), false,
-				); saveErr != nil {
-					m.handleError(saveErr)
-					return nil
-				}
-				m.lastSavedQueryContents = m.queryPanel.GetValue()
+			if saved, saveErr := m.buf.SaveIfChanged(m.queryPanel.GetValue(), m.connectionName, m.selectedDatabase, false); saveErr != nil {
+				m.handleError(saveErr)
+				return nil
+			} else if saved {
 				m.queryPanel.SetDirty(false)
 			}
 		}
@@ -310,7 +306,7 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 		// Load new database's query file (if in per-database mode)
 		if !m.dbConfig.UseSingleQueryFile() {
 			cmds = append(cmds, commands.ReadOrCreateQueryFile(
-				m.connectionName, newDB, false,
+				m.dir, m.connectionName, newDB, false,
 			))
 		}
 
@@ -330,14 +326,11 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 		}
 
 		// Save current buffer to old connection's file before switching (bypass debouncer)
-		if m.queryPanel.GetValue() != m.lastSavedQueryContents {
-			if saveErr := commands.SaveQueryFileToDisk(
-				m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), m.dbConfig.UseSingleQueryFile(),
-			); saveErr != nil {
-				m.handleError(saveErr)
-				return nil
-			}
-			m.lastSavedQueryContents = m.queryPanel.GetValue()
+		current := m.queryPanel.GetValue()
+		if saved, saveErr := m.buf.SaveIfChanged(current, m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile()); saveErr != nil {
+			m.handleError(saveErr)
+			return nil
+		} else if saved {
 			m.queryPanel.SetDirty(false)
 		}
 
@@ -353,7 +346,7 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 		m.initKeyMap()
 		return tea.Batch(
 			commands.ConnectToDB(m.connectionName, m.dbConfig),
-			commands.ReadOrCreateQueryFile(connName, conn.Database, conn.UseSingleQueryFile()),
+			commands.ReadOrCreateQueryFile(m.dir, connName, conn.Database, conn.UseSingleQueryFile()),
 		)
 
 	case commands.PasswordEnteredMsg:
@@ -365,7 +358,7 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 	case commands.QueryFileReadMsg:
 		m.queryPanel.SetValue(msg.Contents)
 		m.queryPanel.SetFilename(msg.FileName)
-		m.lastSavedQueryContents = msg.Contents
+		m.buf.SetSaved(msg.Contents)
 		m.queryPanel.SetDirty(false)
 		return nil
 
@@ -492,14 +485,12 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 
 	case key.Matches(msg, keys.DefaultKeyMap.SaveQuery):
 		if m.activePanelIndex == PanelIndexQuery {
-			if m.lastSavedQueryContents == m.queryPanel.GetValue() {
+			if !m.buf.IsDirty(m.queryPanel.GetValue()) {
 				return nil
 			}
-
 			m.queryPanel.SetDirty(false)
-			m.lastSavedQueryContents = m.queryPanel.GetValue()
 			debouncer.Trigger("save-query", commands.SaveQueryFile(
-				m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), m.dbConfig.UseSingleQueryFile(),
+				m.buf, m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), m.dbConfig.UseSingleQueryFile(),
 			))
 			return waitForResult(debouncedMsgs)
 		}
@@ -507,7 +498,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	case key.Matches(msg, keys.DefaultKeyMap.ReloadQuery):
 		if m.activePanelIndex == PanelIndexQuery {
 			m.queryPanel.SetDirty(false)
-			return commands.ReadOrCreateQueryFile(m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile())
+			return commands.ReadOrCreateQueryFile(m.dir, m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile())
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.ClosePopup):
@@ -586,7 +577,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 				m.queryPanel.GetCurrentStatement(),
 				m.queryPanel.GetWordAtCursor(),
 				m.tablePanel.GetAllTableRefs(),
-				m.db,
+				autocomplete.ConnCtx{Driver: m.db.DriverName, ConnectedDB: m.db.ConnectedDatabase},
 			)
 			return m.handleCompletionResult(result)
 		}
@@ -597,7 +588,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 				m.queryPanel.GetCurrentStatement(),
 				m.queryPanel.GetWordAtCursor(),
 				m.tablePanel.GetAllTableRefs(),
-				m.db,
+				autocomplete.ConnCtx{Driver: m.db.DriverName, ConnectedDB: m.db.ConnectedDatabase},
 			)
 			return m.handleCompletionResult(result)
 		}
@@ -648,7 +639,7 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 					m.queryPanel.GetCurrentStatement(),
 					m.queryPanel.GetWordAtCursor(),
 					m.tablePanel.GetAllTableRefs(),
-					m.db,
+					autocomplete.ConnCtx{Driver: m.db.DriverName, ConnectedDB: m.db.ConnectedDatabase},
 				)
 				if result.Kind == autocomplete.CompletionTable {
 					return m.handleCompletionResult(result)
@@ -656,13 +647,11 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			}
 
 			// buffer file operations
-			if m.lastSavedQueryContents != m.queryPanel.GetValue() {
-				// buffer has changed
+			if m.buf.IsDirty(m.queryPanel.GetValue()) {
 				if m.autoSave {
 					m.queryPanel.SetDirty(false)
-					m.lastSavedQueryContents = m.queryPanel.GetValue()
 					debouncer.Trigger("save-query", commands.SaveQueryFile(
-						m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), m.dbConfig.UseSingleQueryFile(),
+						m.buf, m.connectionName, m.selectedDatabase, m.queryPanel.GetValue(), m.dbConfig.UseSingleQueryFile(),
 					))
 					return waitForResult(debouncedMsgs)
 				}

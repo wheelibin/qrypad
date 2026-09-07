@@ -15,13 +15,6 @@ type DatabaseConnectError struct{ Err error }
 
 func (e DatabaseConnectError) Error() string { return e.Err.Error() }
 
-// DatabaseConnectErrMsg is an alias for backward compatibility.
-//
-// Deprecated: Use DatabaseConnectError instead.
-//
-//nolint:errname // Alias for backward compatibility
-type DatabaseConnectErrMsg = DatabaseConnectError
-
 // ActivePanelChangedMsg is sent when the user navigates to another panel.
 type ActivePanelChangedMsg int
 

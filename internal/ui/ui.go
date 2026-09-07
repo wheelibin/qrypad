@@ -11,6 +11,7 @@ import (
 	"github.com/wheelibin/qrypad/internal/component"
 	"github.com/wheelibin/qrypad/internal/db"
 	"github.com/wheelibin/qrypad/internal/keys"
+	"github.com/wheelibin/qrypad/internal/querybuffer"
 	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
@@ -95,29 +96,30 @@ type model struct {
 	cancelQuery      context.CancelFunc
 	schemaCache      *db.SchemaCache
 	schemaPreloading bool
+	buf              *querybuffer.Buffer
+	dir              string
 
-	windowTooSmall         bool
-	width                  int
-	height                 int
-	leftPanelHidden        bool
-	selectablePanelCount   int
-	lastSavedQueryContents string
-	tablePanelBounds       bounds
-	tableInfoPanelBounds   bounds
-	queryPanelBounds       bounds
-	resultsPanelBounds     bounds
-	autoSave               bool
+	windowTooSmall       bool
+	width                int
+	height               int
+	leftPanelHidden      bool
+	selectablePanelCount int
+	tablePanelBounds     bounds
+	tableInfoPanelBounds bounds
+	queryPanelBounds     bounds
+	resultsPanelBounds   bounds
+	autoSave             bool
 }
 
 // Model is the root Bubble Tea model for the application UI.
 type Model = model
 
-func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
+func NewModel(connectionName string, dbConfig db.ConnectionConfig, dir string) Model {
 	autoSave := viper.GetBool("autoSave")
 
 	tablePanel := component.NewTablePanelModel()
 	tableInfoPanel := component.NewTableInfoPanelModel()
-	queryPanel := component.NewQueryPanelModel(connectionName, dbConfig.Database, dbConfig.UseSingleQueryFile(), autoSave)
+	queryPanel := component.NewQueryPanelModel(connectionName, dbConfig.Database, dbConfig.UseSingleQueryFile(), autoSave, dir)
 	resultsPanel := component.NewResultsPanelModel()
 	statusBar := component.NewStatusBarModel(connectionName)
 	titleBar := component.NewTitleBarModel(connectionName, dbConfig)
@@ -151,6 +153,8 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig) Model {
 		selectablePanelCount:    4,
 		autoSave:                autoSave,
 		schemaCache:             db.NewSchemaCache(),
+		buf:                     querybuffer.New(dir),
+		dir:                     dir,
 	}
 }
 
