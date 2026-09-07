@@ -124,4 +124,3 @@ func NullStyle() lipgloss.Style {
 	}
 	return lipgloss.NewStyle().Foreground(fg)
 }
-

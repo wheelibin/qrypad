@@ -326,7 +326,8 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 		}
 
 		// Save current buffer to old connection's file before switching (bypass debouncer)
-		if saved, saveErr := m.buf.SaveIfChanged(m.queryPanel.GetValue(), m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile()); saveErr != nil {
+		current := m.queryPanel.GetValue()
+		if saved, saveErr := m.buf.SaveIfChanged(current, m.connectionName, m.selectedDatabase, m.dbConfig.UseSingleQueryFile()); saveErr != nil {
 			m.handleError(saveErr)
 			return nil
 		} else if saved {

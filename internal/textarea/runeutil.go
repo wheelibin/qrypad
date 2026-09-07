@@ -5,18 +5,6 @@ import (
 	"unicode/utf8"
 )
 
-// NewSanitizer constructs a rune sanitizer.
-func NewSanitizer(opts ...Option) *sanitizer {
-	s := sanitizer{
-		replaceNewLine: []rune("\n"),
-		replaceTab:     []rune("    "),
-	}
-	for _, o := range opts {
-		s = o(s)
-	}
-	return &s
-}
-
 // Option is the type of option that can be passed to Sanitize().
 type Option func(sanitizer) sanitizer
 
@@ -34,6 +22,23 @@ func ReplaceNewlines(nlRepl string) Option {
 		s.replaceNewLine = []rune(nlRepl)
 		return s
 	}
+}
+
+type sanitizer struct {
+	replaceNewLine []rune
+	replaceTab     []rune
+}
+
+// NewSanitizer constructs a rune sanitizer.
+func NewSanitizer(opts ...Option) *sanitizer { //nolint:revive // sanitizer is intentionally unexported; callers use it only via its methods
+	s := sanitizer{
+		replaceNewLine: []rune("\n"),
+		replaceTab:     []rune("    "),
+	}
+	for _, o := range opts {
+		s = o(s)
+	}
+	return &s
 }
 
 func (s *sanitizer) Sanitize(runes []rune) []rune {
@@ -78,9 +83,4 @@ func (s *sanitizer) Sanitize(runes []rune) []rune {
 		}
 	}
 	return dstrunes
-}
-
-type sanitizer struct {
-	replaceNewLine []rune
-	replaceTab     []rune
 }

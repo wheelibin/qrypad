@@ -75,7 +75,7 @@ func MigrateQueryFileIfNeeded(dir, conn, db string) {
 // Load reads the query file for the given connection/database from dir, creating
 // it if it does not exist. Returns empty strings without error when databaseName
 // is empty in per-database mode (the caller should retry once the database is known).
-func Load(dir, conn, db string, singleFile bool) (contents, filename string, err error) {
+func Load(dir, conn, db string, singleFile bool) (string, string, error) {
 	if !singleFile && db == "" {
 		return "", "", nil
 	}
@@ -84,17 +84,17 @@ func Load(dir, conn, db string, singleFile bool) (contents, filename string, err
 		MigrateQueryFileIfNeeded(dir, conn, db)
 	}
 
-	filename = filepath.Join(dir, QueryFileName(conn, db, singleFile))
+	filename := filepath.Join(dir, QueryFileName(conn, db, singleFile))
 
 	if _, statErr := os.Stat(filename); errors.Is(statErr, os.ErrNotExist) {
 		if _, createErr := os.Create(filename); createErr != nil {
-			return "", "", createErr
+			return "", "", fmt.Errorf("creating query file %s: %w", filename, createErr)
 		}
 	}
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("reading query file %s: %w", filename, err)
 	}
 	return string(data), filename, nil
 }
