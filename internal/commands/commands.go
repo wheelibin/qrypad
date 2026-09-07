@@ -291,6 +291,10 @@ func QuitNoConnection() tea.Cmd {
 	}
 }
 
+func SessionClose(connName string) tea.Cmd {
+	return func() tea.Msg { return SessionCloseMsg(connName) }
+}
+
 func CopyValue(value string, valueDesc string) tea.Cmd {
 	return func() tea.Msg {
 		return CopyValueMsg{Value: value, ValueDesc: valueDesc}

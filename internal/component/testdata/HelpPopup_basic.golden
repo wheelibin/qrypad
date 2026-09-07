@@ -3,12 +3,12 @@
 │                                                                                                                        │
 │   tab       next panel           ctrl+d switch database      F5         execute statement       enter  view data       │
 │   shift+tab previous panel       ctrl+k switch connection    ctrl+space autocomplete            D      view desc       │
-│   ]         next tab             ctrl+p update password      esc        cancel query            y      copy value      │
-│   [         previous tab         R      refresh schema       ctrl+s     save query              Y      copy results    │
-│   /         filter table         ?/F1   show help            ctrl+r     reload query            ctrl+x export results  │
-│   ctrl+b    toggle left panel    ctrl+c quit                 ctrl+e     open query in editor                           │
-│                                                              ctrl+z     undo                                           │
-│                                                              ctrl+y     redo                                           │
+│   ]         next tab             ctrl+l sessions             esc        cancel query            y      copy value      │
+│   [         previous tab         ctrl+t prev session         ctrl+s     save query              Y      copy results    │
+│   /         filter table         ctrl+p update password      ctrl+r     reload query            ctrl+x export results  │
+│   ctrl+b    toggle left panel    R      refresh schema       ctrl+e     open query in editor                           │
+│                                  ?/F1   show help            ctrl+z     undo                                           │
+│                                  ctrl+c quit                 ctrl+y     redo                                           │
 │                                                                                                                        │
 │                                                       esc close                                                        │
 │                                                                                                                        │

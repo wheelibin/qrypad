@@ -141,6 +141,13 @@ func (m *ResultsPanelModel) SetData(data *db.Data) {
 	m.lastQueryTime = data.QueryTime
 }
 
+func (m *ResultsPanelModel) Clear() {
+	m.columns = nil
+	m.columnTypes = nil
+	m.table = newTable([]table.Column{})
+	m.lastQueryTime = 0
+}
+
 func (m *ResultsPanelModel) SetSize(w, h int) {
 	m.width = w
 	m.height = h

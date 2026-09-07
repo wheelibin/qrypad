@@ -33,6 +33,7 @@
 
 - Switch connections without restarting
 - Switch databases on the current connection (Postgres / MySQL)
+- Keep multiple connections open as sessions and flip between them instantly
 - Passwords stored securely in the OS keychain
 
 **Customise**
@@ -139,6 +140,18 @@ database = "warehouse"
 singleQueryFile = true
 ```
 
+## Sessions
+
+Sessions let you keep multiple database connections open at the same time and switch between them without losing your place. Each session remembers the connection, selected database, query text, and last results.
+
+Sessions are created automatically -- every time you switch to a different connection, the current state is saved as a session in the background. When you switch back, everything is restored exactly as you left it, including the live database connection (no reconnect needed).
+
+- `Ctrl+L` -- open the session list (type to filter, `Enter` to switch, `x` to close a session)
+- `Ctrl+T` -- toggle back to the previous session (like Alt-Tab for connections)
+- `Ctrl+K` -- open a new connection (the current one becomes a background session)
+
+The status bar shows `[N sessions]` when more than one connection is open.
+
 ## Key bindings
 
 <details>
@@ -151,6 +164,8 @@ singleQueryFile = true
 - `Ctrl+C` — quit
 - `Ctrl+D` — switch database
 - `Ctrl+K` — switch connection
+- `Ctrl+L` — open session list
+- `Ctrl+T` — toggle to previous session
 - `Ctrl+P` — update stored password
 - `Ctrl+B` — toggle the left (tables / info) panel
 - `R` — refresh schema
@@ -215,6 +230,8 @@ Redo             = ""
 RefreshSchema    = ""
 ReloadQuery      = ""
 SaveQuery        = ""
+SessionList      = ""
+SessionToggle    = ""
 SwitchConnection = ""
 SwitchDatabase   = ""
 ToggleLeftPanel  = ""

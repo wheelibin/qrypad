@@ -1,9 +1,9 @@
 ╭────────────────────────────────────────╮
-│             switch database            │
+│                sessions                │
 │╭──────────────────────────────────────╮│
-││production                            ││
-││staging                               ││
-││development                           ││
+││● local · mydb                        ││
+││  staging · staging_db                ││
+││  production · prod_db                ││
 ││                                      ││
 ││                                      ││
 ││                                      ││
@@ -15,5 +15,5 @@
 ││                                      ││
 │╰──────────────────────────────────────╯│
 │                                        │
-│       enter connect • esc cancel       │
+│  enter switch • x close • esc cancel   │
 ╰────────────────────────────────────────╯
