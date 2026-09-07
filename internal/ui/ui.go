@@ -16,6 +16,18 @@ import (
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
+// session holds in-memory runtime state for a live connection.
+type session struct {
+	connectionName   string
+	dbConfig         db.ConnectionConfig
+	selectedDatabase string
+	queryText        string
+	queryFilename    string
+	results          *db.Data
+	db               db.DBConn
+	schemaCache      *db.SchemaCache
+}
+
 const (
 	PanelIndexTables    = 0
 	PanelIndexTableInfo = 1
@@ -45,6 +57,7 @@ var PopupKind = struct {
 	Loading            PopupKindType
 	ConnectionSwitcher PopupKindType
 	ExportFormat       PopupKindType
+	SessionList        PopupKindType
 }{
 	Error:              1,
 	Help:               2,
@@ -54,6 +67,7 @@ var PopupKind = struct {
 	Loading:            6,
 	ConnectionSwitcher: 7,
 	ExportFormat:       8,
+	SessionList:        9,
 }
 
 type bounds struct {
@@ -83,6 +97,7 @@ type model struct {
 	helpPopup               component.HelpPopupModel
 	loadingPopup            component.LoadingPopupModel
 	exportFormatPopup       component.ExportFormatPopupModel
+	sessionListPopup        component.SessionListPopupModel
 
 	// state
 	connectionName   string
@@ -98,6 +113,9 @@ type model struct {
 	schemaPreloading bool
 	buf              *querybuffer.Buffer
 	dir              string
+	sessions         []session
+	lastSessionName  string
+	lastResultsData  *db.Data
 
 	windowTooSmall       bool
 	width                int
@@ -128,6 +146,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig, dir string) M
 	resultRowPopup := component.NewResultRowPopupModel()
 	databaseSwitcherPopup := component.NewDatabaseSwitcherPopupModel()
 	connectionSwitcherPopup := component.NewConnectionSwitcherPopupModel()
+	sessionListPopup := component.NewSessionListPopupModel()
 	helpPopup := component.NewHelpPopupModel()
 	loadingPopup := component.NewLoadingPopupModel()
 	exportFormatPopup := component.NewExportFormatPopupModel()
@@ -147,6 +166,7 @@ func NewModel(connectionName string, dbConfig db.ConnectionConfig, dir string) M
 		resultRowPopup:          resultRowPopup,
 		databaseSwitcherPopup:   databaseSwitcherPopup,
 		connectionSwitcherPopup: connectionSwitcherPopup,
+		sessionListPopup:        sessionListPopup,
 		helpPopup:               helpPopup,
 		loadingPopup:            loadingPopup,
 		exportFormatPopup:       exportFormatPopup,
@@ -321,6 +341,8 @@ func (m *model) updateActivePopup(msg tea.Msg) tea.Cmd {
 		m.loadingPopup, cmd = m.loadingPopup.Update(msg)
 	case PopupKind.ExportFormat:
 		m.exportFormatPopup, cmd = m.exportFormatPopup.Update(msg)
+	case PopupKind.SessionList:
+		m.sessionListPopup, cmd = m.sessionListPopup.Update(msg)
 	}
 	return cmd
 }
@@ -343,6 +365,8 @@ func (m model) activePopupView() string {
 		return m.loadingPopup.View()
 	case PopupKind.ExportFormat:
 		return m.exportFormatPopup.View()
+	case PopupKind.SessionList:
+		return m.sessionListPopup.View()
 	}
 	return ""
 }
@@ -388,9 +412,125 @@ func (m *model) adjustSizes() {
 	m.resultRowPopup.SetSize(m.width/2, m.height/2)
 	m.databaseSwitcherPopup.SetSize(m.width/3, m.height/3)
 	m.connectionSwitcherPopup.SetSize(m.width/3, m.height/3)
+	m.sessionListPopup.SetSize(m.width/3, m.height/3)
 	m.passwordPopup.SetSize(m.width/3, 5)
 	m.helpPopup.SetSize(120, 5)
 	m.exportFormatPopup.SetSize(m.width/3, 3)
+}
+
+// closeAndResetDB closes the active database connection (if any) and zeroes
+// the field so that subsequent handlers (e.g. DatabaseConnectedMsg) don't
+// accidentally close a session's still-live connection.
+func (m *model) closeAndResetDB() {
+	if m.db.DB != nil {
+		_ = m.db.DB.Close()
+	}
+	m.db = db.DBConn{}
+}
+
+func (m *model) saveCurrentSession() {
+	if m.connectionName == "" {
+		return
+	}
+	s := session{
+		connectionName:   m.connectionName,
+		dbConfig:         m.dbConfig,
+		selectedDatabase: m.selectedDatabase,
+		queryText:        m.queryPanel.GetValue(),
+		queryFilename:    m.queryPanel.GetFilename(),
+		results:          m.lastResultsData,
+		db:               m.db,
+		schemaCache:      m.schemaCache,
+	}
+	if i, ok := m.sessionIndex(m.connectionName); ok {
+		m.sessions[i] = s
+		return
+	}
+	m.sessions = append(m.sessions, s)
+}
+
+func (m *model) sessionIndex(connName string) (int, bool) {
+	for i, s := range m.sessions {
+		if s.connectionName == connName {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func (m *model) findSession(connName string) (session, bool) {
+	if i, ok := m.sessionIndex(connName); ok {
+		return m.sessions[i], true
+	}
+	return session{}, false
+}
+
+// popSession removes a session from the pool without closing its DB connection.
+// Use this when restoring a session; the connection is still needed.
+func (m *model) popSession(connName string) {
+	if i, ok := m.sessionIndex(connName); ok {
+		m.sessions = append(m.sessions[:i], m.sessions[i+1:]...)
+	}
+}
+
+// removeSession removes a session from the pool and closes its DB connection.
+// Use this when the session is being discarded entirely.
+func (m *model) removeSession(connName string) {
+	if i, ok := m.sessionIndex(connName); ok {
+		if m.sessions[i].db.DB != nil {
+			_ = m.sessions[i].db.DB.Close()
+		}
+		m.sessions = append(m.sessions[:i], m.sessions[i+1:]...)
+	}
+}
+
+func (m *model) restoreSession(s session) tea.Cmd {
+	m.connectionName = s.connectionName
+	m.dbConfig = s.dbConfig
+	m.selectedDatabase = s.selectedDatabase
+	m.db = s.db
+	m.schemaCache = s.schemaCache
+	m.lastResultsData = s.results
+	m.titleBar.SetConnectionName(s.connectionName)
+	m.titleBar.SetConn(s.dbConfig)
+	m.statusBar.SetSelectedDatabase(s.selectedDatabase)
+	m.queryPanel.SetConnectionName(s.connectionName)
+	m.queryPanel.SetDatabaseName(s.selectedDatabase)
+	m.queryPanel.SetSingleQueryFile(s.dbConfig.UseSingleQueryFile())
+	m.queryPanel.SetValue(s.queryText)
+	m.queryPanel.SetFilename(s.queryFilename)
+	m.queryPanel.SetDirty(false)
+	m.buf.SetSaved(s.queryText)
+	if s.results != nil {
+		m.resultsPanel.SetData(s.results)
+	} else {
+		m.resultsPanel.Clear()
+	}
+	m.closePopup()
+	m.initKeyMap()
+	return commands.GetSchemaEntities(m.db, commands.TablePanelKind.Tables, m.schemaCache)
+}
+
+func (m *model) totalSessionCount() int {
+	return len(m.sessions) + 1
+}
+
+func (m *model) openSessionList() {
+	active := component.SessionListEntry{
+		ConnName: m.connectionName,
+		DBName:   m.selectedDatabase,
+		IsActive: true,
+	}
+	entries := make([]component.SessionListEntry, 1, 1+len(m.sessions))
+	entries[0] = active
+	for _, s := range m.sessions {
+		entries = append(entries, component.SessionListEntry{
+			ConnName: s.connectionName,
+			DBName:   s.selectedDatabase,
+		})
+	}
+	m.sessionListPopup.SetEntries(entries)
+	m.showPopup(PopupKind.SessionList)
 }
 
 func (m model) getRightWidth(totalWidth int) int {

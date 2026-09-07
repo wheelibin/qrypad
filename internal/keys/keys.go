@@ -26,6 +26,8 @@ type keyMap struct {
 	SaveQuery        key.Binding
 	SwitchDatabase   key.Binding
 	SwitchConnection key.Binding
+	SessionList      key.Binding
+	SessionToggle    key.Binding
 	ToggleLeftPanel  key.Binding
 	Undo             key.Binding
 	UpdatePassword   key.Binding
@@ -44,7 +46,7 @@ func (k keyMap) ShortHelp() []key.Binding {
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.NextPanel, k.PrevPanel, k.NextTab, k.PrevTab, k.FilterTable, k.ToggleLeftPanel},
-		{k.SwitchDatabase, k.SwitchConnection, k.UpdatePassword, k.RefreshSchema, k.Help, k.Quit},
+		{k.SwitchDatabase, k.SwitchConnection, k.SessionList, k.SessionToggle, k.UpdatePassword, k.RefreshSchema, k.Help, k.Quit},
 		{k.ExecuteQuery, k.AutoComplete, k.CancelQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor, k.Undo, k.Redo},
 		{k.ViewData, k.ViewDataDesc, k.CopyValue, k.CopyResults, k.ExportResults},
 	}
@@ -75,6 +77,14 @@ var DefaultKeyMap = keyMap{
 	SwitchConnection: key.NewBinding(
 		key.WithKeys("ctrl+k"),
 		key.WithHelp("ctrl+k", "switch connection"),
+	),
+	SessionList: key.NewBinding(
+		key.WithKeys("ctrl+l"),
+		key.WithHelp("ctrl+l", "sessions"),
+	),
+	SessionToggle: key.NewBinding(
+		key.WithKeys("ctrl+t"),
+		key.WithHelp("ctrl+t", "prev session"),
 	),
 	NextPanel: key.NewBinding(
 		key.WithKeys("tab"),

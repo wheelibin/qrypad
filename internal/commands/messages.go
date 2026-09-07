@@ -63,6 +63,9 @@ type (
 // without choosing a connection on first launch.
 type NoConnectionChosenMsg struct{}
 
+// SessionCloseMsg requests closing a session by connection name.
+type SessionCloseMsg string
+
 // ExportFormat selects the serialization format for exported results.
 type ExportFormat int
 

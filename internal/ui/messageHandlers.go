@@ -44,9 +44,6 @@ func (m *model) handleError(err error) {
 func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case db.DatabaseConnectedMsg:
-		if m.db.DB != nil {
-			_ = m.db.DB.Close()
-		}
 		m.db = db.DBConn(msg)
 		m.schemaCache.Invalidate()
 		m.closePopup()
@@ -86,6 +83,7 @@ func (m *model) handleDBMessages(msg tea.Msg) tea.Cmd {
 		if msg.Err != nil {
 			m.handleError(msg.Err)
 		} else {
+			m.lastResultsData = msg.Data
 			m.resultsPanel.SetData(msg.Data)
 		}
 		return commands.SetLoading(false)
@@ -296,6 +294,9 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 			}
 		}
 
+		// Close the current db now; DatabaseConnectedMsg no longer does this.
+		m.closeAndResetDB()
+
 		m.selectedDatabase = newDB
 		m.dbConfig.Database = newDB
 		m.titleBar.SetConn(m.dbConfig)
@@ -314,14 +315,7 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 
 	case commands.ConnectionSelectedMsg:
 		connName := string(msg)
-		conns, err := db.GetConnections()
-		if err != nil {
-			m.handleError(err)
-			return nil
-		}
-		conn, ok := conns[connName]
-		if !ok {
-			m.handleError(errors.New("connection not found"))
+		if connName == m.connectionName {
 			return nil
 		}
 
@@ -334,25 +328,88 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 			m.queryPanel.SetDirty(false)
 		}
 
-		m.queryPanel.SetConnectionName(connName)
-		m.queryPanel.SetDatabaseName(conn.Database)
-		m.queryPanel.SetSingleQueryFile(conn.UseSingleQueryFile())
+		// Snapshot current connection into the session pool, then clear m.db so
+		// that DatabaseConnectedMsg doesn't close the session's live connection.
+		m.saveCurrentSession()
+		m.lastSessionName = m.connectionName
+		m.closeAndResetDB()
+
+		// Restore an existing session if available
+		if existing, ok := m.findSession(connName); ok {
+			m.popSession(connName)
+			cmd := m.restoreSession(existing)
+			m.statusBar.SetSessionCount(m.totalSessionCount())
+			return cmd
+		}
+
+		// Fresh connection — load from config and connect
+		conns, err := db.GetConnections()
+		if err != nil {
+			m.handleError(err)
+			return nil
+		}
+		conn, ok := conns[connName]
+		if !ok {
+			m.handleError(errors.New("connection not found"))
+			return nil
+		}
 		m.connectionName = connName
 		m.dbConfig = conn
 		m.selectedDatabase = conn.Database
+		m.schemaCache = db.NewSchemaCache()
+		m.lastResultsData = nil
+		m.resultsPanel.Clear()
 		m.titleBar.SetConnectionName(connName)
 		m.titleBar.SetConn(conn)
-		// re-evaluate driver-dependent key bindings for the new connection
+		m.queryPanel.SetConnectionName(connName)
+		m.queryPanel.SetDatabaseName(conn.Database)
+		m.queryPanel.SetSingleQueryFile(conn.UseSingleQueryFile())
 		m.initKeyMap()
+		m.statusBar.SetSessionCount(m.totalSessionCount())
 		return tea.Batch(
 			commands.ConnectToDB(m.connectionName, m.dbConfig),
 			commands.ReadOrCreateQueryFile(m.dir, connName, conn.Database, conn.UseSingleQueryFile()),
 		)
 
+	case commands.SessionCloseMsg:
+		connName := string(msg)
+		if connName == m.connectionName {
+			// Closing the active session: switch to last visited or first remaining
+			if m.totalSessionCount() == 1 {
+				return nil // can't close the only session
+			}
+			target := m.lastSessionName
+			if target == "" || target == connName {
+				target = m.sessions[0].connectionName
+			}
+			existing, ok := m.findSession(target)
+			if !ok {
+				return nil
+			}
+			m.popSession(target)
+			// Close the active connection (it's being discarded)
+			m.closeAndResetDB()
+			m.lastSessionName = ""
+			cmd := m.restoreSession(existing)
+			m.statusBar.SetSessionCount(m.totalSessionCount())
+			return cmd
+		}
+		m.removeSession(connName)
+		if m.lastSessionName == connName {
+			m.lastSessionName = ""
+		}
+		m.statusBar.SetSessionCount(m.totalSessionCount())
+		if m.popupIsActive(PopupKind.SessionList) {
+			m.openSessionList()
+		}
+		return nil
+
 	case commands.PasswordEnteredMsg:
 		return commands.SavePassword(m.connectionName, string(msg))
 
 	case commands.PasswordSavedMsg:
+		// Close and replace the current db; DatabaseConnectedMsg no longer does this.
+		m.closeAndResetDB()
 		return commands.ConnectToDB(m.connectionName, m.dbConfig)
 
 	case commands.QueryFileReadMsg:
@@ -408,6 +465,11 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	if key.Matches(msg, keys.DefaultKeyMap.Quit) {
 		if m.db.DB != nil {
 			_ = m.db.DB.Close()
+		}
+		for _, s := range m.sessions {
+			if s.db.DB != nil {
+				_ = s.db.DB.Close()
+			}
 		}
 		return tea.Quit
 	}
@@ -528,6 +590,16 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 			m.connectionSwitcherPopup.SetIsFirstConnection(false)
 			m.showPopup(PopupKind.ConnectionSwitcher)
 			return commands.GetConnectionList()
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.SessionList):
+		if !m.popupIsActive(PopupKind.SessionList) {
+			m.openSessionList()
+		}
+
+	case key.Matches(msg, keys.DefaultKeyMap.SessionToggle):
+		if m.lastSessionName != "" {
+			return commands.ConnectionSelectionChanged(m.lastSessionName)
 		}
 
 	case key.Matches(msg, keys.DefaultKeyMap.OpenInEditor):

@@ -16,6 +16,7 @@ type StatusBarModel struct {
 	height           int
 	selectedDatabase string
 	statusInfo       string
+	sessionCount     int
 }
 
 func NewStatusBarModel(selectedDatabase string) StatusBarModel {
@@ -51,6 +52,10 @@ func (m *StatusBarModel) SetStatusInfo(info string) {
 	m.statusInfo = info
 }
 
+func (m *StatusBarModel) SetSessionCount(n int) {
+	m.sessionCount = n
+}
+
 func (m StatusBarModel) View() string {
 	containerStyle := lipgloss.NewStyle().
 		Background(theme.GetTheme().StatusBar.BG).
@@ -75,6 +80,11 @@ func (m StatusBarModel) View() string {
 		helpText = helpTextStyle.Render(fmt.Sprintf(" [%s] to switch database", keys.DefaultKeyMap.SwitchDatabase.Help().Key))
 	}
 
+	var sessionText string
+	if m.sessionCount > 1 {
+		sessionText = helpTextStyle.Bold(true).Render(fmt.Sprintf(" [%d sessions]", m.sessionCount))
+	}
+
 	var statusInfo string
 	if m.statusInfo != "" {
 		statusInfo = statusInfoStyle.
@@ -83,5 +93,5 @@ func (m StatusBarModel) View() string {
 			Render(m.statusInfo)
 	}
 
-	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText, statusInfo))
+	return containerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, selectedDatabase+helpText+sessionText, statusInfo))
 }

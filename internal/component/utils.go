@@ -37,7 +37,8 @@ func getStatementAtCursor(text string, cursorLine int) *Statement {
 		if currentStatement.Len() == 0 {
 			startLine = l
 		}
-		currentStatement.WriteString(line + "\n")
+		currentStatement.WriteString(line)
+		currentStatement.WriteByte('\n')
 		if strings.Contains(line, ";") {
 			statements = append(statements, Statement{
 				StartLine: startLine,

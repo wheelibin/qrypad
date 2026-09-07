@@ -99,7 +99,8 @@ var DefaultKeyMap = KeyMap{
 	LowercaseWordForward:  key.NewBinding(key.WithKeys("alt+l")),
 	UppercaseWordForward:  key.NewBinding(key.WithKeys("alt+u")),
 
-	TransposeCharacterBackward: key.NewBinding(key.WithKeys("ctrl+t")),
+	// ctrl+t is reserved for the global session-toggle shortcut.
+	TransposeCharacterBackward: key.NewBinding(key.WithKeys("ctrl+t"), key.WithDisabled()),
 
 	PageUp:   key.NewBinding(key.WithKeys("pgup")),
 	PageDown: key.NewBinding(key.WithKeys("pgdown")),
