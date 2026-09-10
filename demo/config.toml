@@ -1,0 +1,18 @@
+# Standalone config used only for recording demo.tape with vhs.
+# Remaps ExecuteQuery off F5 (vhs 0.12.0 has no function-key command) to
+# ctrl+g, an otherwise-unbound key, so the tape can trigger it.
+
+queryTimeout = 60
+tableDataRowLimit = 100
+autoSave = false
+
+[connections.demo]
+driver           = "postgres"
+host             = "localhost"
+port             = 50403
+user             = "qrypad"
+insecurePassword = "qrypad"
+database         = "qrypad"
+
+[keys]
+ExecuteQuery = "ctrl+g"

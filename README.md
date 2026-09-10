@@ -5,7 +5,7 @@
 <p align="center">A terminal SQL client for Postgres, MySQL and SQLite.</p>
 
 <p align="center">
-  <img src="assets/ss.png" style="max-width:100%; height:auto;"/>
+  <img src="demo/demo.gif" alt="qrypad terminal demo" width="1000">
 </p>
 
 ## Features
