@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/header.png" style="width:600px; height:auto;" />
+  <img src="assets/header.webp" width="600" alt="qrypad">
 </p>
 
 <p align="center">
