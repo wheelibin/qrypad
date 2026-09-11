@@ -2,7 +2,14 @@
   <img src="assets/header.png" style="width:600px; height:auto;" />
 </p>
 
-<p align="center">A terminal SQL client for Postgres, MySQL and SQLite.</p>
+<p align="center">
+  <strong>A fast SQL scratchpad for your terminal.</strong>
+  <br><br>
+  Explore your schema, write and execute SQL, inspect results, and switch between
+  database sessions without leaving your terminal.
+  <br><br>
+  <strong>Postgres · MySQL · SQLite</strong>
+</p>
 
 <p align="center">
   <img src="demo/demo.gif" alt="qrypad terminal demo" width="1000">
