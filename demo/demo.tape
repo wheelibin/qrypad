@@ -1,43 +1,31 @@
-# Generate: vhs demo.tape
-# Requires: go build -o qrypad .   (run from repo root first)
-#
-# Runs against ./demo/config.toml, a standalone config that points at the
-# committed test-db/sqlite/sqlite.db and remaps ExecuteQuery from F5 to
-# Ctrl+G — vhs 0.12.0 has no function-key command, so F5 can't be sent.
+Output demo.gif 
 
-Output demo.gif
-
-Set Shell "zsh"
+Set Shell "zsh" 
 Set FontSize 28 
-Set Columns 195
+Set Columns 195 
 Set Rows 45 
-Set Theme "Kanagawa"
-Set TypingSpeed 90ms
-
+Set Theme "Kanagawa" 
+Set TypingSpeed 45ms 
 Set Margin 32 
-Set MarginFill "#223249"
+Set MarginFill "#223249" 
 Set BorderRadius 16
 
 # open app
-Type@30ms "../qrypad --connection demo"
+Type@25ms "../qrypad --connection demo"
 Enter
-Sleep 2s
+Sleep 750ms
 
 # show some table data
 Enter
-Sleep 1s
-Down
-Enter
-Sleep 1s
-Down
-Enter
-Sleep 1s
+Sleep 750ms
 
 # navigate to query panel
 Tab
 Tab
 
 # enter a query with auto complete
+Enter
+Enter
 Type "select *"
 Enter
 Type "from "
@@ -63,24 +51,24 @@ Backspace
 Type "a.name, a.age, a.health_records"
 Enter
 Ctrl+G
-Sleep 2s
+Sleep 750ms
 
 # to results
 Tab
-Sleep 1s
+Sleep 600ms
 Type "/Buster"
-Sleep 1s
+Sleep 800ms
 Escape
 Down
-Sleep 1s
+Sleep 600ms
 
 # results popup
 Enter
 Down
-Sleep 1s
+Sleep 600ms
 Down
-Sleep 1s
+Sleep 600ms
 Up
-Sleep 1s
+Sleep 600ms
 Escape
-Sleep 2s
+Sleep 750ms
