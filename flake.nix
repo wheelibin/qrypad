@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        version = "1.9.0";
+        version = "1.9.1";
       in
       {
         packages.default = pkgs.buildGoModule {
@@ -19,7 +19,7 @@
 
           src = ./.;
 
-          vendorHash = "sha256-1eeIGDr/+VCKxzT66JmVhdgb2pXa/TkJVHdGdFqNmNQ=";
+          vendorHash = "sha256-r3LUaVnYhgrpoVPWZInL/QiYiJ31vZJcvAGR+d7iCmY=";
 
           doCheck = false;
 
