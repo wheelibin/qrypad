@@ -66,6 +66,11 @@ type NoConnectionChosenMsg struct{}
 // SessionCloseMsg requests closing a session by connection name.
 type SessionCloseMsg string
 
+// QuitRequestedMsg requests quitting the app after closing any open database
+// connections. Popups that quit outright (e.g. dismissing a connection error)
+// should emit this instead of tea.Quit directly, so live sessions get closed.
+type QuitRequestedMsg struct{}
+
 // ExportFormat selects the serialization format for exported results.
 type ExportFormat int
 

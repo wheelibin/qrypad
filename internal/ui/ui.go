@@ -428,6 +428,17 @@ func (m *model) closeAndResetDB() {
 	m.db = db.DBConn{}
 }
 
+// closeAllConnections closes the active connection and every parked session's
+// connection. Call this before quitting the app.
+func (m *model) closeAllConnections() {
+	m.closeAndResetDB()
+	for _, s := range m.sessions {
+		if s.db.DB != nil {
+			_ = s.db.DB.Close()
+		}
+	}
+}
+
 func (m *model) saveCurrentSession() {
 	if m.connectionName == "" {
 		return

@@ -63,7 +63,7 @@ func (m ErrorPopupModel) Update(msg tea.Msg) (ErrorPopupModel, tea.Cmd) {
 
 		case key.Matches(msg, m.keymap.close):
 			if m.isConnectionError {
-				return m, tea.Quit
+				return m, commands.QuitRequested()
 			}
 			return m, commands.ClosePopup()
 
