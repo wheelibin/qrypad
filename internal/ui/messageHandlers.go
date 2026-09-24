@@ -203,6 +203,10 @@ func (m *model) handlePopupMessages(msg tea.Msg) tea.Cmd {
 	case commands.NoConnectionChosenMsg:
 		return tea.Quit
 
+	case commands.QuitRequestedMsg:
+		m.closeAllConnections()
+		return tea.Quit
+
 	case commands.PasswordInputNeededMsg:
 		m.passwordPopup.Clear()
 		m.showPopup(PopupKind.Password)
@@ -328,11 +332,13 @@ func (m *model) handleQueryMessages(msg tea.Msg) tea.Cmd {
 			m.queryPanel.SetDirty(false)
 		}
 
-		// Snapshot current connection into the session pool, then clear m.db so
-		// that DatabaseConnectedMsg doesn't close the session's live connection.
+		// Snapshot current connection into the session pool, then clear m.db
+		// WITHOUT closing it — the connection now belongs to the saved session
+		// and must stay open (closeAndResetDB would close the same *sql.DB
+		// that was just handed off, breaking the session on restore).
 		m.saveCurrentSession()
 		m.lastSessionName = m.connectionName
-		m.closeAndResetDB()
+		m.db = db.DBConn{}
 
 		// Restore an existing session if available
 		if existing, ok := m.findSession(connName); ok {
@@ -463,14 +469,7 @@ func (m *model) handleMouseMessages(msg tea.MouseClickMsg) tea.Cmd {
 //nolint:gocyclo,cyclop // Bubble Tea key handler inherently requires complex switch statements
 func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 	if key.Matches(msg, keys.DefaultKeyMap.Quit) {
-		if m.db.DB != nil {
-			_ = m.db.DB.Close()
-		}
-		for _, s := range m.sessions {
-			if s.db.DB != nil {
-				_ = s.db.DB.Close()
-			}
-		}
+		m.closeAllConnections()
 		return tea.Quit
 	}
 

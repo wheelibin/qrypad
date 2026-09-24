@@ -295,6 +295,12 @@ func SessionClose(connName string) tea.Cmd {
 	return func() tea.Msg { return SessionCloseMsg(connName) }
 }
 
+// QuitRequested is sent by popups that quit the app directly (e.g. dismissing
+// a connection error) so the model can close open connections first.
+func QuitRequested() tea.Cmd {
+	return func() tea.Msg { return QuitRequestedMsg{} }
+}
+
 func CopyValue(value string, valueDesc string) tea.Cmd {
 	return func() tea.Msg {
 		return CopyValueMsg{Value: value, ValueDesc: valueDesc}
