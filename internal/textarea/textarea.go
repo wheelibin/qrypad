@@ -948,7 +948,7 @@ func (m Model) View() string {
 		displayLine++
 
 		if m.ShowLineNumbers {
-			lineNumber := m.style.EndOfBuffer.Render((fmt.Sprintf(m.lineNumberFormat, string(m.EndOfBufferCharacter))))
+			lineNumber := m.style.EndOfBuffer.Render(fmt.Sprintf(m.lineNumberFormat, string(m.EndOfBufferCharacter)))
 			s.WriteString(lineNumber)
 		}
 		s.WriteRune('\n')
@@ -1450,7 +1450,7 @@ func (m Model) placeholderView() string {
 	s.WriteString(m.style.CursorLine.Render(prompt))
 
 	if m.ShowLineNumbers {
-		s.WriteString(m.style.CursorLine.Render(m.style.CursorLineNumber.Render((fmt.Sprintf(m.lineNumberFormat, 1)))))
+		s.WriteString(m.style.CursorLine.Render(m.style.CursorLineNumber.Render(fmt.Sprintf(m.lineNumberFormat, 1))))
 	}
 
 	m.Cursor.TextStyle = m.style.Placeholder
@@ -1468,7 +1468,7 @@ func (m Model) placeholderView() string {
 		s.WriteString(prompt)
 
 		if m.ShowLineNumbers {
-			eob := m.style.EndOfBuffer.Render((fmt.Sprintf(m.lineNumberFormat, string(m.EndOfBufferCharacter))))
+			eob := m.style.EndOfBuffer.Render(fmt.Sprintf(m.lineNumberFormat, string(m.EndOfBufferCharacter)))
 			s.WriteString(eob)
 		}
 	}

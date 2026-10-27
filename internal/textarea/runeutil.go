@@ -30,7 +30,7 @@ type sanitizer struct {
 }
 
 // NewSanitizer constructs a rune sanitizer.
-func NewSanitizer(opts ...Option) *sanitizer { //nolint:revive // sanitizer is intentionally unexported; callers use it only via its methods
+func NewSanitizer(opts ...Option) *sanitizer {
 	s := sanitizer{
 		replaceNewLine: []rune("\n"),
 		replaceTab:     []rune("    "),

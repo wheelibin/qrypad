@@ -56,7 +56,7 @@ format: ## Applies standard formatting (spaces, indents, etc.)
 # ===============================
 # LINTING COMMANDS
 # ===============================
-GOLANGCI_LINT_VERSION := 2.12.2
+GOLANGCI_LINT_VERSION := 2.15.0
 
 install-golangci-lint: # Check and install golangci-lint at specified version
 	@if command -v golangci-lint > /dev/null 2>&1 && \
