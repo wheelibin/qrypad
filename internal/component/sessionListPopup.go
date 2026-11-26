@@ -28,13 +28,8 @@ type SessionListPopupModel struct {
 }
 
 func NewSessionListPopupModel() SessionListPopupModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
+	t := newBaseTable([]table.Column{}).
 		WithHeaderVisibility(false).
-		Filtered(true).
 		Focused(true)
 
 	return SessionListPopupModel{
@@ -99,10 +94,12 @@ func (m SessionListPopupModel) Update(msg tea.Msg) (SessionListPopupModel, tea.C
 	var cmd tea.Cmd
 	cmds := make([]tea.Cmd, 0, 1)
 
+	// checked before table.Update, which unfocuses the filter on enter/esc
+	typing := isTableInputFocused(m.table)
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
-	if kMsg, ok := msg.(tea.KeyPressMsg); ok {
+	if kMsg, ok := msg.(tea.KeyPressMsg); ok && !typing {
 		switch {
 		case key.Matches(kMsg, m.keymap.switchTo):
 			row := m.table.HighlightedRow()

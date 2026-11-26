@@ -49,13 +49,8 @@ type TablePanelModel struct {
 }
 
 func NewTablePanelModel() TablePanelModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.GetTableHeaderStyle()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
-		Filtered(true).
+	t := newBaseTable([]table.Column{}).
+		Searchable(true).
 		Focused(true)
 
 	return TablePanelModel{
@@ -99,7 +94,7 @@ func (m TablePanelModel) Update(msg tea.Msg) (TablePanelModel, tea.Cmd) {
 		cmds = append(cmds, commands.TableSelectionChanged(m.selectedTable))
 
 	case tea.KeyPressMsg:
-		if m.active {
+		if m.active && !m.IsInputFocused() {
 			switch {
 			case key.Matches(msg, keys.DefaultKeyMap.NextTab):
 				m.activeTabIndex = (m.activeTabIndex + 1) % TablePanelTabCount
@@ -213,6 +208,11 @@ func (m TablePanelModel) highlightedRef() db.TableReference {
 func (m *TablePanelModel) SetActive(active bool) {
 	m.table = m.table.Focused(active)
 	m.active = active
+}
+
+// IsInputFocused reports whether the user is typing into the table's filter or search input.
+func (m TablePanelModel) IsInputFocused() bool {
+	return isTableInputFocused(m.table)
 }
 
 func (m *TablePanelModel) SetSize(w, h int) {

@@ -48,6 +48,7 @@ name = "kanagawa"
 # panelTitle            = { bg = "", fg = "" }
 # panelTitleActive      = { bg = "", fg = "" }
 # rowDetailsPopup       = { bg = "", fg = "" }
+# searchMatch           = { bg = "", fg = "" }
 # spinner               = { bg = "", fg = "" }
 # statusBar             = { bg = "", fg = "" }
 # tableBorder           = { bg = "", fg = "" }

@@ -31,13 +31,8 @@ type DatabaseSwitcherPopupModel struct {
 }
 
 func NewDatabaseSwitcherPopupModel() DatabaseSwitcherPopupModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
+	t := newBaseTable([]table.Column{}).
 		WithHeaderVisibility(false).
-		Filtered(true).
 		Focused(true)
 
 	s := spinner.New()
@@ -77,10 +72,12 @@ func (m DatabaseSwitcherPopupModel) Update(msg tea.Msg) (DatabaseSwitcherPopupMo
 		cmds []tea.Cmd
 	)
 
+	// checked before table.Update, which unfocuses the filter on enter/esc
+	typing := isTableInputFocused(m.table)
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok && !typing {
 		switch {
 		case key.Matches(msg, m.keymap.connect):
 			cmd = commands.DatabaseSelectionChanged(m.GetSelectedDatabase())

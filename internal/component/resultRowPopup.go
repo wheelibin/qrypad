@@ -49,13 +49,8 @@ type ResultRowPopupModel struct {
 }
 
 func NewResultRowPopupModel() ResultRowPopupModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
+	t := newBaseTable([]table.Column{}).
 		WithHeaderVisibility(false).
-		Filtered(true).
 		Focused(true).
 		WithMultiline(true)
 	t = withRowBorders(t)
@@ -89,7 +84,7 @@ func (m ResultRowPopupModel) Update(msg tea.Msg) (ResultRowPopupModel, tea.Cmd) 
 		cmds []tea.Cmd
 	)
 
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok && !isTableInputFocused(m.table) {
 		switch {
 		case key.Matches(msg, m.keymap.copy):
 			var valDesc string

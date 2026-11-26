@@ -40,13 +40,7 @@ type TableInfoPanelModel struct {
 }
 
 func NewTableInfoPanelModel() TableInfoPanelModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.GetTableHeaderStyle()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
-		Filtered(true)
+	t := newBaseTable([]table.Column{}).Searchable(true)
 
 	return TableInfoPanelModel{
 		table: t,
@@ -79,7 +73,7 @@ func (m TableInfoPanelModel) Update(msg tea.Msg) (TableInfoPanelModel, tea.Cmd) 
 		cmds = append(cmds, cmd)
 	}
 
-	if m.active {
+	if m.active && !m.IsInputFocused() {
 		if msg, ok := msg.(tea.KeyPressMsg); ok {
 			switch {
 			case key.Matches(msg, keys.DefaultKeyMap.NextTab):
@@ -158,6 +152,11 @@ func (m *TableInfoPanelModel) SetData(data *db.Data) {
 func (m *TableInfoPanelModel) SetActive(active bool) {
 	m.table = m.table.Focused(active)
 	m.active = active
+}
+
+// IsInputFocused reports whether the user is typing into the table's filter or search input.
+func (m TableInfoPanelModel) IsInputFocused() bool {
+	return isTableInputFocused(m.table)
 }
 
 func (m *TableInfoPanelModel) SetSize(w, h int) {

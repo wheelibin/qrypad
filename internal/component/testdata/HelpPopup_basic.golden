@@ -6,8 +6,8 @@
 │   ]         next tab             ctrl+l sessions             esc        cancel query            y      copy value      │
 │   [         previous tab         ctrl+t prev session         ctrl+s     save query              Y      copy results    │
 │   /         filter table         ctrl+p update password      ctrl+r     reload query            ctrl+x export results  │
-│   ctrl+b    toggle left panel    R      refresh schema       ctrl+e     open query in editor                           │
-│                                  ?/F1   show help            ctrl+z     undo                                           │
+│   ctrl+f    search table         R      refresh schema       ctrl+e     open query in editor                           │
+│   ctrl+b    toggle left panel    ?/F1   show help            ctrl+z     undo                                           │
 │                                  ctrl+c quit                 ctrl+y     redo                                           │
 │                                                                                                                        │
 │                                                       esc close                                                        │

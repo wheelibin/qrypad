@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
+	"github.com/evertras/bubble-table/table"
 
 	"github.com/wheelibin/qrypad/internal/style"
 )
@@ -203,5 +204,20 @@ func TestParseFgColor(t *testing.T) {
 				t.Errorf("ParseFgColor(%q) = %v, want %v", tt.input, got, wantColor)
 			}
 		})
+	}
+}
+
+func TestGetTableRowStyle(t *testing.T) {
+	highlight := style.GetTableHighlightStyle().GetForeground()
+	match := style.GetTableRowStyle(table.RowStyleFuncInput{IsSearchMatch: true})
+
+	if got := style.GetTableRowStyle(table.RowStyleFuncInput{IsHighlighted: true, IsSearchMatch: true}).GetForeground(); got != highlight {
+		t.Errorf("highlighted match should use highlight style, got fg %v", got)
+	}
+	if bg := match.GetBackground(); bg == lipgloss.NewStyle().GetBackground() || bg == style.GetTableHighlightStyle().GetBackground() {
+		t.Errorf("search match should have its own background, got %v", bg)
+	}
+	if style.GetTableRowStyle(table.RowStyleFuncInput{}).GetBackground() != lipgloss.NewStyle().GetBackground() {
+		t.Error("plain row should be unstyled")
 	}
 }

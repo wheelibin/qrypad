@@ -11,6 +11,7 @@
   "panelTitle": { "bg": "#6e6a86", "fg": "#e0def4" },
   "panelTitle:active": { "bg": "#ea9a97", "fg": "#1e1e2e" },
   "rowDetailsPopup": { "bg": "#f6c177", "fg": "#1e1e2e" },
+  "searchMatch": { "bg": "#262339" },
   "spinner": { "fg": "#3e8fb0" },
   "statusBar": { "bg": "#393552", "fg": "#9ccfd8" },
   "tableBorder": { "fg": "#393552" },
