@@ -32,13 +32,7 @@ type ConnectionSwitcherPopupModel struct {
 }
 
 func NewConnectionSwitcherPopupModel() ConnectionSwitcherPopupModel {
-	t := table.New([]table.Column{}).
-		WithBaseStyle(style.TableColumn()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
-		HeaderStyle(style.GetTableHeaderStyle()).
-		Filtered(true).
+	t := newBaseTable([]table.Column{}).
 		Focused(true)
 
 	s := spinner.New()
@@ -78,10 +72,12 @@ func (m ConnectionSwitcherPopupModel) Update(msg tea.Msg) (ConnectionSwitcherPop
 		cmds []tea.Cmd
 	)
 
+	// checked before table.Update, which unfocuses the filter on enter/esc
+	typing := isTableInputFocused(m.table)
 	m.table, cmd = m.table.Update(msg)
 	cmds = append(cmds, cmd)
 
-	if msg, ok := msg.(tea.KeyPressMsg); ok {
+	if msg, ok := msg.(tea.KeyPressMsg); ok && !typing {
 		switch {
 		case key.Matches(msg, m.keymap.connect):
 			cmd = commands.ConnectionSelectionChanged(m.GetSelectedConnection())

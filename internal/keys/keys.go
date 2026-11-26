@@ -13,6 +13,7 @@ type keyMap struct {
 	ExportResults    key.Binding
 	CopyResults      key.Binding
 	FilterTable      key.Binding
+	SearchTable      key.Binding
 	Help             key.Binding
 	NextPanel        key.Binding
 	NextTab          key.Binding
@@ -45,7 +46,7 @@ func (k keyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.NextPanel, k.PrevPanel, k.NextTab, k.PrevTab, k.FilterTable, k.ToggleLeftPanel},
+		{k.NextPanel, k.PrevPanel, k.NextTab, k.PrevTab, k.FilterTable, k.SearchTable, k.ToggleLeftPanel},
 		{k.SwitchDatabase, k.SwitchConnection, k.SessionList, k.SessionToggle, k.UpdatePassword, k.RefreshSchema, k.Help, k.Quit},
 		{k.ExecuteQuery, k.AutoComplete, k.CancelQuery, k.SaveQuery, k.ReloadQuery, k.OpenInEditor, k.Undo, k.Redo},
 		{k.ViewData, k.ViewDataDesc, k.CopyValue, k.CopyResults, k.ExportResults},
@@ -142,9 +143,14 @@ var DefaultKeyMap = keyMap{
 		key.WithKeys("y"),
 		key.WithHelp("y", "copy value"),
 	),
+	// FilterTable and SearchTable are help text only: the keys are bubble-table defaults.
 	FilterTable: key.NewBinding(
 		key.WithKeys("/"),
 		key.WithHelp("/", "filter table"),
+	),
+	SearchTable: key.NewBinding(
+		key.WithKeys("ctrl+f"),
+		key.WithHelp("ctrl+f", "search table"),
 	),
 	ExportResults: key.NewBinding(
 		key.WithKeys("ctrl+x"),

@@ -20,7 +20,6 @@ import (
 
 type resultsPanelKeymap struct {
 	viewRow     key.Binding
-	filter      key.Binding
 	copyRow     key.Binding
 	copyResults key.Binding
 	export      key.Binding
@@ -48,10 +47,6 @@ func NewResultsPanelModel() ResultsPanelModel {
 			viewRow: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.ViewData.Keys()...),
 				key.WithHelp(keys.DefaultKeyMap.ViewData.Help().Key, "view row"),
-			),
-			filter: key.NewBinding(
-				key.WithKeys("/"),
-				key.WithHelp("/", "filter data"),
 			),
 			copyRow: key.NewBinding(
 				key.WithKeys(keys.DefaultKeyMap.CopyValue.Keys()...),
@@ -163,6 +158,11 @@ func (m *ResultsPanelModel) SetActive(active bool) {
 	m.active = active
 }
 
+// IsInputFocused reports whether the user is typing into the table's filter or search input.
+func (m ResultsPanelModel) IsInputFocused() bool {
+	return isTableInputFocused(m.table)
+}
+
 func (m ResultsPanelModel) GetSelectedRow() map[string]any {
 	raw := m.table.HighlightedRow().Data
 	out := make(map[string]any, len(raw))
@@ -213,21 +213,15 @@ func (m ResultsPanelModel) GetExportRows() []map[string]any {
 }
 
 func newTable(cols []table.Column) table.Model {
-	t := table.New(cols).
-		WithBaseStyle(style.TableColumn()).
-		HeaderStyle(style.GetTableHeaderStyle()).
-		HighlightStyle(style.GetTableHighlightStyle()).
-		WithBorderForeground(style.GetTableBorderForeground()).
-		BorderRounded().
-		WithHorizontalFreezeColumnCount(1).
-		Filtered(true)
+	t := newBaseTable(cols).
+		Searchable(true).
+		WithHorizontalFreezeColumnCount(1)
 	return withRowBorders(t)
 }
 
 func (m ResultsPanelModel) helpView() string {
 	return m.help.ShortHelpView([]key.Binding{
 		m.keymap.viewRow,
-		m.keymap.filter,
 		m.keymap.copyRow,
 		m.keymap.copyResults,
 		m.keymap.export,

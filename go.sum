@@ -49,8 +49,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dlclark/regexp2/v2 v2.8.0 h1:CekDhPLGfm+GAJmPVFIG+5dqMIQPkyHJll7BbdneDfw=
 github.com/dlclark/regexp2/v2 v2.8.0/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
-github.com/evertras/bubble-table v0.23.0 h1:m8PSrj/nPjxxMWqCh4VLgispQ8HbGWHdxzKXas0ut7s=
-github.com/evertras/bubble-table v0.23.0/go.mod h1:f3xHDRcXh6fcMsbTRsqOIrrFQZdyQBBNSofGanmOAOM=
+github.com/evertras/bubble-table v0.24.0 h1:QO8/Ft1kuhgSzZYNpkceVmL9JywU3mfvrP0F6oCSv6I=
+github.com/evertras/bubble-table v0.24.0/go.mod h1:f3xHDRcXh6fcMsbTRsqOIrrFQZdyQBBNSofGanmOAOM=
 github.com/fatih/structtag v1.2.0 h1:/OdNE99OxoI/PqaW/SuSK9uxxT3f/tcSZgon/ssNSx4=
 github.com/fatih/structtag v1.2.0/go.mod h1:mBJUNpUnHmRKrKlQQlmCrh5PuhftFbNv8Ys4/aAZl94=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=

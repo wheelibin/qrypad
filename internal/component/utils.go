@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/wheelibin/qrypad/internal/db"
+	"github.com/wheelibin/qrypad/internal/style"
 	"github.com/wheelibin/qrypad/internal/textarea"
 	"github.com/wheelibin/qrypad/internal/theme"
 )
@@ -211,4 +212,20 @@ func withRowBorders(t table.Model) table.Model {
 		return t.WithRowBorder(true)
 	}
 	return t
+}
+
+// newBaseTable returns a table with qrypad's shared styling and filtering.
+func newBaseTable(cols []table.Column) table.Model {
+	return table.New(cols).
+		WithBaseStyle(style.TableColumn()).
+		HeaderStyle(style.GetTableHeaderStyle()).
+		WithRowStyleFunc(style.GetTableRowStyle).
+		WithBorderForeground(style.GetTableBorderForeground()).
+		BorderRounded().
+		Filtered(true)
+}
+
+// isTableInputFocused reports whether the user is typing into a table's filter or search input.
+func isTableInputFocused(t table.Model) bool {
+	return t.GetIsFilterInputFocused() || t.GetIsSearchInputFocused()
 }

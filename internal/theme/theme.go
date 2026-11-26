@@ -75,6 +75,7 @@ type Theme struct {
 	PanelTitle              *TC    `json:"panelTitle,omitempty"              mapstructure:"panelTitle,omitempty"`
 	PanelTitleActive        *TC    `json:"panelTitle:active,omitempty"       mapstructure:"panelTitleActive,omitempty"`
 	RowDetailsPopup         *TC    `json:"rowDetailsPopup,omitempty"         mapstructure:"rowDetailsPopup,omitempty"`
+	SearchMatch             *TC    `json:"searchMatch,omitempty"             mapstructure:"searchMatch,omitempty"`
 	Spinner                 *TC    `json:"spinner,omitempty"                 mapstructure:"spinner,omitempty"`
 	StatusBar               *TC    `json:"statusBar,omitempty"               mapstructure:"statusBar,omitempty"`
 	TableBorder             *TC    `json:"tableBorder,omitempty"             mapstructure:"tableBorder,omitempty"`
@@ -107,6 +108,7 @@ func BlankTheme() Theme {
 		PanelTitle:              &TC{},
 		PanelTitleActive:        &TC{},
 		RowDetailsPopup:         &TC{},
+		SearchMatch:             &TC{},
 		Spinner:                 &TC{},
 		StatusBar:               &TC{},
 		TableBorder:             &TC{},
@@ -134,10 +136,10 @@ func GetTheme() Theme {
 }
 
 func LoadTheme() error {
-	viper.SetDefault("theme", defaultThemeName)
-	themeName := viper.GetString("theme.name")
-
 	themeOnce.Do(func() {
+		viper.SetDefault("theme", defaultThemeName)
+		themeName := viper.GetString("theme.name")
+
 		data, err := themes.ReadFile(fmt.Sprintf("themes/%s.json", themeName))
 		if err != nil {
 			fallback, _ := themes.ReadFile(fmt.Sprintf("themes/%s.json", defaultThemeName))

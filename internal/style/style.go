@@ -6,6 +6,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/evertras/bubble-table/table"
+
 	"github.com/wheelibin/qrypad/internal/theme"
 )
 
@@ -123,4 +125,16 @@ func NullStyle() lipgloss.Style {
 		fg = t.Text.FG
 	}
 	return lipgloss.NewStyle().Foreground(fg)
+}
+
+// GetTableRowStyle highlights the cursor row and, beneath it, rows matching the table search.
+// Matches use a background because cell styles override the row foreground.
+func GetTableRowStyle(input table.RowStyleFuncInput) lipgloss.Style {
+	if input.IsHighlighted {
+		return GetTableHighlightStyle()
+	}
+	if input.IsSearchMatch {
+		return lipgloss.NewStyle().Background(theme.GetTheme().SearchMatch.BG)
+	}
+	return lipgloss.NewStyle()
 }

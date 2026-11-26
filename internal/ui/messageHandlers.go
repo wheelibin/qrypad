@@ -478,6 +478,11 @@ func (m *model) handleKeyMessages(msg tea.KeyPressMsg) tea.Cmd {
 		return nil
 	}
 
+	// let the table own keys (e.g. enter to accept) while its filter/search input is focused
+	if m.activePanelInputFocused() {
+		return nil
+	}
+
 	switch {
 	case key.Matches(msg, keys.DefaultKeyMap.NextPanel):
 		nextPanelIndex := (m.activePanelIndex + 1) % m.selectablePanelCount
@@ -757,4 +762,16 @@ func isAutoCompleteKey(key string) bool {
 
 func isPrintableKey(key string) bool {
 	return len(key) == 1 && strconv.IsPrint(rune(key[0]))
+}
+
+func (m *model) activePanelInputFocused() bool {
+	switch m.activePanelIndex {
+	case PanelIndexTables:
+		return m.tablePanel.IsInputFocused()
+	case PanelIndexTableInfo:
+		return m.tableInfoPanel.IsInputFocused()
+	case PanelIndexResults:
+		return m.resultsPanel.IsInputFocused()
+	}
+	return false
 }

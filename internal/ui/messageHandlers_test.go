@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	_ "github.com/ncruces/go-sqlite3/driver"
 
 	"github.com/wheelibin/qrypad/internal/commands"
@@ -82,5 +83,23 @@ func TestQuitRequestedMsg_ClosesAllConnections(t *testing.T) {
 	}
 	if err := parkedDB.PingContext(context.Background()); err == nil {
 		t.Fatalf("expected parked session's connection to be closed")
+	}
+}
+
+// Regression test for: pressing enter to accept a table filter opened the row
+// popup because the global ViewData binding fired before the table saw the key.
+func TestEnterWhileFilterFocused_DoesNotOpenRowPopup(t *testing.T) {
+	m := NewModel("a", db.ConnectionConfig{}, t.TempDir())
+	m.activePanelIndex = PanelIndexResults
+	m.setPanelsActiveState(PanelIndexResults)
+
+	m.resultsPanel, _ = m.resultsPanel.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	if !m.resultsPanel.IsInputFocused() {
+		t.Fatalf("expected '/' to focus the results filter")
+	}
+
+	m.handleKeyMessages(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.popupIsActive(PopupKind.ResultRow) {
+		t.Fatalf("enter while typing a filter must not open the row popup")
 	}
 }
